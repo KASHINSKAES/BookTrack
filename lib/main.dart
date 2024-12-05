@@ -29,32 +29,30 @@ class HomePage extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Вычисляем размеры блока
-    final blockWidth = screenWidth * 0.87; // 87% ширины экрана
+    final blockWidth = screenWidth * 0.97; // 87% ширины экрана
     final blockHeight = screenHeight * 0.2; // 20% высоты экрана
 
     // Задаём отступ для "торчащих" частей блоков
     final overlapOffset = screenWidth * 0.035; // 3.5% ширины экрана
 
-    return Scaffold(
-      backgroundColor: const Color(0xff5775CD),
-      body: SingleChildScrollView(
-          child: Column(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(23.0),
+    return DefaultTabController(
+      length: 4, // Количество вкладок
+      child: Scaffold(
+        backgroundColor: const Color(0xff5775CD),
+        body: Column(
+          children: [
+            // Логотип и поисковая строка
+            Container(
+              // Цвет фона AppBar
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Логотип (SVG)
                   SvgPicture.asset(
                     'assets/images/Logo.svg', // Укажите путь к вашему SVG-файлу
-                    height: 99.87,
-                    width: 255,
+                    height: 60,
+                    width: 150,
                   ),
-                  const SizedBox(height: 20),
-                  // Поисковая строка
+                  const SizedBox(height: 10),
                   TextField(
                     decoration: InputDecoration(
                       hintText: 'Что вы хотите почитать?',
@@ -63,11 +61,10 @@ class HomePage extends StatelessWidget {
                         color: Colors.white.withOpacity(0.5),
                       ),
                       filled: true,
-                      fillColor: const Color(0xff3A4E88)
-                          .withOpacity(0.5), // Прозрачный фон
+                      fillColor: const Color(0xff3A4E88).withOpacity(0.5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(35.0),
-                        borderSide: BorderSide.none, // Убираем рамку
+                        borderSide: BorderSide.none,
                       ),
                       prefixIcon: const Icon(Icons.search, color: Colors.white),
                     ),
@@ -75,108 +72,17 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          // Горизонтальная карусель с использованием carousel_slider
-          CarouselSlider.builder(
-            itemCount: 3, // Количество блоков
-            itemBuilder: (context, index, realIndex) {
-              return Container(
-                width: blockWidth,
-                height: blockHeight,
-                margin: EdgeInsets.symmetric(
-                  horizontal: overlapOffset / 2,
-                ),
-                decoration: BoxDecoration(
-                  color: Color(0xffFD521B),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-              );
-            },
-            options: CarouselOptions(
-              height: blockHeight + 16, // Высота блока с учётом отступов
-              viewportFraction: 0.87, // Пропорциональная ширина (87%)
-              enableInfiniteScroll: true, // Зацикливание карусели
-              enlargeCenterPage: true, // Выделение центрального элемента
-              autoPlay: true, // Автопрокрутка (можно включить)
-              autoPlayInterval:
-                  const Duration(seconds: 4), // Интервал для автопрокрутки
-            ),
-          ),
-        ],
-      )),
-    );
-  }
-}
-
-class HomePageMenu extends StatelessWidget {
-  const HomePageMenu({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Получаем размеры экрана
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    // Вычисляем размеры блока
-    final blockWidth = screenWidth * 0.87; // 87% ширины экрана
-    final blockHeight = screenHeight * 0.2; // 20% высоты экрана
-
-    // Задаём отступ для "торчащих" частей блоков
-    final overlapOffset = screenWidth * 0.035; // 3.5% ширины экрана
-
-    return Scaffold(
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        body: Column(
-          children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(23.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Логотип (SVG)
-                    SvgPicture.asset(
-                      'assets/images/Logo.svg', // Укажите путь к вашему SVG-файлу
-                      height: 99.87,
-                      width: 255,
-                    ),
-                    const SizedBox(height: 20),
-                    // Поисковая строка
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Что вы хотите почитать?',
-                        hintStyle: TextStyle(
-                          fontSize: 14.0,
-                          color: Colors.white.withOpacity(0.5),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xff3A4E88)
-                            .withOpacity(0.5), // Прозрачный фон
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(35.0),
-                          borderSide: BorderSide.none, // Убираем рамку
-                        ),
-                        prefixIcon:
-                            const Icon(Icons.search, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Горизонтальная карусель с использованием carousel_slider
+            const SizedBox(height: 10),
+            // Горизонтальная карусель
             CarouselSlider.builder(
               itemCount: 3, // Количество блоков
               itemBuilder: (context, index, realIndex) {
                 return Container(
                   width: blockWidth,
                   height: blockHeight,
-                  margin: EdgeInsets.symmetric(
-                    horizontal: overlapOffset / 2,
-                  ),
+                  margin: EdgeInsets.symmetric(horizontal: overlapOffset / 2),
                   decoration: BoxDecoration(
-                    color: Color(0xffFD521B),
+                    color: const Color(0xffFD521B),
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 );
@@ -186,12 +92,73 @@ class HomePageMenu extends StatelessWidget {
                 viewportFraction: 0.87, // Пропорциональная ширина (87%)
                 enableInfiniteScroll: true, // Зацикливание карусели
                 enlargeCenterPage: true, // Выделение центрального элемента
-                autoPlay: true, // Автопрокрутка (можно включить)
-                autoPlayInterval:
-                    const Duration(seconds: 4), // Интервал для автопрокрутки
+                autoPlay: true, // Автопрокрутка
+                autoPlayInterval: const Duration(seconds: 4), // Интервал
+              ),
+            ),
+            const SizedBox(height: 10),
+            // TabBar с вкладками
+            const TabBar(
+              isScrollable: true,
+              indicatorSize: TabBarIndicatorSize.label,
+              labelColor: Colors.white,
+              tabAlignment: TabAlignment.start,
+              unselectedLabelColor: Color(0xff03044E),
+              indicatorColor: Colors.white,
+              tabs: [
+                Tab(text: 'Рекомендации'),
+                Tab(text: 'Популярные'),
+                Tab(text: 'Жанры'),
+                Tab(text: 'Скоро в продаже'),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Содержимое вкладок
+            Expanded(
+              child: TabBarView(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ));
+        ),
+      ),
+    );
   }
 }
