@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '/icons.dart';
+import '/widgets/bottomNavigator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
@@ -60,6 +62,13 @@ class HomePage extends StatelessWidget {
                         fontSize: 14.0,
                         color: Colors.white.withOpacity(0.5),
                       ),
+                      prefixIcon: Opacity(
+                          opacity: 0.6,
+                          child: Icon(
+                            MyFlutterApp.magnifer,
+                            size: 21.0,
+                            color: Colors.white,
+                          )),
                       filled: true,
                       fillColor: const Color(0xff3A4E88).withOpacity(0.5),
                       border: OutlineInputBorder(
@@ -155,6 +164,7 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+            bottomNavigator()
           ],
         ),
       ),
