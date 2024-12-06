@@ -66,7 +66,6 @@ class HomePage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(35.0),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white),
                     ),
                   ),
                 ],

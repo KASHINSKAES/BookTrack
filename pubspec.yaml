@@ -32,3 +32,6 @@ flutter:
       - family: MPLUSRounded1c
         fonts:
           - asset: fonts/MPLUSRounded1c-Bold.ttf
+      - family: MyFlutterApp 
+        fonts:
+          - asset: fonts/MyFlutterApp.ttf 
