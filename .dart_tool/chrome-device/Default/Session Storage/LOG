@@ -1,7 +1,3 @@
-2024/12/07-13:31:49.612 53d0 Reusing MANIFEST C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.82d5f92e\flutter_tools_chrome_device.e371ff40\Default\Session Storage/MANIFEST-000001
-2024/12/07-13:31:49.613 53d0 Recovering log #3
-2024/12/07-13:31:49.613 53d0 (ignoring error) C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.82d5f92e\flutter_tools_chrome_device.e371ff40\Default\Session Storage/000003.log: dropping 4459 bytes; Corruption: checksum mismatch
-2024/12/07-13:31:49.613 53d0 (ignoring error) C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.82d5f92e\flutter_tools_chrome_device.e371ff40\Default\Session Storage/000003.log: dropping 95 bytes; Corruption: missing start of fragmented record(2)
-2024/12/07-13:31:49.617 53d0 Reusing old log C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.82d5f92e\flutter_tools_chrome_device.e371ff40\Default\Session Storage/000003.log 
-2024/12/07-13:59:14.699 5b4 Level-0 table #5: started
-2024/12/07-13:59:14.711 5b4 Level-0 table #5: 24651 bytes OK
+2024/12/11-17:16:31.199 43c8 Reusing MANIFEST C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.eb282e71\flutter_tools_chrome_device.54756698\Default\Session Storage/MANIFEST-000001
+2024/12/11-17:16:31.200 43c8 Recovering log #3
+2024/12/11-17:16:31.202 43c8 Reusing old log C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.eb282e71\flutter_tools_chrome_device.54756698\Default\Session Storage/000003.log 

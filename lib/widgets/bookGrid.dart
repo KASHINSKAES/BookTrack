@@ -3,52 +3,51 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class BookGrid extends StatelessWidget {
   // Пример данных
-   
+
   final List<Map<String, String>> books = [
     {
       "title": "Бонсай",
       "author": "Алехандро Самбра",
-      "image": "assets/images/image1.svg"
+      "image": "images/img1.svg"
     },
     {
       "title": "Янтарь рассе...",
       "author": "Люцида Аквила",
-      "image": "assets/images/image2.svg"
+      "image": "images/img2.svg"
     },
     {
       "title": "Греческие и ...",
       "author": "Филипп Матышак",
-      "image": "assets/images/image6.svg"
+      "image": "images/img6.svg"
     },
     {
       "title": "Безмолвное чтение. Том 1. Жюльен",
       "author": "Priest",
-      "image": "assets/images/image15.svg"
+      "image": "images/img15.svg"
     },
     {
       "title": "Евгений Онегин [Борис Годунов Маленькие трагедии]",
       "author": "Александр Пушкин",
-      "image": "assets/images/image4.svg"
+      "image": "images/img4.svg"
     },
     {
       "title": "Мастер и Маргарита. Вечные истории. Young Adult",
       "author": "Михаил Булгаков",
-      "image": "assets/images/image5.svg"
+      "image": "images/img5.svg"
     },
   ];
-
- 
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(12.0), // Общий отступ вокруг сетки
+      padding: const EdgeInsets.symmetric(
+          horizontal: 21), // Общий отступ вокруг сетки
       child: GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3, // Три книги в ряду
           crossAxisSpacing: 12, // Расстояние между колонками
           mainAxisSpacing: 13, // Расстояние между строками
-          childAspectRatio: 103 / 210, // Пропорции карточки (ширина/высота)
+          childAspectRatio: 120 / 210, // Пропорции карточки (ширина/высота)
         ),
         itemCount: books.length,
         itemBuilder: (context, index) {
@@ -69,7 +68,8 @@ class BookCard extends StatelessWidget {
   final String author;
   final String image;
 
-  const BookCard({super.key, 
+  const BookCard({
+    super.key,
     required this.title,
     required this.author,
     required this.image,
@@ -77,6 +77,7 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

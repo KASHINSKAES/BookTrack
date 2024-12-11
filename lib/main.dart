@@ -102,7 +102,7 @@ class HomePage extends StatelessWidget {
                 enableInfiniteScroll: true, // Зацикливание карусели
                 enlargeCenterPage: true, // Выделение центрального элемента
                 autoPlay: true, // Автопрокрутка
-                autoPlayInterval: const Duration(seconds: 4), // Интервал
+                autoPlayInterval: const Duration(seconds: 10), // Интервал
               ),
             ),
             const SizedBox(height: 10),
@@ -127,6 +127,7 @@ class HomePage extends StatelessWidget {
               child: TabBarView(
                 children: [
                   Container(
+                      padding: const EdgeInsets.only(top: 25),
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 255, 255, 255),
                         borderRadius: BorderRadius.only(
