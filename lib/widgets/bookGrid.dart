@@ -35,31 +35,41 @@ class BookGrid extends StatelessWidget {
       "author": "Михаил Булгаков",
       "image": "images/img5.svg"
     },
+    
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 21), // Общий отступ вокруг сетки
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, // Три книги в ряду
-          crossAxisSpacing: 12, // Расстояние между колонками
-          mainAxisSpacing: 13, // Расстояние между строками
-          childAspectRatio: 120 / 210, // Пропорции карточки (ширина/высота)
+    return Container(
+        padding: const EdgeInsets.only(top: 25),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 255, 255, 255),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
         ),
-        itemCount: books.length,
-        itemBuilder: (context, index) {
-          final book = books[index];
-          return BookCard(
-            title: book["title"]!,
-            author: book["author"]!,
-            image: book["image"]!,
-          );
-        },
-      ),
-    );
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 21), // Общий отступ вокруг сетки
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, // Три книги в ряду
+              crossAxisSpacing: 12, // Расстояние между колонками
+              mainAxisSpacing: 13, // Расстояние между строками
+              childAspectRatio: 120 / 210, // Пропорции карточки (ширина/высота)
+            ),
+            itemCount: books.length,
+            itemBuilder: (context, index) {
+              final book = books[index];
+              return BookCard(
+                title: book["title"]!,
+                author: book["author"]!,
+                image: book["image"]!,
+              );
+            },
+          ),
+        ));
   }
 }
 
@@ -77,7 +87,6 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
