@@ -90,9 +90,10 @@ class MainPage extends StatelessWidget {
             const SizedBox(height: 10),
             // TabBar с вкладками
             const TabBar(
-              isScrollable: false,
+              isScrollable: true,
               indicatorSize: TabBarIndicatorSize.label,
               labelColor: Colors.white,
+              tabAlignment: TabAlignment.start,
               unselectedLabelColor: Color(0xff03044E),
               indicatorColor: Colors.white,
               tabs: [
