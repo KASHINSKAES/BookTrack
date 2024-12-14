@@ -35,7 +35,36 @@ class BookGrid extends StatelessWidget {
       "author": "Михаил Булгаков",
       "image": "images/img5.svg"
     },
-    
+    {
+      "title": "Бонсай",
+      "author": "Алехандро Самбра",
+      "image": "images/img1.svg"
+    },
+    {
+      "title": "Янтарь рассе...",
+      "author": "Люцида Аквила",
+      "image": "images/img2.svg"
+    },
+    {
+      "title": "Греческие и ...",
+      "author": "Филипп Матышак",
+      "image": "images/img6.svg"
+    },
+    {
+      "title": "Безмолвное чтение. Том 1. Жюльен",
+      "author": "Priest",
+      "image": "images/img15.svg"
+    },
+    {
+      "title": "Евгений Онегин [Борис Годунов Маленькие трагедии]",
+      "author": "Александр Пушкин",
+      "image": "images/img4.svg"
+    },
+    {
+      "title": "Мастер и Маргарита. Вечные истории. Young Adult",
+      "author": "Михаил Булгаков",
+      "image": "images/img5.svg"
+    },
   ];
 
   @override

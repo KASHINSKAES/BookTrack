@@ -22,7 +22,7 @@ class Catalogpage extends StatelessWidget {
 
     return Scaffold(
         backgroundColor: const Color(0xff5775CD),
-        body: Column(children: [
+        body: ListView(children: [
           //Поисковая строка
           Container(
             // Цвет фона AppBar
@@ -70,6 +70,7 @@ class Catalogpage extends StatelessWidget {
               UncontainedLayoutCard(),
               UncontainedLayoutCard(),
               UncontainedLayoutCard(),
+              
             ]),
           )
         ]));
