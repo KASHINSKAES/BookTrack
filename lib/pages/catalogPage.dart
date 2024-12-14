@@ -56,7 +56,7 @@ class Catalogpage extends StatelessWidget {
           ),
           Container(
             width: screenWidth,
-            padding: const EdgeInsets.only(top: 25),
+            padding: const EdgeInsets.symmetric(vertical: 15),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 255, 255, 255),
               borderRadius: BorderRadius.only(
@@ -65,15 +65,45 @@ class Catalogpage extends StatelessWidget {
               ),
             ),
             child: Column(children: [
-              UncontainedLayoutCard(),
-              UncontainedLayoutCard(),
-              UncontainedLayoutCard(),
-              UncontainedLayoutCard(),
-              UncontainedLayoutCard(),
-              
+              UncontainedLayout(text: 'Художественная литература'),
+              UncontainedLayout(
+                text: 'Учебная литература',
+              ),
+              UncontainedLayout(
+                text: 'Саморазвитие',
+              ),
+              UncontainedLayout(
+                text: 'Психология',
+              ),
+              UncontainedLayout(
+                text: 'Детская литература',
+              ),
             ]),
           )
         ]));
+  }
+}
+
+class UncontainedLayout extends StatelessWidget {
+  final String text;
+
+  const UncontainedLayout({
+    super.key,
+    required this.text,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+        textDirection: TextDirection.ltr,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+              margin: const EdgeInsets.only(top: 30),
+              child: Text(
+                text,
+              )),
+          UncontainedLayoutCard()
+        ]);
   }
 }
 
@@ -85,7 +115,7 @@ class UncontainedLayoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 20),
+      margin: const EdgeInsets.only(top: 15),
       height: 110,
       child: ListView(
         // This next line does the trick.
