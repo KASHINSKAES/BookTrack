@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '/icons.dart';
-import '/widgets/bookGrid.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
@@ -29,34 +28,36 @@ class Catalogpage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Column(
               children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Что вы хотите почитать?',
-                    hintStyle: TextStyle(
-                      fontSize: 14.0,
-                      color: Colors.white.withOpacity(0.5),
-                    ),
-                    prefixIcon: Opacity(
-                        opacity: 0.6,
-                        child: Icon(
-                          MyFlutterApp.magnifer,
-                          size: 21.0,
-                          color: Colors.white,
-                        )),
-                    filled: true,
-                    fillColor: const Color(0xff3A4E88).withOpacity(0.5),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(35.0),
-                      borderSide: BorderSide.none,
+                Padding(
+                  padding: EdgeInsets.only(top: 23),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Что вы хотите почитать?',
+                      hintStyle: TextStyle(
+                        fontSize: 14.0,
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                      prefixIcon: Opacity(
+                          opacity: 0.6,
+                          child: Icon(
+                            MyFlutterApp.magnifer,
+                            size: 21.0,
+                            color: Colors.white,
+                          )),
+                      filled: true,
+                      fillColor: const Color(0xff3A4E88).withOpacity(0.5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35.0),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
-                ),
+                )
               ],
             ),
           ),
           Container(
             width: screenWidth,
-            padding: const EdgeInsets.symmetric(vertical: 15),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 255, 255, 255),
               borderRadius: BorderRadius.only(
@@ -65,6 +66,21 @@ class Catalogpage extends StatelessWidget {
               ),
             ),
             child: Column(children: [
+              UncontainedLayout(
+                text: 'Художественная литература'
+                ),
+              UncontainedLayout(
+                text: 'Учебная литература',
+              ),
+              UncontainedLayout(
+                text: 'Саморазвитие',
+              ),
+              UncontainedLayout(
+                text: 'Психология',
+              ),
+              UncontainedLayout(
+                text: 'Детская литература',
+              ),
               UncontainedLayout(text: 'Художественная литература'),
               UncontainedLayout(
                 text: 'Учебная литература',
@@ -98,7 +114,7 @@ class UncontainedLayout extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-              margin: const EdgeInsets.only(top: 30),
+              margin: const EdgeInsets.only(top: 30, left: 26),
               child: Text(
                 text,
               )),
@@ -115,8 +131,7 @@ class UncontainedLayoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 15),
-      height: 110,
+      height: 90,
       child: ListView(
         // This next line does the trick.
         scrollDirection: Axis.horizontal,
@@ -137,7 +152,7 @@ class Box extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
         width: 110,
-        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+        margin: EdgeInsets.only(top: 15, left: 26),
         decoration: BoxDecoration(
           color: const Color(0xffB8BEF6),
           borderRadius: BorderRadius.circular(12.0),

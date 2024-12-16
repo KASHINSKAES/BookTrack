@@ -20,8 +20,8 @@ class MainPage extends StatelessWidget {
       length: 4,
       child: Scaffold(
         backgroundColor: const Color(0xff5775CD),
-        body: CustomScrollView(
-          slivers: [
+        body: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverToBoxAdapter(
               child: Padding(
                 padding:
@@ -30,8 +30,8 @@ class MainPage extends StatelessWidget {
                   children: [
                     SvgPicture.asset(
                       'assets/images/Logo.svg',
-                      height: 60,
-                      width: 150,
+                      height: 100,
+                      width: 250,
                     ),
                     const SizedBox(height: 10),
                     TextField(
@@ -57,6 +57,7 @@ class MainPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -85,34 +86,62 @@ class MainPage extends StatelessWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: TabBar(
-                isScrollable: true,
-                indicatorSize: TabBarIndicatorSize.label,
-                labelColor: Colors.white,
-                unselectedLabelColor: Color(0xff03044E),
-                indicatorColor: Colors.white,
-                tabs: [
-                  Tab(text: 'Рекомендации'),
-                  Tab(text: 'Популярные'),
-                  Tab(text: 'Жанры'),
-                  Tab(text: 'Скоро в продаже'),
-                ],
-              ),
-            ),
-            SliverFillRemaining(
-              child: TabBarView(
-                children: [
-                  BookGrid(),
-                  BookGrid(),
-                  BookGrid(),
-                  BookGrid(),
-                ],
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(
+                TabBar(
+                  tabAlignment: TabAlignment.start,
+                  isScrollable: true,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: const Color(0xff03044E),
+                  indicatorColor: Colors.white,
+                  tabs: const [
+                    Tab(text: 'Рекомендации'),
+                    Tab(text: 'Популярные'),
+                    Tab(text: 'Жанры'),
+                    Tab(text: 'Скоро в продаже'),
+                  ],
+                ),
               ),
             ),
           ],
+          body: TabBarView(
+            children: [
+              AdaptiveBookGrid(),
+              AdaptiveBookGrid(),
+              AdaptiveBookGrid(),
+              AdaptiveBookGrid(),
+            ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _TabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: const Color(0xff5775CD), // Background color for TabBar
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
   }
 }
