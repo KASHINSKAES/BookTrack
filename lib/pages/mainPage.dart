@@ -17,7 +17,7 @@ class MainPage extends StatelessWidget {
     final overlapOffset = screenWidth * 0.035;
 
     return DefaultTabController(
-      length: 4,
+      length: 4, // Define the number of tabs
       child: Scaffold(
         backgroundColor: const Color(0xff5775CD),
         body: NestedScrollView(

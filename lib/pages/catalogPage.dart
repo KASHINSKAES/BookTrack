@@ -66,9 +66,7 @@ class Catalogpage extends StatelessWidget {
               ),
             ),
             child: Column(children: [
-              UncontainedLayout(
-                text: 'Художественная литература'
-                ),
+              UncontainedLayout(text: 'Художественная литература'),
               UncontainedLayout(
                 text: 'Учебная литература',
               ),
@@ -130,7 +128,7 @@ class UncontainedLayoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 90,
       child: ListView(
         // This next line does the trick.

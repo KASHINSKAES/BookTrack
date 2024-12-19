@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 
 class AdaptiveBookGrid extends StatelessWidget {
   final List<Map<String, String>> books = [
@@ -37,61 +37,62 @@ class AdaptiveBookGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        final screenHeight = constraints.maxHeight;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-        // Определение количества колонок в зависимости от ширины экрана
-        final crossAxisCount = screenWidth > 600 ? 4 : 3;
+    const baseWidth = 375.0;
+    const baseScreenTop = 26.0;
+    const baseCircual = 20.0;
+    const baseImageWidth = 105.0;
+    const baseImageHeight = 160.0;
+    const baseTextSizeTitle = 13.0;
+    const baseTextSizeAuthor = 10.0;
+    const baseCrossAxisSpacing = 12.0;
+    const baseMainAxisSpacing = 13.0;
 
-        // Динамичные отступы и размеры, основанные на ширине и высоте экрана
-        final double gridPadding = screenWidth * 0.05; // Отступы по бокам
-        final double crossAxisSpacing =
-            screenWidth * 0.04; // Горизонтальные отступы
-        final double mainAxisSpacing =
-            screenHeight * 0.02; // Вертикальные отступы
+    final scale = screenWidth / baseWidth;
+    final screenTop = baseScreenTop * scale;
+    final Circual = baseCircual * scale;
+    final imageWidth = baseImageWidth * scale;
+    final imageHeight = baseImageHeight * scale;
+    final textSizeTitle = baseTextSizeTitle * scale;
+    final textSizeAuthor = baseTextSizeAuthor * scale;
+    final crossAxisSpacing = baseCrossAxisSpacing * scale;
+    final mainAxisSpacing = baseMainAxisSpacing * scale;
 
-        return Container(
-          padding: EdgeInsets.only(top: screenHeight * 0.03),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(screenWidth * 0.05),
-              topRight: Radius.circular(screenWidth * 0.05),
-            ),
+    return Container(
+        padding: EdgeInsets.only(top: screenTop),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(Circual),
+            topRight: Radius.circular(Circual),
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: gridPadding),
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount:
-                    crossAxisCount, // Количество колонок зависит от ширины экрана
-                crossAxisSpacing: crossAxisSpacing, // Горизонтальные отступы
-                mainAxisSpacing: mainAxisSpacing, // Вертикальные отступы
-                childAspectRatio:
-                    0.6, // Фиксированные пропорции карточки, сохраняющие правильное соотношение
-              ),
-              itemCount: books.length,
-              itemBuilder: (context, index) {
-                final book = books[index];
-                return BookCard(
-                  title: book["title"]!,
-                  author: book["author"]!,
-                  image: book["image"]!,
-                  imageHeight: screenHeight * 0.18, // Высота изображения
-                  textSpacing: screenHeight * 0.008, // Отступы между элементами
-                  textSizeTitle:
-                      screenWidth * 0.04, // Размер текста для названия
-                  textSizeAuthor:
-                      screenWidth * 0.03, // Размер текста для автора
-                );
-              },
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(crossAxisSpacing),
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: crossAxisSpacing,
+              mainAxisSpacing: mainAxisSpacing,
+              childAspectRatio: imageWidth / (imageHeight + 40 * scale),
             ),
+            itemCount: books.length,
+            itemBuilder: (context, index) {
+              final book = books[index];
+              return BookCard(
+                title: book["title"]!,
+                author: book["author"]!,
+                image: book["image"]!,
+                imageWidth: imageWidth,
+                imageHeight: imageHeight,
+                textSizeTitle: textSizeTitle,
+                textSizeAuthor: textSizeAuthor,
+                textSpacing: 6.0 * scale,
+              );
+            },
           ),
-        );
-      },
-    );
+        ));
   }
 }
 
@@ -99,20 +100,22 @@ class BookCard extends StatelessWidget {
   final String title;
   final String author;
   final String image;
+  final double imageWidth;
   final double imageHeight;
-  final double textSpacing;
   final double textSizeTitle;
   final double textSizeAuthor;
+  final double textSpacing;
 
   const BookCard({
     super.key,
     required this.title,
     required this.author,
     required this.image,
+    required this.imageWidth,
     required this.imageHeight,
-    required this.textSpacing,
     required this.textSizeTitle,
     required this.textSizeAuthor,
+    required this.textSpacing,
   });
 
   @override
@@ -120,18 +123,16 @@ class BookCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Обложка книги
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: SvgPicture.asset(
             image,
+            width: imageWidth,
             height: imageHeight,
-            width: double.infinity,
             fit: BoxFit.cover,
           ),
         ),
-        SizedBox(height: textSpacing), // Отступ между изображением и названием
-        // Название книги
+        SizedBox(height: textSpacing),
         Text(
           title,
           style: TextStyle(
@@ -140,10 +141,9 @@ class BookCard extends StatelessWidget {
             color: const Color(0xff03044E),
           ),
           maxLines: 2,
-          overflow: TextOverflow.ellipsis, // Обрезка текста с "..."
+          overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: textSpacing), // Отступ между названием и автором
-        // Автор книги
+        SizedBox(height: textSpacing / 2),
         Text(
           author,
           style: TextStyle(
@@ -151,7 +151,7 @@ class BookCard extends StatelessWidget {
             color: const Color(0xff575757),
           ),
           maxLines: 1,
-          overflow: TextOverflow.ellipsis, // Обрезка текста с "..."
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

@@ -1,17 +1,2 @@
-2024/12/14-10:38:27.344 2294 Creating DB C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.586fbc4a\flutter_tools_chrome_device.90f8dbe\Default\Local Storage\leveldb since it was missing.
-2024/12/14-10:38:27.381 2294 Reusing MANIFEST C:\Users\STUDEN~1\AppData\Local\Temp\flutter_tools.586fbc4a\flutter_tools_chrome_device.90f8dbe\Default\Local Storage\leveldb/MANIFEST-000001
-2024/12/14-10:42:49.337 afc Level-0 table #5: started
-2024/12/14-10:42:49.342 afc Level-0 table #5: 59726 bytes OK
-2024/12/14-10:42:49.347 afc Delete type=0 #3
-2024/12/14-11:04:05.192 afc Level-0 table #7: started
-2024/12/14-11:04:05.199 afc Level-0 table #7: 36051 bytes OK
-2024/12/14-11:04:05.203 afc Delete type=0 #4
-2024/12/14-11:05:02.288 afc Level-0 table #9: started
-2024/12/14-11:05:02.303 afc Level-0 table #9: 42104 bytes OK
-2024/12/14-11:05:02.307 afc Delete type=0 #6
-2024/12/14-11:21:26.724 afc Level-0 table #11: started
-2024/12/14-11:21:26.740 afc Level-0 table #11: 35743 bytes OK
-2024/12/14-11:21:26.744 afc Delete type=0 #8
-2024/12/14-11:27:22.205 afc Level-0 table #13: started
-2024/12/14-11:27:22.210 afc Level-0 table #13: 41732 bytes OK
-2024/12/14-11:27:22.212 afc Delete type=0 #10
+2024/12/20-00:14:49.283 1984 Creating DB C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Local Storage\leveldb since it was missing.
+2024/12/20-00:14:49.305 1984 Reusing MANIFEST C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Local Storage\leveldb/MANIFEST-000001
