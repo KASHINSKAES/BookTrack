@@ -14,6 +14,7 @@
 ///
 ///
 library;
+
 import 'package:flutter/widgets.dart';
 
 class MyFlutterApp {
@@ -74,4 +75,8 @@ class MyFlutterApp {
       IconData(0xe818, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData history_2 =
       IconData(0xe819, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+
+  static const IconData tuning2 = IconData(0xe900, fontFamily: _kFontPkg);
+
+  static const IconData sort = IconData(0xe901, fontFamily: _kFontPkg);
 }

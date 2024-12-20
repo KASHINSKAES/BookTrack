@@ -140,7 +140,7 @@ class BookCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: const Color(0xff03044E),
           ),
-          maxLines: 2,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: textSpacing / 2),

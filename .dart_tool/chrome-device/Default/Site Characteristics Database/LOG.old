@@ -1,14 +1,9 @@
-2024/12/20-00:14:49.130 2f34 Log #3: 7 ops saved to Table #12 OK
-2024/12/20-00:14:49.134 2f34 Archiving C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Site Characteristics Database/000003.log: OK
-2024/12/20-00:14:49.142 2f34 Log #6: 9 ops saved to Table #13 OK
-2024/12/20-00:14:49.144 2f34 Archiving C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Site Characteristics Database/000006.log: OK
-2024/12/20-00:14:49.153 2f34 Log #10: 11 ops saved to Table #14 OK
-2024/12/20-00:14:49.154 2f34 Archiving C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Site Characteristics Database/000010.log: OK
-2024/12/20-00:14:49.157 2f34 Table #4: 7 entries OK
-2024/12/20-00:14:49.160 2f34 Table #6: 7 entries OK
-2024/12/20-00:14:49.162 2f34 Table #11: 5 entries OK
-2024/12/20-00:14:49.162 2f34 Table #12: 7 entries OK
-2024/12/20-00:14:49.162 2f34 Table #13: 9 entries OK
-2024/12/20-00:14:49.162 2f34 Table #14: 11 entries OK
-2024/12/20-00:14:49.172 2f34 Archiving C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Site Characteristics Database/MANIFEST-000001: OK
-2024/12/20-00:14:49.177 2f34 **** Repaired leveldb C:\Users\9875~1\AppData\Local\Temp\flutter_tools.c3ab29c5\flutter_tools_chrome_device.5531058f\Default\Site Characteristics Database; recovered 6 files; 2406 bytes. Some data may have been lost. ****
+2024/12/20-22:12:34.962 2790 Reusing MANIFEST C:\Users\9875~1\AppData\Local\Temp\flutter_tools.3349a9f3\flutter_tools_chrome_device.857742ca\Default\Site Characteristics Database/MANIFEST-000001
+2024/12/20-22:12:34.963 2790 Recovering log #16
+2024/12/20-22:12:34.964 2790 Reusing old log C:\Users\9875~1\AppData\Local\Temp\flutter_tools.3349a9f3\flutter_tools_chrome_device.857742ca\Default\Site Characteristics Database/000016.log 
+2024/12/20-22:12:34.965 2790 Delete type=0 #3
+2024/12/20-22:12:34.965 2790 Delete type=2 #4
+2024/12/20-22:12:34.965 2790 Delete type=2 #6
+2024/12/20-22:12:34.965 2790 Delete type=0 #6
+2024/12/20-22:12:34.965 2790 Delete type=0 #10
+2024/12/20-22:12:34.966 2790 Delete type=2 #11

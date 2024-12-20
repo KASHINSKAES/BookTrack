@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '/icons.dart';
 import '/pages/mainPage.dart';
 import '/pages/catalogPage.dart';
+import '/widgets/BookListPage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'MPLUSRounded1c'),
-      home: BottomNavigationBarEX(),
+      home: const BottomNavigationBarEX(),
     );
   }
 }
@@ -24,42 +25,77 @@ class BottomNavigationBarEX extends StatefulWidget {
   const BottomNavigationBarEX({super.key});
 
   @override
-  State<BottomNavigationBarEX> createState() => HomePage();
+  State<BottomNavigationBarEX> createState() => _BottomNavigationBarEXState();
 }
 
-class HomePage extends State<BottomNavigationBarEX> {
-  static int _selectedIndex = 0;
-  static const List<Widget> _pages = <Widget>[
-    MainPage(),
-    Catalogpage(),
-    Icon(
-      Icons.chat,
-      size: 150,
-    ),
-     Icon(
-      Icons.chat,
-      size: 150,
-    ),
-  ];
+class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
+  int _selectedIndex = 0;
+  String? _selectedCategory;
+
+  void _onCategoryTap(String category) {
+    setState(() {
+      _selectedCategory =
+          category; // Выбираем категорию для отображения BookListPage
+    });
+  }
+
   void _onItemTap(int index) {
     setState(() {
       _selectedIndex = index;
+      _selectedCategory =
+          null; // Сбрасываем категорию, чтобы вернуться на основную страницу
     });
+  }
+
+  static List<Widget> _mainPages(
+      BuildContext context, Function(String) onCategoryTap) {
+    return <Widget>[
+      const MainPage(),
+      CatalogPage(
+          onCategoryTap: onCategoryTap), // Передача обработчика в CatalogPage
+      const Icon(
+        Icons.favorite,
+        size: 150,
+      ),
+      const Icon(
+        Icons.person,
+        size: 150,
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: _pages.elementAt(_selectedIndex),
+      body: Stack(
+        children: [
+          // Основное содержимое
+          _mainPages(context, _onCategoryTap)[_selectedIndex],
+
+          // Страница с книгами (если выбрана категория)
+          if (_selectedCategory != null)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: BookListPage(
+                  category: _selectedCategory!,
+                  onBack: () {
+                    setState(() {
+                      _selectedCategory = null; // Убираем BookListPage
+                    });
+                  },
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        unselectedLabelStyle: TextStyle(fontSize: 11.0),
-        selectedLabelStyle: TextStyle(fontSize: 11.0),
+        unselectedLabelStyle: const TextStyle(fontSize: 11.0),
+        selectedLabelStyle: const TextStyle(fontSize: 11.0),
         iconSize: 35.0,
         showUnselectedLabels: true,
-        selectedItemColor: Color(0xff5775CD),
-        unselectedItemColor: Color(0xffFD521B),
+        selectedItemColor: const Color(0xff5775CD),
+        unselectedItemColor: const Color(0xffFD521B),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
               icon: Icon(MyFlutterApp.widget_2), label: 'Главная'),
