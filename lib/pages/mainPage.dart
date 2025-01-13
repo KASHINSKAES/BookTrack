@@ -46,7 +46,7 @@ class MainPage extends StatelessWidget {
                         prefixIcon: Opacity(
                           opacity: 0.6,
                           child: Icon(
-                            MyFlutterApp.magnifer,
+                            MyFlutterApp.search1,
                             size: 21.0,
                             color: Colors.white,
                           ),

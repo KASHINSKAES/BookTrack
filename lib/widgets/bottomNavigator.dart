@@ -14,11 +14,11 @@ class bottomNavigator extends StatelessWidget {
       unselectedItemColor: Color(0xffFD521B),
       items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.widget_2), label: 'Главная'),
+            icon: Icon(MyFlutterApp.home), label: 'Главная'),
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.server_minimalistic), label: 'Каталог'),
+            icon: Icon(MyFlutterApp.catalog), label: 'Каталог'),
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.notebook_bookmark), label: 'Избранное'),
+            icon: Icon(MyFlutterApp.school), label: 'Избранное'),
         BottomNavigationBarItem(
             icon: Icon(MyFlutterApp.user), label: 'Профиль'),
       ],

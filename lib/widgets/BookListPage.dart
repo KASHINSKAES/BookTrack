@@ -48,11 +48,7 @@ class BookListPage extends StatelessWidget {
       "author": "Люцида Аквила",
       "image": "images/img2.svg"
     },
-    {
-      "title": "Греческие и ...",
-      "author": "Филипп Матышак",
-      "image": "images/img6.svg"
-    },
+    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
     {
       "title": "Безмолвное чтение. Том 1. Жюльен",
       "author": "Priest",
@@ -78,11 +74,7 @@ class BookListPage extends StatelessWidget {
       "author": "Люцида Аквила",
       "image": "images/img2.svg"
     },
-    {
-      "title": "Греческие и ...",
-      "author": "Филипп Матышак",
-      "image": "images/img6.svg"
-    },
+    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
     {
       "title": "Безмолвное чтение. Том 1. Жюльен",
       "author": "Priest",
@@ -99,15 +91,14 @@ class BookListPage extends StatelessWidget {
       "image": "images/img5.svg"
     },
   ];
+
   const BookListPage({super.key, required this.category, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     const baseWidth = 375.0;
-    const baseScreenTop = 26.0;
     const baseCircual = 20.0;
     const baseImageWidth = 105.0;
     const baseImageHeight = 160.0;
@@ -117,7 +108,6 @@ class BookListPage extends StatelessWidget {
     const baseMainAxisSpacing = 13.0;
 
     final scale = screenWidth / baseWidth;
-    final screenTop = baseScreenTop * scale;
     final Circual = baseCircual * scale;
     final imageWidth = baseImageWidth * scale;
     final imageHeight = baseImageHeight * scale;
@@ -127,75 +117,122 @@ class BookListPage extends StatelessWidget {
     final mainAxisSpacing = baseMainAxisSpacing * scale;
 
     return Scaffold(
-        backgroundColor: const Color(0xff5775CD),
-        appBar: AppBar(
-          title: Text(
-            category,
-            style: TextStyle(
-              fontSize: 20 * scale,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-            softWrap: true,
-            overflow: TextOverflow.fade,
+      backgroundColor: const Color(0xff5775CD),
+      appBar: AppBar(
+        title: Text(
+          category,
+          style: TextStyle(
+            fontSize: 20 * scale,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          backgroundColor: const Color(0xff5775CD),
-          leading: IconButton(
+          textAlign: TextAlign.center,
+          softWrap: true,
+          overflow: TextOverflow.fade,
+        ),
+        backgroundColor: const Color(0xff5775CD),
+        leading: IconButton(
+          icon: const Icon(
+            MyFlutterApp.back,
+            color: Colors.white,
+          ),
+          onPressed: onBack,
+        ),
+        actions: [
+          IconButton(
             icon: const Icon(
-              MyFlutterApp.undo_left_round,
+              MyFlutterApp.search1,
               color: Colors.white,
             ),
             onPressed: onBack,
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(
-                MyFlutterApp.undo_left_round,
-                color: Colors.white,
-              ),
-              onPressed: onBack,
-            ),
-          ],
-        ),
-        body: Padding(
-          padding: EdgeInsets.only(top: 20.0 * scale),
-          child: Container(
-            padding: EdgeInsets.only(top: 20.0 * scale),
-            height: screenHeight,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(Circual),
-                topRight: Radius.circular(Circual),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(crossAxisSpacing),
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: crossAxisSpacing,
-                  mainAxisSpacing: mainAxisSpacing,
-                  childAspectRatio: imageWidth / (imageHeight + 40 * scale),
-                ),
-                itemCount: books.length,
-                itemBuilder: (context, index) {
-                  final book = books[index];
-                  return BookCard(
-                    title: book["title"]!,
-                    author: book["author"]!,
-                    image: book["image"]!,
-                    imageWidth: imageWidth,
-                    imageHeight: imageHeight,
-                    textSizeTitle: textSizeTitle,
-                    textSizeAuthor: textSizeAuthor,
-                    textSpacing: 6.0 * scale,
-                  );
-                },
-              ),
+        ],
+      ),
+      body: Padding(
+        padding: EdgeInsets.only(top: 20.0 * scale),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(Circual),
+              topRight: Radius.circular(Circual),
             ),
           ),
-        ));
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: crossAxisSpacing),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24.0),
+                        ),
+                      ),
+                      onPressed: () => {},
+                      icon: const Icon(
+                        MyFlutterApp.tuning,
+                        color: Color(0xff03044E),
+                      ),
+                      label: const Text(
+                        'Популярные',
+                        style: TextStyle(color: Color(0xff03044E)),
+                      ),
+                    ),
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24.0),
+                        ),
+                      ),
+                      onPressed: () => {},
+                      icon: const Icon(
+                        MyFlutterApp.sort,
+                        color: Color(0xff03044E),
+                      ),
+                      label: const Text(
+                        'Фильтры',
+                        style: TextStyle(color: Color(0xff03044E)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(crossAxisSpacing),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: crossAxisSpacing,
+                      mainAxisSpacing: mainAxisSpacing,
+                      childAspectRatio: imageWidth / (imageHeight + 40 * scale),
+                    ),
+                    itemCount: books.length,
+                    itemBuilder: (context, index) {
+                      final book = books[index];
+                      return BookCard(
+                        title: book["title"]!,
+                        author: book["author"]!,
+                        image: book["image"]!,
+                        imageWidth: imageWidth,
+                        imageHeight: imageHeight,
+                        textSizeTitle: textSizeTitle,
+                        textSizeAuthor: textSizeAuthor,
+                        textSpacing: 6.0 * scale,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '/widgets/BookListPage.dart';
+import '/icons.dart';
 
 // CatalogPage с обработчиком нажатий на категории
 class CatalogPage extends StatelessWidget {
@@ -28,7 +29,7 @@ class CatalogPage extends StatelessWidget {
                 prefixIcon: Opacity(
                   opacity: 0.6,
                   child: const Icon(
-                    Icons.search,
+                    MyFlutterApp.search1,
                     size: 21.0,
                     color: Colors.white,
                   ),

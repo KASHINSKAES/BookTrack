@@ -13,11 +13,7 @@ class AdaptiveBookGrid extends StatelessWidget {
       "author": "Люцида Аквила",
       "image": "images/img2.svg"
     },
-    {
-      "title": "Греческие и ...",
-      "author": "Филипп Матышак",
-      "image": "images/img6.svg"
-    },
+    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
     {
       "title": "Безмолвное чтение. Том 1. Жюльен",
       "author": "Priest",
@@ -123,15 +119,24 @@ class BookCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SvgPicture.asset(
-            image,
-            width: imageWidth,
-            height: imageHeight,
-            fit: BoxFit.cover,
-          ),
-        ),
+        image.isEmpty
+            ? Container(
+                width: imageWidth,
+                height: imageHeight,
+                decoration: BoxDecoration(
+                  color: const Color(0xffFD521B),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SvgPicture.asset(
+                  image,
+                  width: imageWidth,
+                  height: imageHeight,
+                  fit: BoxFit.cover,
+                ),
+              ),
         SizedBox(height: textSpacing),
         Text(
           title,
