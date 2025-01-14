@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '/widgets/AdaptiveBookGrid.dart';
 
 // Страница с подборкой книг
-
-class BookListPage extends StatelessWidget {
+class BookListPage extends StatefulWidget {
   final String category;
   final VoidCallback onBack;
   static const List<Map<String, String>> books = [
@@ -92,7 +91,15 @@ class BookListPage extends StatelessWidget {
     },
   ];
 
-  const BookListPage({super.key, required this.category, required this.onBack});
+  const BookListPage({Key? key, required this.category, required this.onBack})
+      : super(key: key);
+
+  @override
+  _BookListPageState createState() => _BookListPageState();
+}
+
+class _BookListPageState extends State<BookListPage> {
+  int selectedOption = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +127,7 @@ class BookListPage extends StatelessWidget {
       backgroundColor: const Color(0xff5775CD),
       appBar: AppBar(
         title: Text(
-          category,
+          widget.category,
           style: TextStyle(
             fontSize: 20 * scale,
             fontWeight: FontWeight.bold,
@@ -136,7 +143,7 @@ class BookListPage extends StatelessWidget {
             MyFlutterApp.back,
             color: Colors.white,
           ),
-          onPressed: onBack,
+          onPressed: widget.onBack,
         ),
         actions: [
           IconButton(
@@ -144,7 +151,7 @@ class BookListPage extends StatelessWidget {
               MyFlutterApp.search1,
               color: Colors.white,
             ),
-            onPressed: onBack,
+            onPressed: widget.onBack,
           ),
         ],
       ),
@@ -172,7 +179,48 @@ class BookListPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(24.0),
                         ),
                       ),
-                      onPressed: () => {},
+                      onPressed: () => {
+                        showModalBottomSheet(
+                            context: context,
+                            builder: (context) {
+                              return SizedBox(
+                                height: imageHeight,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: <Widget>[
+                                    ListTile(
+                                      title: const Text('Option 1'),
+                                      leading: Radio<int>(
+                                        value: 1,
+                                        groupValue: selectedOption,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selectedOption = value!;
+                                          });
+                                          Navigator.pop(
+                                              context); // Закрыть модальное окно
+                                        },
+                                      ),
+                                    ),
+                                    ListTile(
+                                      title: const Text('Option 2'),
+                                      leading: Radio<int>(
+                                        value: 2,
+                                        groupValue: selectedOption,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selectedOption = value!;
+                                          });
+                                          Navigator.pop(
+                                              context); // Закрыть модальное окно
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            })
+                      },
                       icon: const Icon(
                         MyFlutterApp.tuning,
                         color: Color(0xff03044E),
@@ -212,9 +260,9 @@ class BookListPage extends StatelessWidget {
                       mainAxisSpacing: mainAxisSpacing,
                       childAspectRatio: imageWidth / (imageHeight + 40 * scale),
                     ),
-                    itemCount: books.length,
+                    itemCount: BookListPage.books.length,
                     itemBuilder: (context, index) {
-                      final book = books[index];
+                      final book = BookListPage.books[index];
                       return BookCard(
                         title: book["title"]!,
                         author: book["author"]!,
