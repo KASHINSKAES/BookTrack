@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'constants.dart';
 
 class AdaptiveBookGrid extends StatelessWidget {
   final List<Map<String, String>> books = [
@@ -33,45 +34,26 @@ class AdaptiveBookGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    const baseWidth = 375.0;
-    const baseScreenTop = 26.0;
-    const baseCircual = 20.0;
-    const baseImageWidth = 105.0;
-    const baseImageHeight = 160.0;
-    const baseTextSizeTitle = 13.0;
-    const baseTextSizeAuthor = 10.0;
-    const baseCrossAxisSpacing = 12.0;
-    const baseMainAxisSpacing = 13.0;
-
-    final scale = screenWidth / baseWidth;
-    final screenTop = baseScreenTop * scale;
-    final Circual = baseCircual * scale;
-    final imageWidth = baseImageWidth * scale;
-    final imageHeight = baseImageHeight * scale;
-    final textSizeTitle = baseTextSizeTitle * scale;
-    final textSizeAuthor = baseTextSizeAuthor * scale;
-    final crossAxisSpacing = baseCrossAxisSpacing * scale;
-    final mainAxisSpacing = baseMainAxisSpacing * scale;
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Container(
-        padding: EdgeInsets.only(top: screenTop),
+        padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(Circual),
-            topRight: Radius.circular(Circual),
+            topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+            topRight: Radius.circular(AppDimensions.baseCircual * scale),
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(crossAxisSpacing),
+          padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
           child: GridView.builder(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              crossAxisSpacing: crossAxisSpacing,
-              mainAxisSpacing: mainAxisSpacing,
-              childAspectRatio: imageWidth / (imageHeight + 40 * scale),
+              crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
+              mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
+              childAspectRatio: AppDimensions.baseImageWidth /
+                  (AppDimensions.baseImageHeight + 40 * scale),
             ),
             itemCount: books.length,
             itemBuilder: (context, index) {
@@ -80,10 +62,10 @@ class AdaptiveBookGrid extends StatelessWidget {
                 title: book["title"]!,
                 author: book["author"]!,
                 image: book["image"]!,
-                imageWidth: imageWidth,
-                imageHeight: imageHeight,
-                textSizeTitle: textSizeTitle,
-                textSizeAuthor: textSizeAuthor,
+                imageWidth: AppDimensions.baseImageWidth * scale,
+                imageHeight: AppDimensions.baseImageHeight * scale,
+                textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
+                textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
                 textSpacing: 6.0 * scale,
               );
             },

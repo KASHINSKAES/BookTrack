@@ -1,95 +1,11 @@
-import 'package:booktrack/icons.dart';
 import 'package:flutter/material.dart';
+import 'constants.dart';
 import '/widgets/AdaptiveBookGrid.dart';
+import 'package:booktrack/icons.dart';
 
-// Страница с подборкой книг
 class BookListPage extends StatefulWidget {
   final String category;
   final VoidCallback onBack;
-  static const List<Map<String, String>> books = [
-    {
-      "title": "Бонсай",
-      "author": "Алехандро Самбра",
-      "image": "images/img1.svg"
-    },
-    {
-      "title": "Янтарь рассе...",
-      "author": "Люцида Аквила",
-      "image": "images/img2.svg"
-    },
-    {
-      "title": "Греческие и ...",
-      "author": "Филипп Матышак",
-      "image": "images/img6.svg"
-    },
-    {
-      "title": "Безмолвное чтение. Том 1. Жюльен",
-      "author": "Priest",
-      "image": "images/img15.svg"
-    },
-    {
-      "title": "Евгений Онегин",
-      "author": "Александр Пушкин",
-      "image": "images/img4.svg"
-    },
-    {
-      "title": "Мастер и Маргарита",
-      "author": "Михаил Булгаков",
-      "image": "images/img5.svg"
-    },
-    {
-      "title": "Бонсай",
-      "author": "Алехандро Самбра",
-      "image": "images/img1.svg"
-    },
-    {
-      "title": "Янтарь рассе...",
-      "author": "Люцида Аквила",
-      "image": "images/img2.svg"
-    },
-    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
-    {
-      "title": "Безмолвное чтение. Том 1. Жюльен",
-      "author": "Priest",
-      "image": "images/img15.svg"
-    },
-    {
-      "title": "Евгений Онегин",
-      "author": "Александр Пушкин",
-      "image": "images/img4.svg"
-    },
-    {
-      "title": "Мастер и Маргарита",
-      "author": "Михаил Булгаков",
-      "image": "images/img5.svg"
-    },
-    {
-      "title": "Бонсай",
-      "author": "Алехандро Самбра",
-      "image": "images/img1.svg"
-    },
-    {
-      "title": "Янтарь рассе...",
-      "author": "Люцида Аквила",
-      "image": "images/img2.svg"
-    },
-    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
-    {
-      "title": "Безмолвное чтение. Том 1. Жюльен",
-      "author": "Priest",
-      "image": "images/img15.svg"
-    },
-    {
-      "title": "Евгений Онегин",
-      "author": "Александр Пушкин",
-      "image": "images/img4.svg"
-    },
-    {
-      "title": "Мастер и Маргарита",
-      "author": "Михаил Булгаков",
-      "image": "images/img5.svg"
-    },
-  ];
 
   const BookListPage({Key? key, required this.category, required this.onBack})
       : super(key: key);
@@ -100,392 +16,304 @@ class BookListPage extends StatefulWidget {
 
 class _BookListPageState extends State<BookListPage> {
   int selectedOption = 1;
+  String? selectedFormat;
+  String? selectedLanguage;
+  bool switched1 = false;
+  bool switched2 = false;
+  bool switched3 = false;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    const baseWidth = 375.0;
-    const baseCircual = 20.0;
-    const baseImageWidth = 105.0;
-    const baseImageHeight = 160.0;
-    const baseTextSizeButton = 20.0;
-    const baseTextSizeTitle = 13.0;
-    const baseTextSizeAuthor = 10.0;
-    const baseCrossAxisSpacing = 12.0;
-    const baseMainAxisSpacing = 13.0;
-
-    String? selectedFormat; // Выбранный формат
-    String? selectedLanguage;
-    final scale = screenWidth / baseWidth;
-    final Circual = baseCircual * scale;
-    final imageWidth = baseImageWidth * scale;
-    final imageHeight = baseImageHeight * scale;
-    final textSizeTitle = baseTextSizeTitle * scale;
-    final textSizeButton = baseTextSizeButton * scale;
-    final textSizeAuthor = baseTextSizeAuthor * scale;
-    final crossAxisSpacing = baseCrossAxisSpacing * scale;
-    final mainAxisSpacing = baseMainAxisSpacing * scale;
-    bool switched1 = false;
-    bool switched2 = false;
-    bool switched3 = false;
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
-      backgroundColor: const Color(0xff5775CD),
-      appBar: AppBar(
-        title: Text(
-          widget.category,
-          style: TextStyle(
-            fontSize: 20 * scale,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          textAlign: TextAlign.center,
-          softWrap: true,
-          overflow: TextOverflow.fade,
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(scale),
+      body: _buildBody(scale),
+    );
+  }
+
+  AppBar _buildAppBar(double scale) {
+    return AppBar(
+      title: Text(
+        widget.category,
+        style: TextStyle(
+          fontSize: 20 * scale,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
-        backgroundColor: const Color(0xff5775CD),
-        leading: IconButton(
+        textAlign: TextAlign.center,
+      ),
+      backgroundColor: AppColors.background,
+      leading: IconButton(
+        icon: const Icon(
+          MyFlutterApp.back,
+          color: Colors.white,
+        ),
+        onPressed: widget.onBack,
+      ),
+      actions: [
+        IconButton(
           icon: const Icon(
-            MyFlutterApp.back,
+            MyFlutterApp.search1,
             color: Colors.white,
           ),
           onPressed: widget.onBack,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              MyFlutterApp.search1,
-              color: Colors.white,
-            ),
-            onPressed: widget.onBack,
+      ],
+    );
+  }
+
+  Widget _buildBody(double scale) {
+    return Padding(
+      padding: EdgeInsets.only(top: 20.0 * scale),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+            topRight: Radius.circular(AppDimensions.baseCircual * scale),
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildFilterBar(scale),
+            _buildBookGrid(scale),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterBar(double scale) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.baseCrossAxisSpacing * scale),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _FilterButton(
+            label: "Популярные",
+            icon: MyFlutterApp.tuning,
+            onPressed: () => _showSortOptions(scale),
+            scale: scale,
+          ),
+          _FilterButton(
+            label: "Фильтры",
+            icon: MyFlutterApp.sort,
+            onPressed: () => _showFilterOptions(scale),
+            scale: scale,
           ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.only(top: 20.0 * scale),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(Circual),
-              topRight: Radius.circular(Circual),
-            ),
+    );
+  }
+
+  Widget _buildBookGrid(double scale) {
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
+            mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
+            childAspectRatio: AppDimensions.baseImageWidth /
+                (AppDimensions.baseImageHeight + 40 * scale),
           ),
+          itemCount: Book.books.length,
+          itemBuilder: (context, index) {
+            final book = Book.books[index];
+            return BookCard(
+              title: book.title,
+              author: book.author,
+              image: book.image,
+              imageWidth: AppDimensions.baseImageWidth * scale,
+              imageHeight: AppDimensions.baseImageHeight * scale,
+              textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
+              textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
+              textSpacing: 6.0 * scale,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showSortOptions(double scale) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SizedBox(
+          height: AppDimensions.baseImageWidth * scale,
           child: Column(
             children: [
-              Padding(
-                padding: EdgeInsets.only(top: crossAxisSpacing),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24.0),
-                        ),
-                      ),
-                      onPressed: () => {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return SizedBox(
-                                height: imageWidth,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: <Widget>[
-                                    ListTile(
-                                      title: const Text('Option 1'),
-                                      leading: Radio<int>(
-                                        value: 1,
-                                        groupValue: selectedOption,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            selectedOption = value!;
-                                          });
-                                          Navigator.pop(
-                                              context); // Закрыть модальное окно
-                                        },
-                                      ),
-                                    ),
-                                    ListTile(
-                                      title: const Text('Option 2'),
-                                      leading: Radio<int>(
-                                        value: 2,
-                                        groupValue: selectedOption,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            selectedOption = value!;
-                                          });
-                                          Navigator.pop(
-                                              context); // Закрыть модальное окно
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            })
-                      },
-                      icon: const Icon(
-                        MyFlutterApp.tuning,
-                        color: Color(0xff03044E),
-                      ),
-                      label: const Text(
-                        'Популярные',
-                        style: TextStyle(color: Color(0xff03044E)),
-                      ),
-                    ),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24.0),
-                        ),
-                      ),
-                      onPressed: () => {
-                        showModalBottomSheet(
-                            backgroundColor: Colors.white,
-                            context: context,
-                            builder: (context) {
-                              return SizedBox(
-                                height: 600,
-                                child: Padding(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 16.0),
-                                  child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: <Widget>[
-                                        SwitchListTile(
-                                          value: switched1,
-                                          activeColor: Color(0xffB8BEF6),
-                                          thumbColor:
-                                              const WidgetStatePropertyAll<
-                                                  Color>(Colors.white),
-                                          onChanged: (value) =>
-                                              setState(() => switched1 = value),
-                                          title: const Text(
-                                            "Подписка",
-                                            style: TextStyle(
-                                                fontSize: 24,
-                                                color: Color(0xff03044E)),
-                                          ),
-                                          subtitle: const Text(
-                                            "Книги доступные по подписке",
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color(0xff636391)),
-                                          ),
-                                          isThreeLine: true,
-                                        ),
-                                        Divider(
-                                          color: Color(0xffB8BEF6),
-                                          endIndent: 0,
-                                        ),
-                                        SwitchListTile(
-                                          value: switched2,
-                                          activeColor: Color(0xffB8BEF6),
-                                          thumbColor:
-                                              const WidgetStatePropertyAll<
-                                                  Color>(Colors.white),
-                                          onChanged: (value) =>
-                                              setState(() => switched2 = value),
-                                          title: const Text(
-                                            "Экслюзивно",
-                                            style: TextStyle(
-                                                fontSize: 24,
-                                                color: Color(0xff03044E)),
-                                          ),
-                                          subtitle: const Text(
-                                            "Эксклюзивные книги только в нашем приложении",
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color(0xff636391)),
-                                          ),
-                                          isThreeLine: true,
-                                        ),
-                                        Divider(
-                                            color: Color(0xffB8BEF6),
-                                            endIndent: 0),
-                                        Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                'Формат',
-                                                style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Row(
-                                                children: [
-                                                  _SelectableButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Текст',
-                                                    icon: Icons.book,
-                                                    isSelected:
-                                                        selectedFormat ==
-                                                            'Текст',
-                                                    onTap: () => setState(() =>
-                                                        selectedFormat =
-                                                            'Текст'),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  _SelectableButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Аудио',
-                                                    icon: Icons.audiotrack,
-                                                    isSelected:
-                                                        selectedFormat ==
-                                                            'Аудио',
-                                                    onTap: () => setState(() =>
-                                                        selectedFormat =
-                                                            'Аудио'),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 16),
-                                              const Text(
-                                                'Язык',
-                                                style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Wrap(
-                                                spacing: 8,
-                                                runSpacing: 8,
-                                                children: [
-                                                  _SelectableLanguageButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Русский',
-                                                    flag: '🇷🇺',
-                                                    isSelected:
-                                                        selectedLanguage ==
-                                                            'Русский',
-                                                    onTap: () => setState(() =>
-                                                        selectedLanguage =
-                                                            'Русский'),
-                                                  ),
-                                                  _SelectableLanguageButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Английский',
-                                                    flag: '🇬🇧',
-                                                    isSelected:
-                                                        selectedLanguage ==
-                                                            'Английский',
-                                                    onTap: () => setState(() =>
-                                                        selectedLanguage =
-                                                            'Английский'),
-                                                  ),
-                                                  _SelectableLanguageButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Японский',
-                                                    flag: '🇯🇵',
-                                                    isSelected:
-                                                        selectedLanguage ==
-                                                            'Японский',
-                                                    onTap: () => setState(() =>
-                                                        selectedLanguage =
-                                                            'Японский'),
-                                                  ),
-                                                  _SelectableLanguageButton(
-                                                    textSizeButton:
-                                                        textSizeButton,
-                                                    label: 'Французский',
-                                                    flag: '🇫🇷',
-                                                    isSelected:
-                                                        selectedLanguage ==
-                                                            'Французский',
-                                                    onTap: () => setState(() =>
-                                                        selectedLanguage =
-                                                            'Французский'),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        SwitchListTile(
-                                          value: switched3,
-                                          activeColor: Color(0xffB8BEF6),
-                                          thumbColor:
-                                              const WidgetStatePropertyAll<
-                                                  Color>(Colors.white),
-                                          onChanged: (value) =>
-                                              setState(() => switched3 = value),
-                                          title: const Text(
-                                            "Высшая оценка",
-                                            style: TextStyle(
-                                                fontSize: 24,
-                                                color: Color(0xff03044E)),
-                                          ),
-                                          subtitle: const Text(
-                                            "Книги с рейтингом 4 и высше",
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                color: Color(0xff636391)),
-                                          ),
-                                          isThreeLine: true,
-                                        )
-                                      ]),
-                                ),
-                              );
-                            })
-                      },
-                      icon: const Icon(
-                        MyFlutterApp.sort,
-                        color: Color(0xff03044E),
-                      ),
-                      label: const Text(
-                        'Фильтры',
-                        style: TextStyle(color: Color(0xff03044E)),
-                      ),
-                    ),
-                  ],
+              ListTile(
+                title: const Text('Option 1'),
+                leading: Radio<int>(
+                  value: 1,
+                  groupValue: selectedOption,
+                  onChanged: (value) {
+                    setState(() => selectedOption = value!);
+                    Navigator.pop(context);
+                  },
                 ),
               ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(crossAxisSpacing),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: crossAxisSpacing,
-                      mainAxisSpacing: mainAxisSpacing,
-                      childAspectRatio: imageWidth / (imageHeight + 40 * scale),
-                    ),
-                    itemCount: BookListPage.books.length,
-                    itemBuilder: (context, index) {
-                      final book = BookListPage.books[index];
-                      return BookCard(
-                        title: book["title"]!,
-                        author: book["author"]!,
-                        image: book["image"]!,
-                        imageWidth: imageWidth,
-                        imageHeight: imageHeight,
-                        textSizeTitle: textSizeTitle,
-                        textSizeAuthor: textSizeAuthor,
-                        textSpacing: 6.0 * scale,
-                      );
-                    },
-                  ),
+              ListTile(
+                title: const Text('Option 2'),
+                leading: Radio<int>(
+                  value: 2,
+                  groupValue: selectedOption,
+                  onChanged: (value) {
+                    setState(() => selectedOption = value!);
+                    Navigator.pop(context);
+                  },
                 ),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
+    );
+  }
+
+  void _showFilterOptions(double scale) {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      isScrollControlled: true, // Позволяет сделать листаемое содержимое
+      builder: (context) {
+        final height =
+            MediaQuery.of(context).size.height * 0.8; // Занимает 80% экрана
+
+        return SizedBox(
+          height: height,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 16.0 * scale),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 16.0 * scale),
+                _CustomSwitchTile(
+                  value: switched1,
+                  onChanged: (value) => setState(() => switched1 = value),
+                  title: "Подписка",
+                  scale: scale,
+                  subtitle: "Книги доступные по подписке",
+                ),
+                Divider(color: AppColors.background),
+                _CustomSwitchTile(
+                  value: switched2,
+                  onChanged: (value) => setState(() => switched2 = value),
+                  title: "Эксклюзивно",
+                  scale: scale,
+                  subtitle: "Эксклюзивные книги только в нашем приложении",
+                ),
+                Divider(color: AppColors.background),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0 * scale),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Формат',
+                        style: TextStyle(
+                            fontSize: 20 * scale,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary),
+                      ),
+                      Row(
+                        children: [
+                          _SelectableButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Текст',
+                            icon: Icons.book,
+                            isSelected: selectedFormat == 'Текст',
+                            onTap: () =>
+                                setState(() => selectedFormat = 'Текст'),
+                          ),
+                          SizedBox(width: 8.0 * scale),
+                          _SelectableButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Аудио',
+                            icon: Icons.audiotrack,
+                            isSelected: selectedFormat == 'Аудио',
+                            onTap: () =>
+                                setState(() => selectedFormat = 'Аудио'),
+                          ),
+                        ],
+                      ),
+                      Divider(color: AppColors.background),
+                      Text(
+                        'Язык',
+                        style: TextStyle(
+                            fontSize: 20 * scale,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary),
+                      ),
+                      SizedBox(height: 8.0 * scale),
+                      Wrap(
+                        spacing: 8.0 * scale,
+                        runSpacing: 8.0 * scale,
+                        children: [
+                          _SelectableLanguageButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Русский',
+                            flag: '🇷🇺',
+                            isSelected: selectedLanguage == 'Русский',
+                            onTap: () =>
+                                setState(() => selectedLanguage = 'Русский'),
+                          ),
+                          _SelectableLanguageButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Английский',
+                            flag: '🇬🇧',
+                            isSelected: selectedLanguage == 'Английский',
+                            onTap: () =>
+                                setState(() => selectedLanguage = 'Английский'),
+                          ),
+                          _SelectableLanguageButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Японский',
+                            flag: '🇯🇵',
+                            isSelected: selectedLanguage == 'Японский',
+                            onTap: () =>
+                                setState(() => selectedLanguage = 'Японский'),
+                          ),
+                          _SelectableLanguageButton(
+                            textSizeButton:
+                                AppDimensions.baseTextSizeButton * scale,
+                            label: 'Французский',
+                            flag: '🇫🇷',
+                            isSelected: selectedLanguage == 'Французский',
+                            onTap: () => setState(
+                                () => selectedLanguage = 'Французский'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(color: AppColors.background),
+                _CustomSwitchTile(
+                  value: switched3,
+                  onChanged: (value) => setState(() => switched3 = value),
+                  title: "Высшая оценка",
+                  subtitle: "Книги с рейтингом 4 и высше",
+                  scale: scale,
+                ),
+                SizedBox(height: 16.0 * scale),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -511,7 +339,8 @@ class _SelectableButton extends StatelessWidget {
       onPressed: onTap,
       label: Text(
         label,
-        style: TextStyle(fontSize: textSizeButton),
+        style:
+            TextStyle(fontSize: textSizeButton, color: AppColors.textPrimary),
       ),
       style: OutlinedButton.styleFrom(
         side: BorderSide(color: isSelected ? Color(0xff5775CD) : Colors.white),
@@ -541,7 +370,7 @@ class _SelectableLanguageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
+    return ElevatedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         side: BorderSide(color: isSelected ? Color(0xff5775CD) : Colors.white),
@@ -556,13 +385,90 @@ class _SelectableLanguageButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: textSizeButton,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : Colors.black,
-            ),
+                fontSize: textSizeButton, color: AppColors.textPrimary),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final double scale;
+
+  const _FilterButton(
+      {required this.label,
+      required this.icon,
+      required this.onPressed,
+      required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        textStyle: TextStyle(
+            fontSize: AppDimensions.baseTextSizeButtonSort * scale,
+            fontFamily: 'MPLUSRounded1c'),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.circular(AppDimensions.baseCircualButton * scale),
+        ),
+      ),
+      onPressed: onPressed,
+      icon: Icon(
+        icon,
+        color: AppColors.textPrimary,
+        size: 19 * scale,
+      ),
+      label: Text(label, style: TextStyle(color: AppColors.textPrimary)),
+    );
+  }
+}
+
+class _CustomSwitchTile extends StatelessWidget {
+  final double scale;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String title;
+  final String subtitle;
+
+  const _CustomSwitchTile({
+    Key? key,
+    required this.value,
+    required this.onChanged,
+    required this.title,
+    required this.scale,
+    required this.subtitle,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: value,
+      activeTrackColor: AppColors.background,
+      inactiveThumbColor: Colors.white,
+      inactiveTrackColor: Colors.grey,
+      activeColor: Colors.white,
+      onChanged: onChanged,
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 20.0 * scale,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 14.0 * scale,
+          color: AppColors.textSecondary,
+        ),
+      ),
+      isThreeLine: true,
     );
   }
 }
