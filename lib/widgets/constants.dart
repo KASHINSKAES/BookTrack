@@ -16,6 +16,8 @@ class AppDimensions {
   static const baseTextSizeFiltrText = 14.0;
   static const baseMainAxisSpacing = 13.0;
   static const baseScreenTop = 26.0;
+  static const baseBoxWidthTimer = 330.0;
+  static const baseBoxHeightTimer = 77.0;
 }
 
 class AppColors {

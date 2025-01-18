@@ -85,7 +85,6 @@ class BookCard extends StatelessWidget {
   final double textSpacing;
 
   const BookCard({
-    super.key,
     required this.title,
     required this.author,
     required this.image,
@@ -120,25 +119,31 @@ class BookCard extends StatelessWidget {
                 ),
               ),
         SizedBox(height: textSpacing),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: textSizeTitle,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xff03044E),
+        Container(
+          width: imageWidth, // Ensure the text has a defined width
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: textSizeTitle,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xff03044E),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
         SizedBox(height: textSpacing / 2),
-        Text(
-          author,
-          style: TextStyle(
-            fontSize: textSizeAuthor,
-            color: const Color(0xff575757),
+        Container(
+          width: imageWidth, // Ensure the text has a defined width
+          child: Text(
+            author,
+            style: TextStyle(
+              fontSize: textSizeAuthor,
+              color: const Color(0xff575757),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

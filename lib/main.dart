@@ -1,3 +1,5 @@
+import 'package:provider/provider.dart';
+import 'pages/AppState.dart';
 import 'package:booktrack/pages/selectedPage.dart';
 import 'package:flutter/material.dart';
 import '/icons.dart';
@@ -7,7 +9,12 @@ import '/pages/catalogPage.dart';
 import '/widgets/BookListPage.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AppState(),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
