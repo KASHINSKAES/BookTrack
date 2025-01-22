@@ -1,3 +1,4 @@
+import 'package:booktrack/pages/profilePage.dart';
 import 'package:provider/provider.dart';
 import 'pages/AppState.dart';
 import 'package:booktrack/pages/selectedPage.dart';
@@ -63,10 +64,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
       CatalogPage(
           onCategoryTap: onCategoryTap), // Передача обработчика в CatalogPage
       selectedPage(),
-      const Icon(
-        Icons.person,
-        size: 150,
-      ),
+      ProfilePage(),
     ];
   }
 
