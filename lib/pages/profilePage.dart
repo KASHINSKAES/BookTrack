@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '/widgets/constants.dart';
+import '/MyFlutter_icons.dart';
+import '/icons.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -11,7 +13,9 @@ class ProfilePage extends StatelessWidget {
           backgroundColor: AppColors.background,
           actions: [
             IconButton(
-              icon: Icon(Icons.settings),
+              icon: Icon(
+                MyFlutter.setting2,
+              ),
               onPressed: () {
                 // Действие для настроек
               },
@@ -88,7 +92,7 @@ class ProfilePage extends StatelessWidget {
                                       )),
                                   MenuItem(
                                     title: "Уровень",
-                                    icon: Icons.star,
+                                    icon: MyFlutter.level,
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -99,7 +103,7 @@ class ProfilePage extends StatelessWidget {
                                   ),
                                   MenuItem(
                                     title: "Статистика",
-                                    icon: Icons.bar_chart,
+                                    icon: MyFlutter.statistik,
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -111,7 +115,7 @@ class ProfilePage extends StatelessWidget {
                                   ),
                                   MenuItem(
                                     title: "Трекер чтения",
-                                    icon: Icons.book,
+                                    icon: MyFlutter.calendar,
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -123,7 +127,7 @@ class ProfilePage extends StatelessWidget {
                                   ),
                                   MenuItem(
                                     title: "История бонусов",
-                                    icon: Icons.history,
+                                    icon: MyFlutter.bonus,
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -341,4 +345,181 @@ class LanguagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text("Язык интерфейса")));
   }
+}
+
+class AnimatedBlobsPage extends StatefulWidget {
+  @override
+  _AnimatedBlobsPageState createState() => _AnimatedBlobsPageState();
+}
+
+class _AnimatedBlobsPageState extends State<AnimatedBlobsPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true); // Зацикленная анимация
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue[50],
+      body: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: BlobPainter(animationValue: _controller.value),
+                child: Container(),
+              );
+            },
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: Image.asset(
+                      'assets/avatar.png'), // Замените на свой аватар
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Павел",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class AnimatedBlobsScreen extends StatefulWidget {
+  @override
+  _AnimatedBlobsScreenState createState() => _AnimatedBlobsScreenState();
+}
+
+class _AnimatedBlobsScreenState extends State<AnimatedBlobsScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 4),
+      vsync: this,
+    )..repeat(reverse: true); // Зацикленная анимация
+
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: BlobPainter(animationValue: _animation.value),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BlobPainter extends CustomPainter {
+  final double animationValue;
+
+  BlobPainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.orange
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+
+    // Центральные координаты
+    double centerX = size.width / 2;
+    double centerY = size.height / 2;
+
+    // Переменные для изменения формы
+    double baseRadius = 150; // Базовый размер пятна
+    double distortion = 50 * animationValue; // Анимация изменений
+
+    // Рисуем пятно с искажениями
+    path.moveTo(centerX, centerY - baseRadius);
+
+    path.quadraticBezierTo(
+      centerX + baseRadius + distortion,
+      centerY - baseRadius,
+      centerX + baseRadius,
+      centerY,
+    );
+    path.quadraticBezierTo(
+      centerX + baseRadius,
+      centerY + baseRadius + distortion,
+      centerX,
+      centerY + baseRadius,
+    );
+    path.quadraticBezierTo(
+      centerX - baseRadius - distortion,
+      centerY + baseRadius,
+      centerX - baseRadius,
+      centerY,
+    );
+    path.quadraticBezierTo(
+      centerX - baseRadius,
+      centerY - baseRadius - distortion,
+      centerX,
+      centerY - baseRadius,
+    );
+
+    path.close();
+
+    // Отрисовка фигуры
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

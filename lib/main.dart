@@ -64,7 +64,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
       CatalogPage(
           onCategoryTap: onCategoryTap), // Передача обработчика в CatalogPage
       selectedPage(),
-      ProfilePage(),
+      AnimatedBlobsScreen(),
     ];
   }
 
