@@ -28,4 +28,5 @@ class MyFlutterApp {
   static const IconData chat = IconData(0xe900, fontFamily: _fontFamily);
   static const IconData star = IconData(0xe902, fontFamily: _fontFamily);
   static const IconData back = IconData(0xe905, fontFamily: _fontFamily);
+
 }
