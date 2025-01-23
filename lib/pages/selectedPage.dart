@@ -39,29 +39,6 @@ class _selectedPage extends State<selectedPage> {
     _totalTimeInSeconds = appState.readingMinutesPurpose * 60;
   }
 
-  void _startTimer() {
-    setState(() {
-      isTimerRunning = true;
-    });
-
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_totalTimeInSeconds > 0) {
-          _totalTimeInSeconds--;
-        } else {
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  void _pauseTimer() {
-    setState(() {
-      isTimerRunning = false;
-    });
-    _countdownTimer?.cancel();
-  }
-
   // Запуск обоих таймеров
   void _startTimers() {
     setState(() {

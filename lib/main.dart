@@ -5,7 +5,6 @@ import 'package:booktrack/pages/selectedPage.dart';
 import 'package:flutter/material.dart';
 import '/icons.dart';
 import '/pages/mainPage.dart';
-import '/pages/selectedPage.dart';
 import '/pages/catalogPage.dart';
 import '/widgets/BookListPage.dart';
 
@@ -64,7 +63,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
       CatalogPage(
           onCategoryTap: onCategoryTap), // Передача обработчика в CatalogPage
       selectedPage(),
-      AnimatedBlobsScreen(),
+      ProfilePage(),
     ];
   }
 

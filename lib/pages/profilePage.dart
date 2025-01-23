@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import '/widgets/constants.dart';
 import '/MyFlutter_icons.dart';
+import 'chatPage.dart';
 import '/icons.dart';
+import 'dart:math';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -14,7 +17,7 @@ class ProfilePage extends StatelessWidget {
           actions: [
             IconButton(
               icon: Icon(
-                MyFlutter.setting2,
+                MyFlutter.setting,
               ),
               onPressed: () {
                 // Действие для настроек
@@ -33,10 +36,11 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: AssetImage(
-                        'assets/profile_image.png'), // Добавьте изображение
+                    child: SvgPicture.asset(
+                      'images/logoProfile.svg',
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  SizedBox(height: 8),
                   Text(
                     "Павел",
                     style: TextStyle(
@@ -63,6 +67,8 @@ class ProfilePage extends StatelessWidget {
                       Padding(
                           padding: EdgeInsets.only(top: 16.0 * scale),
                           child: Container(
+                              padding:
+                                  EdgeInsets.symmetric(horizontal: 19 * scale),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 boxShadow: [
@@ -100,7 +106,9 @@ class ProfilePage extends StatelessWidget {
                                             builder: (context) => LevelPage()),
                                       );
                                     },
+                                    scale: scale,
                                   ),
+                                  Divider(color: Color(0xffDCDCDC)),
                                   MenuItem(
                                     title: "Статистика",
                                     icon: MyFlutter.statistik,
@@ -112,7 +120,9 @@ class ProfilePage extends StatelessWidget {
                                                 StatisticsPage()),
                                       );
                                     },
+                                    scale: scale,
                                   ),
+                                  Divider(color: Color(0xffDCDCDC)),
                                   MenuItem(
                                     title: "Трекер чтения",
                                     icon: MyFlutter.calendar,
@@ -124,7 +134,9 @@ class ProfilePage extends StatelessWidget {
                                                 ReadingTrackerPage()),
                                       );
                                     },
+                                    scale: scale,
                                   ),
+                                  Divider(color: Color(0xffDCDCDC)),
                                   MenuItem(
                                     title: "История бонусов",
                                     icon: MyFlutter.bonus,
@@ -136,6 +148,7 @@ class ProfilePage extends StatelessWidget {
                                                 BonusHistoryPage()),
                                       );
                                     },
+                                    scale: scale,
                                   ),
                                 ],
                               ))),
@@ -157,20 +170,26 @@ class ProfilePage extends StatelessWidget {
                             ),
                             child: MenuItem(
                               title: "Чат",
-                              icon: Icons.chat,
+                              icon: MyFlutter.chatObsh,
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => ChatPage()),
+                                      builder: (context) =>
+                                          ChatPage(onBack: () {
+                                            Navigator.pop(context);
+                                          })),
                                 );
                               },
+                              scale: scale,
                             ),
                           )),
                       // Блок "Настройки"
                       Padding(
                         padding: EdgeInsets.only(top: 16 * scale),
                         child: Container(
+                            padding:
+                                EdgeInsets.symmetric(horizontal: 19 * scale),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               boxShadow: [
@@ -198,9 +217,9 @@ class ProfilePage extends StatelessWidget {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     )),
-                                MenuItem(
+                                Divider(color: Color(0xffDCDCDC)),
+                                MenuItem2(
                                   title: "Способы оплаты",
-                                  icon: Icons.payment,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -209,10 +228,11 @@ class ProfilePage extends StatelessWidget {
                                               PaymentMethodsPage()),
                                     );
                                   },
+                                  scale: scale,
                                 ),
-                                MenuItem(
+                                Divider(color: Color(0xffDCDCDC)),
+                                MenuItem2(
                                   title: "Ваши платежи",
-                                  icon: Icons.receipt,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -220,10 +240,11 @@ class ProfilePage extends StatelessWidget {
                                           builder: (context) => PaymentsPage()),
                                     );
                                   },
+                                  scale: scale,
                                 ),
-                                MenuItem(
+                                Divider(color: Color(0xffDCDCDC)),
+                                MenuItem2(
                                   title: "Язык интерфейса",
-                                  icon: Icons.language,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -231,16 +252,24 @@ class ProfilePage extends StatelessWidget {
                                           builder: (context) => LanguagePage()),
                                     );
                                   },
+                                  scale: scale,
+                                  trailing: Text(
+                                    "Русский",
+                                    style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 14 * scale),
+                                  ),
                                 ),
-                                MenuItem(
+                                Divider(color: Color(0xffDCDCDC)),
+                                MenuItem2(
                                   title: "Скачивать только по Wi-Fi",
-                                  icon: Icons.wifi,
                                   trailing: Switch(
                                     value: true,
                                     onChanged: (value) {
                                       // Обработка переключателя
                                     },
                                   ),
+                                  scale: scale,
                                 ),
                               ],
                             )),
@@ -264,7 +293,10 @@ class SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Text(
         title,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -275,16 +307,65 @@ class MenuItem extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final double? scale;
 
-  MenuItem(
-      {required this.title, required this.icon, this.onTap, this.trailing});
+  MenuItem({
+    required this.title,
+    required this.icon,
+    this.onTap,
+    this.trailing,
+    required this.scale,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: AppColors.textPrimary,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 20 * scale!,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class MenuItem2 extends StatelessWidget {
+  final String title;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+  final double? scale;
+
+  MenuItem2({
+    required this.title,
+    this.onTap,
+    this.trailing,
+    required this.scale,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: Colors.blue),
-      title: Text(title),
-      trailing: trailing ?? Icon(Icons.arrow_forward),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 20 * scale!,
+        ),
+      ),
+      trailing: trailing ??
+          Transform.rotate(
+            angle: 180 * pi / 180,
+            child: Icon(
+              MyFlutterApp.back,
+              color: AppColors.textPrimary,
+            ),
+          ),
       onTap: onTap,
     );
   }
@@ -319,13 +400,6 @@ class BonusHistoryPage extends StatelessWidget {
   }
 }
 
-class ChatPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Чат")));
-  }
-}
-
 class PaymentMethodsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -345,181 +419,4 @@ class LanguagePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text("Язык интерфейса")));
   }
-}
-
-class AnimatedBlobsPage extends StatefulWidget {
-  @override
-  _AnimatedBlobsPageState createState() => _AnimatedBlobsPageState();
-}
-
-class _AnimatedBlobsPageState extends State<AnimatedBlobsPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true); // Зацикленная анимация
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blue[50],
-      body: Stack(
-        children: [
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: BlobPainter(animationValue: _controller.value),
-                child: Container(),
-              );
-            },
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: Image.asset(
-                      'assets/avatar.png'), // Замените на свой аватар
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Павел",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-class AnimatedBlobsScreen extends StatefulWidget {
-  @override
-  _AnimatedBlobsScreenState createState() => _AnimatedBlobsScreenState();
-}
-
-class _AnimatedBlobsScreenState extends State<AnimatedBlobsScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 4),
-      vsync: this,
-    )..repeat(reverse: true); // Зацикленная анимация
-
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: BlobPainter(animationValue: _animation.value),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class BlobPainter extends CustomPainter {
-  final double animationValue;
-
-  BlobPainter({required this.animationValue});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.orange
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-
-    // Центральные координаты
-    double centerX = size.width / 2;
-    double centerY = size.height / 2;
-
-    // Переменные для изменения формы
-    double baseRadius = 150; // Базовый размер пятна
-    double distortion = 50 * animationValue; // Анимация изменений
-
-    // Рисуем пятно с искажениями
-    path.moveTo(centerX, centerY - baseRadius);
-
-    path.quadraticBezierTo(
-      centerX + baseRadius + distortion,
-      centerY - baseRadius,
-      centerX + baseRadius,
-      centerY,
-    );
-    path.quadraticBezierTo(
-      centerX + baseRadius,
-      centerY + baseRadius + distortion,
-      centerX,
-      centerY + baseRadius,
-    );
-    path.quadraticBezierTo(
-      centerX - baseRadius - distortion,
-      centerY + baseRadius,
-      centerX - baseRadius,
-      centerY,
-    );
-    path.quadraticBezierTo(
-      centerX - baseRadius,
-      centerY - baseRadius - distortion,
-      centerX,
-      centerY - baseRadius,
-    );
-
-    path.close();
-
-    // Отрисовка фигуры
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
