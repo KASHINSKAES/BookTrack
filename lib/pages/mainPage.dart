@@ -12,8 +12,6 @@ class MainPage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    const baseWidth = 375.0;
-    final scale = screenWidth / baseWidth;
     final blockWidth = screenWidth * 0.97;
     final blockHeight = screenHeight * 0.2;
     final overlapOffset = screenWidth * 0.035;
