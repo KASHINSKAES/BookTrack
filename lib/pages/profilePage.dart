@@ -282,10 +282,10 @@ class ProfilePage extends StatelessWidget {
   }
 }
 
-class SectionTitle extends StatelessWidget {
+class SectionTitleProfile extends StatelessWidget {
   final String title;
 
-  SectionTitle({required this.title});
+  SectionTitleProfile({required this.title, required Null Function() onSeeAll});
 
   @override
   Widget build(BuildContext context) {
