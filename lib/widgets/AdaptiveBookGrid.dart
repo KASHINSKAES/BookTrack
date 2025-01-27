@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'constants.dart';
+import '/pages/BookDetailScreen.dart';
 
 class AdaptiveBookGrid extends StatelessWidget {
   final List<Map<String, String>> books = [
@@ -97,55 +98,69 @@ class BookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        image.isEmpty
-            ? Container(
-                width: imageWidth,
-                height: imageHeight,
-                decoration: BoxDecoration(
-                  color: const Color(0xffFD521B),
-                  borderRadius: BorderRadius.circular(8.0),
+    return GestureDetector(
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return BookDetailScreen(
+              bookTitle: title,
+              authorName: author,
+              bookImageUrl: image,
+              bookRating: 8.6,
+              reviewCount: 100,
+              pages: 320,
+              age: 16,
+            );
+          }));
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            image.isEmpty
+                ? Container(
+                    width: imageWidth,
+                    height: imageHeight,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFD521B),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SvgPicture.asset(
+                      image,
+                      width: imageWidth,
+                      height: imageHeight,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+            SizedBox(height: textSpacing),
+            Container(
+              width: imageWidth, // Ensure the text has a defined width
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: textSizeTitle,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xff03044E),
                 ),
-              )
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SvgPicture.asset(
-                  image,
-                  width: imageWidth,
-                  height: imageHeight,
-                  fit: BoxFit.cover,
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-        SizedBox(height: textSpacing),
-        Container(
-          width: imageWidth, // Ensure the text has a defined width
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: textSizeTitle,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xff03044E),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        SizedBox(height: textSpacing / 2),
-        Container(
-          width: imageWidth, // Ensure the text has a defined width
-          child: Text(
-            author,
-            style: TextStyle(
-              fontSize: textSizeAuthor,
-              color: const Color(0xff575757),
+            SizedBox(height: textSpacing / 2),
+            Container(
+              width: imageWidth, // Ensure the text has a defined width
+              child: Text(
+                author,
+                style: TextStyle(
+                  fontSize: textSizeAuthor,
+                  color: const Color(0xff575757),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
+          ],
+        ));
   }
 }

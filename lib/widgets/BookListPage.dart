@@ -149,7 +149,7 @@ class _BookListPageState extends State<BookListPage> {
           child: Column(
             children: [
               ListTile(
-                title: const Text('Option 1'),
+                title: const Text('Популярные'),
                 leading: Radio<int>(
                   value: 1,
                   groupValue: selectedOption,
@@ -160,7 +160,7 @@ class _BookListPageState extends State<BookListPage> {
                 ),
               ),
               ListTile(
-                title: const Text('Option 2'),
+                title: const Text('Новинки'),
                 leading: Radio<int>(
                   value: 2,
                   groupValue: selectedOption,

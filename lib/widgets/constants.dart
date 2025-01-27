@@ -25,6 +25,8 @@ class AppColors {
   static const textPrimary = Color(0xff03044E);
   static const textSecondary = Color(0xff636391);
   static const buttonBorder = Color(0xff5775CD);
+  static const orange = Color(0xffFD521B);
+  static const grey = Color(0xff575757);
 }
 
 // book_model.dart
