@@ -280,13 +280,61 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       ElevatedButton(
-                        onPressed: () {},
-                        child: const Text('Полностью за 299 ₽'),
-                      ),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.background),
+                          onPressed: () {},
+                          child: Row(
+                            children: [
+                              Icon(
+                                MyFlutterApp.school,
+                                color: Colors.white,
+                              ),
+                              SizedBox(
+                                  width: 7), // Отступы между иконками и текстом
+                              Column(
+                                children: [
+                                  Text(
+                                    'Полностью ',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(' за 299 ₽',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(.6),
+                                      )),
+                                ],
+                              )
+                            ],
+                          )),
                       ElevatedButton(
-                        onPressed: () {},
-                        child: const Text('Отрывок бесплатно'),
-                      ),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.background),
+                          onPressed: () {},
+                          child: Row(
+                            children: [
+                              Icon(
+                                MyFlutterApp.notes,
+                                color: Colors.white,
+                              ),
+                              SizedBox(
+                                  width: 7), // Отступы между иконками и текстом
+                              Column(
+                                children: [
+                                  Text(
+                                    'Отрывок ',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(' бесплатно',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(.6),
+                                      )),
+                                ],
+                              )
+                            ],
+                          )),
                     ],
                   ),
                 ),
