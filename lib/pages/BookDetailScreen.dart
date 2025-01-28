@@ -1,4 +1,5 @@
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/selectedPage.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -44,10 +45,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         },
         child: Scaffold(
           appBar: AppBar(
-            backgroundColor: _scrollPosition > 355 * scale
+            backgroundColor: _scrollPosition > 300 * scale
                 ? AppColors.background
                 : Colors.transparent,
-            title: _scrollPosition > 355 * scale
+            title: _scrollPosition > 300 * scale
                 ? Text(
                     widget.bookTitle,
                     style: const TextStyle(color: Colors.white),
@@ -137,14 +138,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                         ],
                                       ),
                                       SizedBox(height: 5 * scale),
-                                      Text(
-                                        widget.bookTitle,
-                                        style: TextStyle(
-                                          fontSize: 20 * scale,
-                                          color: AppColors.textPrimary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      Text(widget.bookTitle,
+                                          style: TextStyle(
+                                            fontSize: 20 * scale,
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          softWrap: true),
                                       Text(
                                         widget.authorName,
                                         style: TextStyle(
@@ -162,43 +162,109 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                         ),
                                       ),
                                     ]),
-
+                                Text(
+                                  'Описание',
+                                  style: TextStyle(
+                                    fontSize: 16 * scale,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Третья книга из цикла про Аню Ширли.Аня проработал 2 года учительницей в местной школе, но теперь она нацелена поступить в Редмондский университет Кингспорта. Её друзья детства практически все устроили свою жизнь, кто-то уехал, многие вступили в семейную жизнь. ',
+                                  style: TextStyle(
+                                    fontSize: 14 * scale,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Chip(
+                                          label: Text('Зарубежная классика'),
+                                          backgroundColor: AppColors.background,
+                                          labelStyle: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11 * scale,
+                                          ),
+                                        ),
+                                        Chip(
+                                          label: Text('Яркая классика'),
+                                          backgroundColor: AppColors.background,
+                                          labelStyle: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11 * scale,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Характеристика',
+                                          style: TextStyle(
+                                            fontSize: 14 * scale,
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Издательство:Эксмо',
+                                          style: TextStyle(
+                                            fontSize: 14 * scale,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                            'Серия:Яркие страницы.Коллекционные издания',
+                                            style: TextStyle(
+                                              fontSize: 14 * scale,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                            softWrap: true),
+                                        Text(
+                                          'Год издания:2024',
+                                          style: TextStyle(
+                                            fontSize: 14 * scale,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 16),
 
-                                const Divider(),
-                                const Text(
-                                  'Похожие книги',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                SectionTitle(
+                                  title: "Другие книги автора ",
+                                  onSeeAll: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => AllBooksPage()),
+                                    );
+                                  },
                                 ),
-                                SizedBox(height: 150, child: _buildBookList()),
-                                const Text(
-                                  'Похожие книги',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                BookList(),
+                                SectionTitle(
+                                  title: "Похожие книги",
+                                  onSeeAll: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => AllBooksPage()),
+                                    );
+                                  },
                                 ),
-                                SizedBox(height: 150, child: _buildBookList()),
-                                const Text(
-                                  'Похожие книги',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 150, child: _buildBookList()),
-                                const Text(
-                                  'Похожие книги',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 150, child: _buildBookList()),
-                                const Divider(),
+                                BookList(),
+
                                 const Text(
                                   'Отзывы',
                                   style: TextStyle(
@@ -366,36 +432,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             ),
             const Text(
               'Reviewer Name',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBookList() {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: 5,
-      itemBuilder: (context, index) => Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 120,
-              height: 160,
-              color: Colors.grey[300],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Book Title',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'Author Name',
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
