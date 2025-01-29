@@ -1,3 +1,4 @@
+import 'package:booktrack/pages/statistikPages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '/widgets/constants.dart';
@@ -376,13 +377,6 @@ class LevelPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text("Уровень")));
-  }
-}
-
-class StatisticsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Статистика")));
   }
 }
 
