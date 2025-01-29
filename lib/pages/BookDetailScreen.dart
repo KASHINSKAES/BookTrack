@@ -5,6 +5,14 @@ import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+final List<String> reviews = [
+  "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
+      "Это история о сильной и независимой девушке, которая преодолевает множество трудностей "
+      "и находит своё счастье.",
+  "Очень захватывающая книга! Интересный сюжет, великолепная проработка персонажей.",
+  "Эта книга вдохновила меня на новые свершения. Определённо рекомендую к прочтению!"
+];
+
 class BookDetailScreen extends StatefulWidget {
   final String bookTitle;
   final String authorName;
@@ -44,7 +52,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           return true;
         },
         child: Scaffold(
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
+            elevation: 0,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             backgroundColor: _scrollPosition > 300 * scale
                 ? AppColors.background
                 : Colors.transparent,
@@ -80,7 +92,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   )),
               // Прокручиваемый контент
               SingleChildScrollView(
-                padding: EdgeInsets.only(top: 200 * scale),
+                padding: EdgeInsets.only(top: 250 * scale),
                 child: Column(
                   children: [
                     Stack(
@@ -273,14 +285,25 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                   ),
                                 ),
                                 SizedBox(
-                                    height: 150, child: _buildReviewsList()),
+                                  height:
+                                      160 * scale, // Фиксируем высоту списка
+                                  child: ListView.builder(
+                                    scrollDirection: Axis
+                                        .horizontal, // Горизонтальный скролл
+                                    itemCount: reviews.length,
+                                    itemBuilder: (context, index) {
+                                      return ReviewCard(
+                                          text: reviews[index], scale: scale);
+                                    },
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
                         // Картинка книги между белым и фиолетовым слоями
                         Positioned(
-                          top: -190 * scale,
+                          top: -180 * scale,
                           left: 0,
                           right: 0,
                           child: Align(
@@ -326,7 +349,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 ),
               ),
               Positioned(
-                top: 750, // Позиция сверху, чтобы "висел"
+                top: 680 * scale, // Позиция сверху, чтобы "висел"
                 left: 16,
                 right: 16,
                 child: Container(
@@ -411,31 +434,242 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Widget _buildReviewsList() {
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: 5,
-      itemBuilder: (context, index) => Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 200,
-              height: 120,
-              color: Colors.grey[300],
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+    return Container(
+      width: 380 * scale, // Фиксированная ширина карточки
+      margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
+      padding: EdgeInsets.all(16 * scale),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade100, // Фон комментария
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Аватар и имя
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20 * scale,
+                backgroundImage: NetworkImage(
+                    'https://randomuser.me/api/portraits/women/44.jpg'),
+              ),
+              SizedBox(width: 10 * scale),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Алиса",
+                      style: TextStyle(
+                        fontSize: 16 * scale,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      "13 марта 2022",
+                      style:
+                          TextStyle(fontSize: 12 * scale, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * scale),
+
+          // Оценка
+          Row(
+            children: List.generate(
+              5,
+              (index) =>
+                  Icon(Icons.star, size: 16 * scale, color: Colors.orange),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Review Title',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8 * scale),
+
+          // Контейнер с текстом и затемнением
+          Stack(
+            children: [
+              SizedBox(
+                height: 160 * scale, // Ограничиваем высоту текста
+                child: SingleChildScrollView(
+                  physics: NeverScrollableScrollPhysics(), // Отключаем скролл
+                  child: Text(
+                    "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
+                    "Это история о сильной и независимой девушке, которая преодолевает множество трудностей "
+                    "и находит своё счастье.",
+                    style: TextStyle(fontSize: 14 * scale, color: Colors.black),
+                    softWrap: true,
+                  ),
+                ),
+              ),
+
+              // Затемнение
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 20 * scale,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.blue.shade100.withOpacity(0.0),
+                        Colors.blue.shade100,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ReviewCard extends StatelessWidget {
+  final String text;
+  final double scale;
+
+  ReviewCard({required this.text, required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 350 * scale,
+      height: 350 * scale, // Фиксированная ширина карточки
+      margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
+      padding: EdgeInsets.all(16 * scale),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade100, // Фон комментария
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Аватар и имя
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20 * scale,
+                backgroundImage: NetworkImage(
+                    'https://randomuser.me/api/portraits/women/44.jpg'),
+              ),
+              SizedBox(width: 10 * scale),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Алиса",
+                      style: TextStyle(
+                        fontSize: 16 * scale,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      "13 марта 2022",
+                      style:
+                          TextStyle(fontSize: 12 * scale, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * scale),
+
+          // Оценка
+          Row(
+            children: List.generate(
+              5,
+              (index) =>
+                  Icon(Icons.star, size: 16 * scale, color: Colors.orange),
             ),
-            const Text(
-              'Reviewer Name',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: 8 * scale),
+
+          // Контейнер с текстом и затемнением
+          Stack(
+            children: [
+              SizedBox(
+                height: 160 * scale, // Ограничиваем высоту текста
+                child: SingleChildScrollView(
+                  physics: NeverScrollableScrollPhysics(), // Отключаем скролл
+                  child: Text(
+                    text,
+                    style: TextStyle(fontSize: 14 * scale, color: Colors.black),
+                    softWrap: true, // ✅ Включает перенос строк
+                    maxLines:
+                        null, // ✅ Позволяет неограниченное количество строк
+                    overflow:
+                        TextOverflow.visible, // ✅ Отключает обрезку текста,
+                  ),
+                ),
+              ),
+
+              // Затемнение
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 20 * scale,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.blue.shade100.withOpacity(0.0),
+                        Colors.blue.shade100,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Кнопка "Далее"
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: TextButton(
+                  onPressed: () {
+                    // Открытие полного текста
+                  },
+                  child: Text(
+                    "Далее",
+                    style: TextStyle(
+                      fontSize: 14 * scale,
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
