@@ -215,41 +215,52 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                         ),
                                       ],
                                     ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Характеристика',
-                                          style: TextStyle(
-                                            fontSize: 14 * scale,
-                                            color: AppColors.textPrimary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Издательство:Эксмо',
-                                          style: TextStyle(
-                                            fontSize: 14 * scale,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        Text(
-                                            'Серия:Яркие страницы.Коллекционные издания',
-                                            style: TextStyle(
-                                              fontSize: 14 * scale,
-                                              color: AppColors.textPrimary,
+                                    ConstrainedBox(
+                                        constraints:
+                                            BoxConstraints(maxWidth: 180),
+                                        child: Column(
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Характеристика',
+                                                  style: TextStyle(
+                                                    fontSize: 14 * scale,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Издательство:Эксмо',
+                                                  style: TextStyle(
+                                                    fontSize: 14 * scale,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                  ),
+                                                ),
+                                                Text(
+                                                    'Серия:Яркие страницы.Коллекционные издания',
+                                                    style: TextStyle(
+                                                      fontSize: 14 * scale,
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                    ),
+                                                    softWrap: true),
+                                                Text(
+                                                  'Год издания:2024',
+                                                  style: TextStyle(
+                                                    fontSize: 14 * scale,
+                                                    color:
+                                                        AppColors.textPrimary,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            softWrap: true),
-                                        Text(
-                                          'Год издания:2024',
-                                          style: TextStyle(
-                                            fontSize: 14 * scale,
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                          ],
+                                        )),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
@@ -277,23 +288,35 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                 ),
                                 BookList(),
 
-                                const Text(
-                                  'Отзывы',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    Row(
+                                      children: List.generate(
+                                        5,
+                                        (index) => Icon(Icons.star,
+                                            size: 24 * scale,
+                                            color: AppColors.orange),
+                                      ),
+                                    ),
+                                    Text(
+                                      '8.6',
+                                      style: TextStyle(
+                                        fontSize: 18 * scale,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.orange,
+                                      ),
+                                    )
+                                  ],
                                 ),
                                 SizedBox(
                                   height:
-                                      160 * scale, // Фиксируем высоту списка
+                                      250 * scale, // Фиксируем высоту списка
                                   child: ListView.builder(
                                     scrollDirection: Axis
                                         .horizontal, // Горизонтальный скролл
                                     itemCount: reviews.length,
                                     itemBuilder: (context, index) {
-                                      return ReviewCard(
-                                          text: reviews[index], scale: scale);
+                                      return _buildReviewsList();
                                     },
                                   ),
                                 ),
@@ -349,7 +372,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 ),
               ),
               Positioned(
-                top: 680 * scale, // Позиция сверху, чтобы "висел"
+                top: 740 * scale, // Позиция сверху, чтобы "висел"
                 left: 16,
                 right: 16,
                 child: Container(
@@ -436,7 +459,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget _buildReviewsList() {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
     return Container(
-      width: 380 * scale, // Фиксированная ширина карточки
+      width: 350 * scale, // Фиксированная ширина карточки
       margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
       padding: EdgeInsets.all(16 * scale),
       decoration: BoxDecoration(
@@ -491,7 +514,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             children: List.generate(
               5,
               (index) =>
-                  Icon(Icons.star, size: 16 * scale, color: Colors.orange),
+                  Icon(Icons.star, size: 16 * scale, color: AppColors.orange),
             ),
           ),
           SizedBox(height: 8 * scale),
@@ -500,38 +523,26 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           Stack(
             children: [
               SizedBox(
-                height: 160 * scale, // Ограничиваем высоту текста
+                width: 400 * scale, // Ограничиваем высоту текста
                 child: SingleChildScrollView(
-                  physics: NeverScrollableScrollPhysics(), // Отключаем скролл
-                  child: Text(
-                    "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
-                    "Это история о сильной и независимой девушке, которая преодолевает множество трудностей "
-                    "и находит своё счастье.",
-                    style: TextStyle(fontSize: 14 * scale, color: Colors.black),
-                    softWrap: true,
-                  ),
-                ),
+                    physics: NeverScrollableScrollPhysics(), // Отключаем скролл
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: 400),
+                      child: Text(
+                        "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
+                        "Это история о сильной и независимой девушке, которая преодолевает множество трудностей "
+                        "и находит своё счастье.",
+                        style: TextStyle(
+                            fontSize: 14 * scale, color: Colors.black),
+                        softWrap: true, // ✅ Включает перенос строк
+                        maxLines:
+                            null, // ✅ Позволяет неограниченное количество строк
+                        overflow: TextOverflow.visible,
+                      ),
+                    )),
               ),
 
               // Затемнение
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 20 * scale,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.blue.shade100.withOpacity(0.0),
-                        Colors.blue.shade100,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ],
@@ -544,7 +555,7 @@ class ReviewCard extends StatelessWidget {
   final String text;
   final double scale;
 
-  ReviewCard({required this.text, required this.scale});
+  const ReviewCard({required this.text, required this.scale});
 
   @override
   Widget build(BuildContext context) {
