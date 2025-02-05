@@ -1,3 +1,5 @@
+import 'package:booktrack/pages/activityPages.dart';
+import 'package:booktrack/pages/bonusPages.dart';
 import 'package:booktrack/pages/statistikPages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -134,7 +136,7 @@ class ProfilePage extends StatelessWidget {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                ReadingTrackerPage()),
+                                                ActivityPage()),
                                       );
                                     },
                                     scale: scale,
@@ -148,7 +150,9 @@ class ProfilePage extends StatelessWidget {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                BonusHistoryPage()),
+                                                BonusHistoryPage(onBack: () {
+                                                  Navigator.pop(context);
+                                                })),
                                       );
                                     },
                                     scale: scale,
@@ -386,13 +390,6 @@ class ReadingTrackerPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text("Трекер чтения")));
-  }
-}
-
-class BonusHistoryPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("История бонусов")));
   }
 }
 

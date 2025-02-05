@@ -206,6 +206,12 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "simple_gesture_detector",
+      "rootUri": "file:///C:/Users/%D0%95%D0%BB%D0%B8%D0%B7%D0%B0%D0%B2%D0%B5%D1%82%D0%B0/AppData/Local/Pub/Cache/hosted/pub.dev/simple_gesture_detector-0.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "sky_engine",
       "rootUri": "file:///C:/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
@@ -234,6 +240,12 @@
       "rootUri": "file:///C:/Users/%D0%95%D0%BB%D0%B8%D0%B7%D0%B0%D0%B2%D0%B5%D1%82%D0%B0/AppData/Local/Pub/Cache/hosted/pub.dev/string_scanner-1.2.0",
       "packageUri": "lib/",
       "languageVersion": "2.18"
+    },
+    {
+      "name": "table_calendar",
+      "rootUri": "file:///C:/Users/%D0%95%D0%BB%D0%B8%D0%B7%D0%B0%D0%B2%D0%B5%D1%82%D0%B0/AppData/Local/Pub/Cache/hosted/pub.dev/table_calendar-3.0.8",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
     },
     {
       "name": "term_glyph",
@@ -302,7 +314,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-02-02T15:05:00.969702Z",
+  "generated": "2025-02-05T20:22:53.248007Z",
   "generator": "pub",
   "generatorVersion": "3.5.4",
   "flutterRoot": "file:///C:/flutter",

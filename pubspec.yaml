@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   fl_chart: ^0.64.0 
+  table_calendar: ^3.0.8
   easy_pie_chart: ^1.0.1
   flutter_svg: ^2.0.0
   
