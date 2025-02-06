@@ -26,6 +26,7 @@ class AppColors {
   static const textSecondary = Color(0xff636391);
   static const buttonBorder = Color(0xff5775CD);
   static const orange = Color(0xffFD521B);
+  static const orangeLight = Color(0xffFFD3C5);
   static const grey = Color(0xff575757);
 }
 
