@@ -136,7 +136,9 @@ class ProfilePage extends StatelessWidget {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                ActivityPage()),
+                                                ActivityPage(onBack: () {
+                                                  Navigator.pop(context);
+                                                })),
                                       );
                                     },
                                     scale: scale,

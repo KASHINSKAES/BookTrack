@@ -1,48 +1,68 @@
+import 'package:booktrack/icons.dart';
+import 'package:booktrack/widgets/SemiCircleChart.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_pie_chart/easy_pie_chart.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class ActivityPage extends StatefulWidget {
+  final VoidCallback onBack;
+  ActivityPage({super.key, required this.onBack});
   @override
   _ActivityPageState createState() => _ActivityPageState();
 }
 
 class _ActivityPageState extends State<ActivityPage> {
+  final Set<DateTime> _highlightDates = {
+    DateTime(2025, 2, 10),
+    DateTime(2025, 2, 12),
+    DateTime(2025, 2, 13),
+  };
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildDailyGoals(),
-            _buildActivityDays(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      color: Colors.blue,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "Активность",
+        appBar: AppBar(
+          title: Text(
+            'История бонусов',
             style: TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              fontSize: 32 * scale,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-        ],
-      ),
-    );
+          backgroundColor: AppColors.background,
+          leading: IconButton(
+            icon: Icon(
+              size: 35 * scale,
+              MyFlutterApp.back,
+              color: Colors.white,
+            ),
+            onPressed: widget.onBack,
+          ),
+        ),
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+                topRight: Radius.circular(AppDimensions.baseCircual * scale),
+              ),
+            ),
+            child: ListView(
+              children: [
+                _buildDailyGoals(),
+                _buildActivityDays(),
+              ],
+            ),
+          ),
+        ));
   }
 
   Widget _buildDailyGoals() {
@@ -56,7 +76,7 @@ class _ActivityPageState extends State<ActivityPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildPieChart(89, 200, "страниц"),
+              _buildPieChartPol(89, 200, "страниц"),
             ],
           ),
           SizedBox(height: 20),
@@ -85,7 +105,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 height: 100,
                 child: EasyPieChart(
                   children: [
-                    PieData(value: total - value, color: Color(0xffFFD3C5)),
+                    PieData(value: total - value, color: AppColors.orangeLight),
                     PieData(value: total, color: AppColors.orange),
                   ],
                   borderEdge: StrokeCap.round,
@@ -114,39 +134,71 @@ class _ActivityPageState extends State<ActivityPage> {
     );
   }
 
-  Widget _buildActivityDays() {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+  Widget _buildPieChartPol(double value, double total, String unit) {
+    double percentage = value / total;
+    return Column(
+      children: [
+        SizedBox(height: 10),
+        Stack(
+          alignment: Alignment.center,
           children: [
-            Text("Дни активности",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            Expanded(
-              child: TableCalendar(
-                focusedDay: _focusedDay,
-                firstDay: DateTime.utc(2023, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
-                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = selectedDay;
-                    _focusedDay = focusedDay;
-                  });
-                },
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                      color: Colors.orange, shape: BoxShape.circle),
-                  selectedDecoration:
-                      BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                ),
-                headerStyle: HeaderStyle(
-                    formatButtonVisible: false, titleCentered: true),
-              ),
+            SemiCircleChart(
+              progress: percentage,
+            ), // 75% заполнения дуги),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "${value.toStringAsFixed(0)}",
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
+                )
+              ],
             ),
           ],
         ),
+        SizedBox(height: 10),
+        Text(
+          "из $total $unit",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityDays() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Text("Дни активности",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          TableCalendar(
+            focusedDay: _focusedDay,
+            firstDay: DateTime.utc(2023, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            selectedDayPredicate: (day) {
+              return _highlightDates.any((d) => isSameDay(d, day));
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+            },
+            calendarStyle: CalendarStyle(
+              todayDecoration: BoxDecoration(
+                  color: AppColors.background, shape: BoxShape.circle),
+              selectedDecoration: BoxDecoration(
+                  color: AppColors.orange, shape: BoxShape.circle),
+            ),
+            headerStyle:
+                HeaderStyle(formatButtonVisible: false, titleCentered: true),
+          ),
+        ],
       ),
     );
   }
