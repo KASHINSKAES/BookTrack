@@ -28,7 +28,7 @@ class _ActivityPageState extends State<ActivityPage> {
     return Scaffold(
         appBar: AppBar(
           title: Text(
-            'История бонусов',
+            'Активность',
             style: TextStyle(
               fontSize: 32 * scale,
               fontWeight: FontWeight.bold,

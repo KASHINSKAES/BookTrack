@@ -20,4 +20,5 @@ class MyFlutter {
   static const IconData setting2 = IconData(0xe90c, fontFamily: _fontFamily);
   static const IconData statistik = IconData(0xe90f, fontFamily: _fontFamily);
   static const IconData sun = IconData(0xe910, fontFamily: _fontFamily);
+
 }
