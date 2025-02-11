@@ -1,5 +1,7 @@
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
+import 'package:booktrack/pages/languagePages.dart';
+import 'package:booktrack/pages/levelPage.dart';
 import 'package:booktrack/pages/statistikPages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -58,7 +60,8 @@ class ProfilePage extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(top: 18 * scale),
               child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 23 * scale),
+                  padding: EdgeInsets.only(
+                      right: 23 * scale, left: 23 * scale, bottom: 18 * scale),
                   decoration: BoxDecoration(
                       color: Color(0xffF5F5F5),
                       borderRadius: BorderRadius.only(
@@ -106,7 +109,10 @@ class ProfilePage extends StatelessWidget {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (context) => LevelPage()),
+                                            builder: (context) =>
+                                                LevelScreen(onBack: () {
+                                                  Navigator.pop(context);
+                                                })),
                                       );
                                     },
                                     scale: scale,
@@ -147,6 +153,22 @@ class ProfilePage extends StatelessWidget {
                                   MenuItem(
                                     title: "История бонусов",
                                     icon: MyFlutter.bonus,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                BonusHistoryPage(onBack: () {
+                                                  Navigator.pop(context);
+                                                })),
+                                      );
+                                    },
+                                    scale: scale,
+                                  ),
+                                  Divider(color: Color(0xffDCDCDC)),
+                                  MenuItem(
+                                    title: "Любимые цитаты",
+                                    icon: MyFlutterApp.book2,
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -226,7 +248,6 @@ class ProfilePage extends StatelessWidget {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     )),
-                                Divider(color: Color(0xffDCDCDC)),
                                 MenuItem2(
                                   title: "Способы оплаты",
                                   onTap: () {
@@ -241,24 +262,15 @@ class ProfilePage extends StatelessWidget {
                                 ),
                                 Divider(color: Color(0xffDCDCDC)),
                                 MenuItem2(
-                                  title: "Ваши платежи",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => PaymentsPage()),
-                                    );
-                                  },
-                                  scale: scale,
-                                ),
-                                Divider(color: Color(0xffDCDCDC)),
-                                MenuItem2(
                                   title: "Язык интерфейса",
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => LanguagePage()),
+                                          builder: (context) =>
+                                              LanguageScreen(onBack: () {
+                                                Navigator.pop(context);
+                                              })),
                                     );
                                   },
                                   scale: scale,
@@ -381,12 +393,6 @@ class MenuItem2 extends StatelessWidget {
 }
 
 // Заглушки для страниц
-class LevelPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Уровень")));
-  }
-}
 
 class ReadingTrackerPage extends StatelessWidget {
   @override
@@ -406,12 +412,5 @@ class PaymentsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(appBar: AppBar(title: Text("Ваши платежи")));
-  }
-}
-
-class LanguagePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Язык интерфейса")));
   }
 }
