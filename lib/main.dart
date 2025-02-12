@@ -1,4 +1,5 @@
 import 'package:booktrack/pages/profilePage.dart';
+import 'package:intl/date_symbol_data_file.dart';
 import 'package:provider/provider.dart';
 import 'pages/AppState.dart';
 import 'package:booktrack/pages/selectedPage.dart';
@@ -10,6 +11,7 @@ import '/widgets/BookListPage.dart';
 
 void main() {
   runApp(
+    // Инициализация локали
     ChangeNotifierProvider(
       create: (context) => AppState(),
       child: MyApp(),
