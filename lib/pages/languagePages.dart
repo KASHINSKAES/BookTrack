@@ -42,67 +42,60 @@ class _LanguageScreenState extends State<LanguageScreen> {
     ];
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
     return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Язык интерфейса',
-            style: TextStyle(
-              fontSize: 32 * scale,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.background,
-          leading: IconButton(
-            icon: Icon(
-              size: 35 * scale,
-              MyFlutterApp.back,
-              color: Colors.white,
-            ),
-            onPressed: widget.onBack,
+      appBar: AppBar(
+        title: Text(
+          'Язык интерфейса',
+          style: TextStyle(
+            fontSize: 32 * scale,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         backgroundColor: AppColors.background,
-        body: Container(
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-                topRight: Radius.circular(AppDimensions.baseCircual * scale),
-              ),
+        leading: IconButton(
+          icon: Icon(
+            size: 35 * scale,
+            MyFlutterApp.back,
+            color: Colors.white,
+          ),
+          onPressed: widget.onBack,
+        ),
+      ),
+      backgroundColor: AppColors.background,
+      body: Container(
+          height: MediaQuery.of(context).size.height,
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 255, 255, 255),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+              topRight: Radius.circular(AppDimensions.baseCircual * scale),
             ),
-            child: Card(
-              shadowColor: Colors.black,
-              elevation: 10,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12 * scale)),
-              child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: languages.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              title: Text(languages[index],
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
-                              trailing: _selectedIndex == index
-                                  ? Icon(Icons.check, color: Colors.blue)
-                                  : null,
-                              onTap: () {
-                                setState(() {
-                                  _selectedIndex = index;
-                                });
-                                _saveSelectedLanguage(index);
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  )),
-            )));
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: languages.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(languages[index],
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      trailing: _selectedIndex == index
+                          ? Icon(Icons.check, color: Colors.blue)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                        _saveSelectedLanguage(index);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          )),
+    );
   }
 }

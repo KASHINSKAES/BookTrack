@@ -1,3 +1,4 @@
+import 'package:booktrack/pages/PaymentMethodsPage.dart';
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
 import 'package:booktrack/pages/languagePages.dart';
@@ -255,7 +256,9 @@ class ProfilePage extends StatelessWidget {
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              PaymentMethodsPage()),
+                                              PaymentMethodsPage(onBack: () {
+                                                Navigator.pop(context);
+                                              })),
                                     );
                                   },
                                   scale: scale,
@@ -401,12 +404,7 @@ class ReadingTrackerPage extends StatelessWidget {
   }
 }
 
-class PaymentMethodsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Способы оплаты")));
-  }
-}
+
 
 class PaymentsPage extends StatelessWidget {
   @override
