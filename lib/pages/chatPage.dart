@@ -1,10 +1,8 @@
+import 'package:booktrack/ChatDetailPage.dart';
+import 'package:booktrack/icons.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-
-import '/widgets/constants.dart';
-
-import '/chatDetailPage.dart';
-import '/icons.dart';
 
 class ChatPage extends StatelessWidget {
   final VoidCallback onBack;

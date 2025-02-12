@@ -1,6 +1,7 @@
+import 'package:booktrack/icons.dart';
+import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
 import 'package:flutter/material.dart';
-import '/icons.dart';
-import '/widgets/AdaptiveBookGrid.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 

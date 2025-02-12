@@ -11,8 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl: ^0.18.0
-  intl_translation: ^0.20.1
+  intl: ^0.17.0
+  intl_translation: 0.18.0
   fl_chart: ^0.64.0 
   table_calendar: ^3.0.8
   easy_pie_chart: ^1.0.1

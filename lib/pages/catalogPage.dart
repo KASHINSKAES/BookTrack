@@ -1,6 +1,6 @@
+import 'package:booktrack/icons.dart';
+import 'package:booktrack/widgets/BookListPage.dart';
 import 'package:flutter/material.dart';
-import '/widgets/BookListPage.dart';
-import '/icons.dart';
 
 // CatalogPage с обработчиком нажатий на категории
 class CatalogPage extends StatelessWidget {

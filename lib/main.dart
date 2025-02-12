@@ -1,17 +1,20 @@
-import 'package:booktrack/pages/profilePage.dart';
-import 'package:intl/date_symbol_data_file.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'pages/AppState.dart';
+import 'package:booktrack/pages/profilePage.dart';
 import 'package:booktrack/pages/selectedPage.dart';
-import 'package:flutter/material.dart';
 import '/icons.dart';
 import '/pages/mainPage.dart';
 import '/pages/catalogPage.dart';
 import '/widgets/BookListPage.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/intl_standalone.dart';
 
-void main() {
+void main() async {
+  // Инициализация локали
+  await initializeDateFormatting('ru_RU', null);
   runApp(
-    // Инициализация локали
     ChangeNotifierProvider(
       create: (context) => AppState(),
       child: MyApp(),
