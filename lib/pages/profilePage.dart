@@ -1,16 +1,18 @@
+import 'dart:math';
+
+import 'package:booktrack/MyFlutterIcons.dart';
+import 'package:booktrack/icons.dart';
 import 'package:booktrack/pages/PaymentMethodsPage.dart';
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
+import 'package:booktrack/pages/chatPage.dart';
 import 'package:booktrack/pages/languagePages.dart';
 import 'package:booktrack/pages/levelPage.dart';
+import 'package:booktrack/pages/loveQuote.dart';
 import 'package:booktrack/pages/statistikPages.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import '/widgets/constants.dart';
-import '/MyFlutter_icons.dart';
-import 'chatPage.dart';
-import '/icons.dart';
-import 'dart:math';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -175,7 +177,7 @@ class ProfilePage extends StatelessWidget {
                                         context,
                                         MaterialPageRoute(
                                             builder: (context) =>
-                                                BonusHistoryPage(onBack: () {
+                                                loveQuotes(onBack: () {
                                                   Navigator.pop(context);
                                                 })),
                                       );
@@ -392,23 +394,5 @@ class MenuItem2 extends StatelessWidget {
           ),
       onTap: onTap,
     );
-  }
-}
-
-// Заглушки для страниц
-
-class ReadingTrackerPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Трекер чтения")));
-  }
-}
-
-
-
-class PaymentsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(appBar: AppBar(title: Text("Ваши платежи")));
   }
 }

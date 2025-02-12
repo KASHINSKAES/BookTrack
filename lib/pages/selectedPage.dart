@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:booktrack/icons.dart';
+import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import '/widgets/AdaptiveBookGrid.dart';
-import '/icons.dart';
-import '/widgets/constants.dart';
+
 import 'package:provider/provider.dart';
 import 'AppState.dart';
 

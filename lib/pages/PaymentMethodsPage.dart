@@ -1,13 +1,14 @@
+import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 final List<Map<String, dynamic>> paymentHistory = [
-  {
-    "amount": 250,
-    "date_bonus": DateTime(2024,1,5),
-    "reason": "Достигнут новый уровень"
-  }
+  {"amount": 250, "date": DateTime(2024, 1, 5), "reason": "Покупка книги"},
+  {"amount": 350, "date": DateTime(2024, 1, 5), "reason": "Оплата подписки"},
+  {"amount": 250, "date": DateTime(2024, 2, 5), "reason": "Покупка книги"},
+  {"amount": 250, "date": DateTime(2024, 3, 5), "reason": "Покупка книги"},
 ];
 final List<Map<String, dynamic>> paymentCard = [
   {
@@ -62,7 +63,7 @@ class PaymentMethodsPage extends StatelessWidget {
         ),
         backgroundColor: AppColors.background,
         body: Container(
-            padding: EdgeInsets.symmetric(vertical: 19 * scale),
+            padding: EdgeInsets.symmetric(vertical: 10 * scale),
             height: MediaQuery.of(context).size.height,
             decoration: BoxDecoration(
               color: const Color(0xffF5F5F5),
@@ -73,9 +74,10 @@ class PaymentMethodsPage extends StatelessWidget {
             ),
             child: ListView(
               padding: EdgeInsets.symmetric(
-                  vertical: 19 * scale, horizontal: 23 * scale),
+                  vertical: 19 * scale, horizontal: 16 * scale),
               children: [
                 _buildCard(scale),
+                _builHistoryPaument(scale),
               ],
             )));
   }
@@ -172,4 +174,88 @@ Widget _buildCard(double scale) {
 
 extension E on String {
   String lastChars(int n) => substring(length - n);
+}
+
+Map<String, List<Map<String, dynamic>>> groupBonusHistoryByMonth(
+    List<Map<String, dynamic>> history) {
+  Map<String, List<Map<String, dynamic>>> groupedHistory = {};
+
+  for (var entry in history) {
+    DateTime date = entry['date'];
+    String monthKey =
+        DateFormat('LLLL yyyy', 'ru').format(date); // Пример: "январь 2024"
+
+    if (!groupedHistory.containsKey(monthKey)) {
+      groupedHistory[monthKey] = [];
+    }
+
+    groupedHistory[monthKey]!.add(entry);
+  }
+
+  return groupedHistory;
+}
+
+Widget _builHistoryPaument(double scale) {
+  Map<String, List<Map<String, dynamic>>> groupedHistory =
+      groupBonusHistoryByMonth(paymentHistory);
+  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(
+      "История оплаты",
+      style: TextStyle(color: AppColors.textPrimary, fontSize: 24 * scale),
+    ),
+    SizedBox(height: 10),
+    ...groupedHistory.entries.map((entry) {
+      String month = entry.key; // Название месяца
+      List<Map<String, dynamic>> bonuses = entry.value;
+
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(
+          month[0].toUpperCase() + month.substring(1),
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 18 * scale),
+        ),
+        SizedBox(height: 10),
+        ...bonuses.map((bonus) {
+          return Padding(
+              padding: EdgeInsets.symmetric(vertical: 10 * scale),
+              child: Container(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 5 * scale, vertical: 10 * scale),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 4,
+                        offset: Offset(4, 8), // Shadow position
+                      ),
+                    ],
+                    borderRadius: BorderRadius.all(
+                        Radius.circular(AppDimensions.baseCircual * scale)),
+                  ),
+                  child: ListTile(
+                    title: Text(
+                      "${bonus['reason']}",
+                      style: TextStyle(
+                          color: AppColors.textPrimary, fontSize: 18 * scale),
+                    ),
+                    leading: Icon(
+                      MyFlutter.bonus,
+                      size: 48 * scale,
+                      color: AppColors.orange,
+                    ),
+                    subtitle: Text(
+                      'Списано ${DateFormat('dd MMMM', 'ru').format(bonus['date'])}',
+                      style: TextStyle(
+                          color: AppColors.textPrimary, fontSize: 14 * scale),
+                      softWrap: false,
+                    ),
+                    trailing: Text('-${bonus['amount']}P',
+                        style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20 * scale)),
+                  )));
+        })
+      ]);
+    }).toList(),
+  ]);
 }
