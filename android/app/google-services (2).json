@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "178335024089",
+    "project_id": "izla-a2a3d",
+    "storage_bucket": "izla-a2a3d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:178335024089:android:bb1ca488b4b6ef0f37cfc8",
+        "android_client_info": {
+          "package_name": "com.example.booktrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAT3nwoe2ZMG7JMpEtgDtq2q1rJ9nam0Fw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,3 +1,6 @@
+import 'package:booktrack/firebase_options.dart';
+import 'package:booktrack/pages/ReadingStatsProvider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
@@ -7,16 +10,22 @@ import 'package:booktrack/pages/selectedPage.dart';
 import '/icons.dart';
 import '/pages/mainPage.dart';
 import '/pages/catalogPage.dart';
-import '/widgets/BookListPage.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/intl_standalone.dart';
+import '/widgets/BookListPage.dart';  
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // Используйте конфигурацию
+  );
   // Инициализация локали
   await initializeDateFormatting('ru_RU', null);
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppState(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AppState()),
+        ChangeNotifierProvider(
+            create: (context) => ReadingStatsProvider()..loadData())
+      ],
       child: MyApp(),
     ),
   );

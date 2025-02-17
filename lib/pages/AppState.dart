@@ -8,4 +8,5 @@ class AppState extends ChangeNotifier {
     readingMinutesPurpose = newPurpose;
     notifyListeners(); // Уведомляет подписчиков об изменении
   }
+  
 }
