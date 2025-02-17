@@ -1,9 +1,87 @@
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/AppState.dart';
+import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:easy_pie_chart/easy_pie_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
+
+Future<Map<String, List<int>>> fetchReadingStats(String type) async {
+  final snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc('user_1')
+      .collection('reading_goals')
+      .orderBy('date')
+      .get();
+
+  final Map<String, List<int>> weeklyData = {};
+
+  for (var doc in snapshot.docs) {
+    final data = doc.data();
+    final date = (data['date'] as Timestamp).toDate();
+    final weekKey =
+        _getWeekKey(date); // Получаем ключ недели (например, "11.11-17.11")
+
+    // Инициализируем список для недели, если его ещё нет
+    if (!weeklyData.containsKey(weekKey)) {
+      weeklyData[weekKey] = List.filled(7, 0);
+    }
+
+    final weekday = (date.weekday % 7); // Приводим к началу недели (ВС–СБ)
+    if (type == "pages") {
+      weeklyData[weekKey]![weekday] =
+          (weeklyData[weekKey]![weekday] + (data['readPages'] ?? 0)).toInt();
+    } else if (type == "minutes") {
+      weeklyData[weekKey]![weekday] =
+          (weeklyData[weekKey]![weekday] + (data['readMinutes'] ?? 0)).toInt();
+    }
+  }
+
+  return weeklyData;
+}
+
+Future<Map<String, int>> fetchDailyReadingStats(String type) async {
+  final snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc('user_1')
+      .collection('reading_goals')
+      .orderBy('date')
+      .get();
+
+  final Map<String, int> dailyData = {};
+
+  for (var doc in snapshot.docs) {
+    final data = doc.data();
+    final date = (data['date'] as Timestamp).toDate();
+    final dayKey =
+        _formatDate(date); // Форматируем дату в строку (например, "2023-11-15")
+
+    if (type == "pages") {
+      dailyData[dayKey] =
+          ((dailyData[dayKey] ?? 0) + (data['readPages'] ?? 0)).toInt();
+    } else if (type == "minutes") {
+      dailyData[dayKey] =
+          ((dailyData[dayKey] ?? 0) + (data['readMinutes'] ?? 0)).toInt();
+    }
+  }
+
+  return dailyData;
+}
+
+// Вспомогательная функция для форматирования даты
+String _formatDate(DateTime date) {
+  return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+}
+
+// Вспомогательная функция для получения ключа недели
+String _getWeekKey(DateTime date) {
+  final startOfWeek = date.subtract(Duration(days: date.weekday % 7));
+  final endOfWeek = startOfWeek.add(Duration(days: 6));
+  return "${startOfWeek.day}.${startOfWeek.month}-${endOfWeek.day}.${endOfWeek.month}";
+}
 
 class StatisticsPage extends StatefulWidget {
   final VoidCallback onBack;
@@ -14,17 +92,174 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
+  int selectedWeekPages = 0;
+  int selectedWeekMinutes = 0;
   int selectedWeek = 0;
-
   int selectedDay = 0;
+  Map<String, List<int>> weeklyData = {};
+  Map<String, int> dailyDataPages = {};
+  Map<String, int> dailyDataMinutes = {};
+  Map<String, int> dailyGoalPages = {}; // Целевые значения для страниц
+  Map<String, int> dailyGoalMinutes = {};
+  bool isLoading = true;
 
-  final List<String> weeks = ["11.11-17.11", "18.11-24.11", "25.11-01.12"];
+  @override
+  void initState() {
+    super.initState();
+    _loadDataMinutes();
+    _loadDataPages();
+    _loadData();
+  }
 
-  final List<String> days = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+  Future<void> _loadDataMinutes() async {
+    final data = await fetchReadingStats("minutes");
+    setState(() {
+      weeklyData = data;
+      isLoading = false;
+    });
+  }
+
+  Future<void> _loadDataPages() async {
+    final data = await fetchReadingStats("pages");
+    setState(() {
+      weeklyData = data;
+      isLoading = false;
+    });
+  }
+
+  Future<void> _loadData() async {
+    await _loadDataPagesDate();
+    await _loadDataMinutesDate();
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<void> _loadDataPagesDate() async {
+    final data = await fetchDailyReadingStats("pages");
+    setState(() {
+      dailyDataPages = data;
+    });
+  }
+
+  Future<void> _loadDataMinutesDate() async {
+    final data = await fetchDailyReadingStats("minutes");
+    setState(() {
+      dailyDataMinutes = data;
+    });
+  }
+
+  // final List<String> weeks = ["11.11-17.11", "18.11-24.11", "25.11-01.12"];
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ReadingStatsProvider>(context);
+
+    if (provider.dailyDataPages.isEmpty) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    final weeks = weeklyData.keys.toList();
+    final currentWeekDataPages =
+        weeklyData[weeks[selectedWeekPages]] ?? List.filled(7, 0);
+    final currentWeekDataMinutes =
+        weeklyData[weeks[selectedWeekMinutes]] ?? List.filled(7, 0);
+
+    if (provider.dailyDataPages.isEmpty) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    final days = provider.dailyDataPages.keys.toList();
+    final selectedDate = provider.selectedDate;
+    final pages = provider.pages;
+    final minutes = provider.minutes;
+    final goalPages = provider.goalPages;
+    final goalMinutes = provider.goalMinutes;
+
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
+    Widget _buildDaySelector(ReadingStatsProvider provider) {
+      final days = provider.dailyDataPages.keys.toList();
+      if (days.isEmpty) {
+        return Center(child: Text("Нет данных"));
+      }
+
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: Icon(Icons.chevron_left),
+            onPressed: provider.selectedDay > 0
+                ? () => provider.setSelectedDay(provider.selectedDay - 1)
+                : null,
+          ),
+          Text(days[provider.selectedDay],
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          IconButton(
+            icon: Icon(Icons.chevron_right),
+            onPressed: provider.selectedDay < days.length - 1
+                ? () => provider.setSelectedDay(provider.selectedDay + 1)
+                : null,
+          ),
+        ],
+      );
+    }
+
+    Widget _buildWeekSelector() {
+      final weeks = weeklyData.keys.toList();
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.chevron_left),
+                onPressed: selectedWeek > 0
+                    ? () => setState(() => selectedWeek--)
+                    : null,
+              ),
+              Text(weeks[selectedWeek],
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: Icon(Icons.chevron_right),
+                onPressed: selectedWeek < weeks.length - 1
+                    ? () => setState(() => selectedWeek++)
+                    : null,
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    Widget buildChartCard2({required String title, required Widget child}) {
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                    softWrap: true,
+                  ),
+                  _buildWeekSelector(),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(height: 200, child: child),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -58,38 +293,42 @@ class _StatisticsPageState extends State<StatisticsPage> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                _buildChartCard2(
+                buildChartCard2(
                   title: "Страницы",
-                  child: _PagesBarChart(),
+                  child: _PagesBarChart(
+                    readingPages: currentWeekDataPages,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                _buildChartCard2(
+                buildChartCard2(
                   title: "Время чтения",
-                  child: _ReadingTimeLineChart(),
+                  child: _ReadingTimeLineChart(
+                    readingTime: currentWeekDataMinutes,
+                  ),
                 ),
                 const SizedBox(height: 20),
-                _buildDaySelector(),
+                _buildDaySelector(provider),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildChartCard(
                       title: "Время чтения",
                       child: TodayPieChart(
-                        progress: 35,
+                        progress: minutes.toDouble(),
                         title: 'минут',
-                        value: '35',
+                        value: '$minutes',
                         icon: MyFlutterApp.clock,
-                        progressWant: 60,
+                        progressWant: goalMinutes.toDouble(),
                       ),
                     ),
                     _buildChartCard(
                       title: "Количество страниц",
                       child: TodayPieChart(
-                        progress: 268,
+                        progress: pages.toDouble(),
                         title: 'страниц',
-                        value: '268',
+                        value: '$pages',
                         icon: MyFlutterApp.book2,
-                        progressWant: 400,
+                        progressWant: goalPages.toDouble(),
                       ),
                     )
                   ],
@@ -109,85 +348,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
             ),
           ),
         ));
-  }
-
-  Widget _buildChartCard2({required String title, required Widget child}) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                  softWrap: true,
-                ),
-                _buildWeekSelector(),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SizedBox(height: 200, child: child),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeekSelector() {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.chevron_left),
-              onPressed: selectedWeek > 0
-                  ? () => setState(() => selectedWeek--)
-                  : null,
-            ),
-            Text(weeks[selectedWeek],
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            IconButton(
-              icon: Icon(Icons.chevron_right),
-              onPressed: selectedWeek < weeks.length - 1
-                  ? () => setState(() => selectedWeek++)
-                  : null,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDaySelector() {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(Icons.chevron_left),
-              onPressed:
-                  selectedDay > 0 ? () => setState(() => selectedDay--) : null,
-            ),
-            Text(days[selectedDay],
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            IconButton(
-              icon: Icon(Icons.chevron_right),
-              onPressed: selectedDay < days.length - 1
-                  ? () => setState(() => selectedDay++)
-                  : null,
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Widget _buildChartCard({required String title, required Widget child}) {
@@ -219,7 +379,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
 }
 
 class _PagesBarChart extends StatelessWidget {
-  final List<int> pagesPerDay = [120, 180, 250, 160, 170, 200, 70];
+  final List<int> readingPages;
+
+  const _PagesBarChart({required this.readingPages});
 
   @override
   Widget build(BuildContext context) {
@@ -249,12 +411,12 @@ class _PagesBarChart extends StatelessWidget {
         borderData: FlBorderData(show: false),
         gridData: FlGridData(show: true, drawVerticalLine: false),
         barGroups: List.generate(
-          pagesPerDay.length,
+          readingPages.length,
           (index) => BarChartGroupData(
             x: index,
             barRods: [
               BarChartRodData(
-                  toY: pagesPerDay[index].toDouble(),
+                  toY: readingPages[index].toDouble(),
                   color: Colors.blue,
                   width: 16,
                   borderRadius: BorderRadius.only(
@@ -269,7 +431,9 @@ class _PagesBarChart extends StatelessWidget {
 }
 
 class _ReadingTimeLineChart extends StatelessWidget {
-  final List<int> readingTime = [60, 120, 30, 45, 80, 20, 100];
+  final List<int> readingTime;
+
+  const _ReadingTimeLineChart({required this.readingTime});
 
   @override
   Widget build(BuildContext context) {
@@ -385,33 +549,31 @@ class _BooksReadToday extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text("Что вы читали сегодня",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 150,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: bookCovers.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SvgPicture.asset(
-                  bookCovers[index],
-                  width: 150 * scale,
-                  height: 200 * scale,
-                  fit: BoxFit.cover,
-                ),
-              ),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Text("Что вы читали сегодня",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      const SizedBox(height: 10),
+      SizedBox(
+        height: 150,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: bookCovers.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (context, index) => ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SvgPicture.asset(
+              bookCovers[index],
+              width: 150 * scale,
+              height: 200 * scale,
+              fit: BoxFit.cover,
             ),
           ),
-        ]);
+        ),
+      ),
+    ]);
   }
 }
