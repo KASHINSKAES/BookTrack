@@ -96,7 +96,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
   int selectedWeekMinutes = 0;
   int selectedWeek = 0;
   int selectedDay = 0;
-  Map<String, List<int>> weeklyData = {};
+  
+  Map<String, List<int>> weeklyDataPages = {};
+  Map<String, List<int>> weeklyDataMinutes = {};
   Map<String, int> dailyDataPages = {};
   Map<String, int> dailyDataMinutes = {};
   Map<String, int> dailyGoalPages = {}; // Целевые значения для страниц
@@ -114,7 +116,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Future<void> _loadDataMinutes() async {
     final data = await fetchReadingStats("minutes");
     setState(() {
-      weeklyData = data;
+      weeklyDataMinutes = data;
       isLoading = false;
     });
   }
@@ -122,7 +124,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   Future<void> _loadDataPages() async {
     final data = await fetchReadingStats("pages");
     setState(() {
-      weeklyData = data;
+      weeklyDataPages = data;
       isLoading = false;
     });
   }
@@ -159,18 +161,19 @@ class _StatisticsPageState extends State<StatisticsPage> {
       return Center(child: CircularProgressIndicator());
     }
 
-    final weeks = weeklyData.keys.toList();
+    final weeksMinutes = weeklyDataMinutes.keys.toList();
+    final weeksPages = weeklyDataPages.keys.toList();
     final currentWeekDataPages =
-        weeklyData[weeks[selectedWeekPages]] ?? List.filled(7, 0);
+        weeklyDataPages[weeksPages[selectedWeekPages]] ?? List.filled(7, 0);
     final currentWeekDataMinutes =
-        weeklyData[weeks[selectedWeekMinutes]] ?? List.filled(7, 0);
+        weeklyDataMinutes[weeksMinutes[selectedWeekMinutes]] ?? List.filled(7, 0);
 
     if (provider.dailyDataPages.isEmpty) {
       return Center(child: CircularProgressIndicator());
     }
 
-    final days = provider.dailyDataPages.keys.toList();
-    final selectedDate = provider.selectedDate;
+    /*final days = provider.dailyDataPages.keys.toList();
+    final selectedDate = provider.selectedDate;*/
     final pages = provider.pages;
     final minutes = provider.minutes;
     final goalPages = provider.goalPages;
@@ -206,7 +209,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     }
 
     Widget _buildWeekSelector() {
-      final weeks = weeklyData.keys.toList();
+      final weeks = weeklyDataPages.keys.toList();
       return StatefulBuilder(
         builder: (context, setState) {
           return Row(
