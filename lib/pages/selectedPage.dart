@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/timerAndPages.dart';
 import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -191,7 +192,10 @@ class _selectedPage extends State<selectedPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => TimerPage()),
+                                          builder: (context) => TimerPage(onBack: () {
+                                                Navigator.pop(context);
+                                              },
+                                          )),
                                     );
                                   },
                                 ),
@@ -322,59 +326,6 @@ class BookList extends StatelessWidget {
   }
 }
 
-class TimerPage extends StatelessWidget {
-  final myController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Timer Page"),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: myController,
-              decoration: InputDecoration(
-                labelText: "Enter Reading Minutes",
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                final numberPattern = RegExp(r'\d+');
-                final matches = numberPattern.allMatches(myController.text);
-
-                if (matches.isNotEmpty) {
-                  final extractedNumber =
-                      matches.map((match) => match.group(0)).join();
-                  final enteredMinutes = int.parse(extractedNumber) ?? 0;
-
-                  if (enteredMinutes > 0) {
-                    // Обновляем значение в AppState
-                    Provider.of<AppState>(context, listen: false)
-                        .updateReadingMinutesPurpose(enteredMinutes);
-                    Navigator.pop(
-                        context); // Возвращаемся на предыдущую страницу
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Please enter a valid number!")),
-                    );
-                  }
-                }
-              },
-              child: Text("Submit"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class AllBooksPage extends StatelessWidget {
   @override

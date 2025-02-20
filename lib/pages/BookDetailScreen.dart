@@ -1,5 +1,6 @@
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/pages/selectedPage.dart';
+import 'package:booktrack/pages/textBook.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -394,7 +395,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                       ElevatedButton(
                           style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.background),
-                          onPressed: () {},
+                          onPressed: () {Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                            textBook(onBack: () {
+                                                Navigator.pop(context);
+                                              }
+
+                            )));
+                          },
                           child: Row(
                             children: [
                               Icon(
@@ -482,7 +492,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               CircleAvatar(
                 radius: 20 * scale,
                 backgroundImage: NetworkImage(
-                    'https://randomuser.me/api/portraits/women/44.jpg'),
+                    ''),
               ),
               SizedBox(width: 10 * scale),
               Expanded(
