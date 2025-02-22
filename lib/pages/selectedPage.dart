@@ -26,19 +26,20 @@ class _selectedPage extends State<selectedPage> {
   Timer? _readingTimer; // Таймер для отслеживания минут чтения
 
   // Форматированное время для обратного отсчёта
-  String get _formattedTime {
-    final hours = (_totalTimeInSeconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes =
-        ((_totalTimeInSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_totalTimeInSeconds % 60).toString().padLeft(2, '0');
-    return "$hours:$minutes:$seconds";
-  }
 
   @override
   void initState() {
     super.initState();
     final appState = Provider.of<AppState>(context, listen: false);
-    _totalTimeInSeconds = appState.readingMinutesPurpose * 60;
+    _totalTimeInSeconds = appState.readingMinutesPurpose;
+  }
+
+  String get formattedTime {
+    final hours = (_totalTimeInSeconds ~/ 3600).toString().padLeft(2, '0');
+    final minutes =
+        ((_totalTimeInSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_totalTimeInSeconds % 60).toString().padLeft(2, '0');
+    return "$hours:$minutes:$seconds";
   }
 
   // Запуск обоих таймеров
@@ -71,7 +72,7 @@ class _selectedPage extends State<selectedPage> {
     super.didChangeDependencies();
     final appState = Provider.of<AppState>(context);
     setState(() {
-      _totalTimeInSeconds = appState.readingMinutesPurpose * 60;
+      _totalTimeInSeconds = appState.readingMinutesPurpose;
     });
   }
 
@@ -104,7 +105,7 @@ class _selectedPage extends State<selectedPage> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final readingMinutesPurpose = appState.readingMinutesPurpose;
+    final readingMinutesPurpose = appState.readingMinutesPurpose / 60;
     final screenWidth = MediaQuery.of(context).size.width;
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
@@ -167,7 +168,7 @@ class _selectedPage extends State<selectedPage> {
                                       children: [
                                     // Отображение таймера обратного отсчёта
                                     Text(
-                                      _formattedTime,
+                                      formattedTime,
                                       style: TextStyle(
                                           fontSize: 32 * scale,
                                           fontWeight: FontWeight.bold,
@@ -176,7 +177,7 @@ class _selectedPage extends State<selectedPage> {
 
                                     // Отображение минут чтения
                                     Text(
-                                      '$readingMinutes/$readingMinutesPurpose минут',
+                                      '$readingMinutes/${readingMinutesPurpose.round()} минут',
                                       style: TextStyle(
                                         fontSize: 16 * scale,
                                         color: Colors.white,
@@ -192,10 +193,11 @@ class _selectedPage extends State<selectedPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => TimerPage(onBack: () {
-                                                Navigator.pop(context);
-                                              },
-                                          )),
+                                          builder: (context) => TimerPage(
+                                                onBack: () {
+                                                  Navigator.pop(context);
+                                                },
+                                              )),
                                     );
                                   },
                                 ),
@@ -325,7 +327,6 @@ class BookList extends StatelessWidget {
     );
   }
 }
-
 
 class AllBooksPage extends StatelessWidget {
   @override

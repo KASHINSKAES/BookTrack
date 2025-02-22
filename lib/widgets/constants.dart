@@ -24,6 +24,7 @@ class AppColors {
   static const background = Color(0xff5775CD);
   static const textPrimary = Color(0xff03044E);
   static const textSecondary = Color(0xff636391);
+  static const blueColor = Color(0xff6699FF);
   static const buttonBorder = Color(0xff5775CD);
   static const orange = Color(0xffFD521B);
   static const orangeLight = Color(0xffFFD3C5);
