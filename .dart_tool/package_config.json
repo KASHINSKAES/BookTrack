@@ -194,6 +194,12 @@
       "languageVersion": "3.7"
     },
     {
+      "name": "flutter_credit_card",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/flutter_credit_card-3.0.7",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "flutter_lints",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/flutter_lints-5.0.0",
       "packageUri": "lib/",
@@ -566,7 +572,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-02-20T19:35:30.565276Z",
+  "generated": "2025-02-23T13:42:05.681684Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

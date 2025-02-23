@@ -1,5 +1,6 @@
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/cardForm.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -41,6 +42,7 @@ class PaymentMethodsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
         appBar: AppBar(
           title: Text(
@@ -76,14 +78,14 @@ class PaymentMethodsPage extends StatelessWidget {
               padding: EdgeInsets.symmetric(
                   vertical: 19 * scale, horizontal: 16 * scale),
               children: [
-                _buildCard(scale),
+                _buildCard(scale, context),
                 _builHistoryPaument(scale),
               ],
             )));
   }
 }
 
-Widget _buildCard(double scale) {
+Widget _buildCard(double scale, BuildContext context) {
   return Container(
     padding: EdgeInsets.symmetric(horizontal: 19 * scale, vertical: 20 * scale),
     decoration: BoxDecoration(
@@ -111,28 +113,77 @@ Widget _buildCard(double scale) {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              Container(
-                width: 130 * scale,
-                height: 95 * scale,
-                padding: EdgeInsets.symmetric(
-                    horizontal: 9 * scale, vertical: 5 * scale),
-                margin: const EdgeInsets.only(top: 15),
-                decoration: BoxDecoration(
-                  color: const Color(0xffB8BEF6),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Icon(MyFlutterApp.back, size: 24 * scale),
-                    SizedBox(height: 15 * scale),
-                    Text("Добавить карту",
-                        style: TextStyle(
-                            color: AppColors.textPrimary, fontSize: 15 * scale))
-                  ],
-                ),
-              ),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent, // Прозрачный фон
+                    elevation: 0, // Убираем тень
+                    padding: EdgeInsets.zero, // Убираем внутренние отступы
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(12.0), // Скругление углов
+                    ),
+                  ),
+                  child: Container(
+                      width: 130 * scale,
+                      height: 95 * scale,
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 9 * scale, vertical: 5 * scale),
+                      margin: const EdgeInsets.only(top: 15),
+                      decoration: BoxDecoration(
+                        color: const Color(0xffB8BEF6),
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(MyFlutterApp.back, size: 24 * scale),
+                            SizedBox(height: 15 * scale),
+                            Text("Добавить карту",
+                                style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 15 * scale))
+                          ])),
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      barrierDismissible: false, // user must tap button!
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text(
+                            "Введите данные карты",
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 24 * scale,
+                            ),
+                          ),
+                          content: SingleChildScrollView(
+                            child: ListBody(
+                              children: <Widget>[
+                                CardFormScreen(
+                                  onSave: (cardData) {
+                                    // Закрываем диалог
+                                    Navigator.of(context).pop();
+                                    // Обрабатываем данные карты
+                                    print('Данные карты: $cardData');
+                                    // Здесь можно отправить данные на сервер или обновить состояние
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: <Widget>[
+                            TextButton(
+                              child: const Text('Закрыть'),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }),
               ...paymentCard.map((card) => Container(
                     width: 130 * scale,
                     height: 95 * scale,
