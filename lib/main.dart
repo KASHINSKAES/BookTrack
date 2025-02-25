@@ -1,8 +1,10 @@
 import 'package:booktrack/firebase_options.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
+import 'package:booktrack/pages/loadingScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'pages/AppState.dart';
@@ -11,25 +13,25 @@ import 'package:booktrack/pages/selectedPage.dart';
 import '/icons.dart';
 import '/pages/mainPage.dart';
 import '/pages/catalogPage.dart';
-import '/widgets/BookListPage.dart';  
+import '/widgets/BookListPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // Используйте конфигурацию
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Инициализация локали
   await initializeDateFormatting('ru_RU', null);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
         ChangeNotifierProvider(
             create: (context) => ReadingStatsProvider()..loadData()),
-            ChangeNotifierProvider(
-      create: (context) => SettingsProvider())
+        ChangeNotifierProvider(create: (context) => SettingsProvider()),
       ],
-      child: MyApp(),
+      child: const MyApp(), // Используем MyApp как корневой виджет
     ),
   );
 }
@@ -42,7 +44,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'MPLUSRounded1c'),
-      home: const BottomNavigationBarEX(),
+      home: const LoadingScreen(), // Загрузочный экран как первый экран
     );
   }
 }
@@ -60,16 +62,14 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
 
   void _onCategoryTap(String category) {
     setState(() {
-      _selectedCategory =
-          category; // Выбираем категорию для отображения BookListPage
+      _selectedCategory = category;
     });
   }
 
   void _onItemTap(int index) {
     setState(() {
       _selectedIndex = index;
-      _selectedCategory =
-          null; // Сбрасываем категорию, чтобы вернуться на основную страницу
+      _selectedCategory = null;
     });
   }
 
@@ -77,8 +77,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
       BuildContext context, Function(String) onCategoryTap) {
     return <Widget>[
       const MainPage(),
-      CatalogPage(
-          onCategoryTap: onCategoryTap), // Передача обработчика в CatalogPage
+      CatalogPage(onCategoryTap: onCategoryTap),
       selectedPage(),
       ProfilePage(),
     ];
@@ -89,10 +88,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
     return Scaffold(
       body: Stack(
         children: [
-          // Основное содержимое
           _mainPages(context, _onCategoryTap)[_selectedIndex],
-
-          // Страница с книгами (если выбрана категория)
           if (_selectedCategory != null)
             Positioned.fill(
               child: Align(
@@ -101,7 +97,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
                   category: _selectedCategory!,
                   onBack: () {
                     setState(() {
-                      _selectedCategory = null; // Убираем BookListPage
+                      _selectedCategory = null;
                     });
                   },
                 ),
