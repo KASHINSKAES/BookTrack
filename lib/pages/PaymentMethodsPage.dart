@@ -147,39 +147,40 @@ Widget _buildCard(double scale, BuildContext context) {
                   onPressed: () {
                     showDialog<void>(
                       context: context,
-                      barrierDismissible: false, // user must tap button!
+                      barrierDismissible:
+                          false, // пользователь должен нажать кнопку!
                       builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text(
-                            "Введите данные карты",
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 24 * scale,
+                        return Dialog(
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxHeight: MediaQuery.of(context).size.height *
+                                  0.8, // Ограничиваем высоту
                             ),
-                          ),
-                          content: SingleChildScrollView(
-                            child: ListBody(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
-                                CardFormScreen(
-                                  onSave: (cardData) {
-                                    // Закрываем диалог
+                                Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Text(
+                                    "Введите данные карты",
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 24 * scale,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: AddCardScreen(),
+                                ),
+                                TextButton(
+                                  child: const Text('Закрыть'),
+                                  onPressed: () {
                                     Navigator.of(context).pop();
-                                    // Обрабатываем данные карты
-                                    print('Данные карты: $cardData');
-                                    // Здесь можно отправить данные на сервер или обновить состояние
                                   },
                                 ),
                               ],
                             ),
                           ),
-                          actions: <Widget>[
-                            TextButton(
-                              child: const Text('Закрыть'),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
                         );
                       },
                     );

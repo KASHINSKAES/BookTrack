@@ -86,6 +86,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "cloudpayments",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/cloudpayments-0.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "collection",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/collection-1.19.1",
       "packageUri": "lib/",
@@ -312,6 +318,12 @@
       "rootUri": "file:///C:/firebase/hosted/pub.dev/meta-1.16.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
+    },
+    {
+      "name": "my_wave_animation",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/my_wave_animation-0.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
     },
     {
       "name": "nested",
@@ -572,7 +584,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-02-23T13:42:05.681684Z",
+  "generated": "2025-02-25T18:13:00.064279Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.4.3"
+  cloudpayments:
+    dependency: "direct main"
+    description:
+      name: cloudpayments
+      sha256: "8465cc4cc9d35666b4e04ea7b9f24730a89cafd59925ecae47134b0154f0b1e0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   collection:
     dependency: transitive
     description:
@@ -408,6 +416,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  my_wave_animation:
+    dependency: "direct main"
+    description:
+      name: my_wave_animation
+      sha256: "5c2710dee7de93a960383ea243eecc320b4e3c0ef3f2d4884ce8cc0ab2d01767"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.1"
   nested:
     dependency: transitive
     description:

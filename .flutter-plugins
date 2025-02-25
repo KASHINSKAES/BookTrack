@@ -1,6 +1,7 @@
 # This is a generated file; do not edit or check into version control.
 cloud_firestore=C:\\firebase\\hosted\\pub.dev\\cloud_firestore-5.6.3\\
 cloud_firestore_web=C:\\firebase\\hosted\\pub.dev\\cloud_firestore_web-4.4.3\\
+cloudpayments=C:\\firebase\\hosted\\pub.dev\\cloudpayments-0.3.0\\
 firebase_auth=C:\\firebase\\hosted\\pub.dev\\firebase_auth-5.4.2\\
 firebase_auth_web=C:\\firebase\\hosted\\pub.dev\\firebase_auth_web-5.13.8\\
 firebase_core=C:\\firebase\\hosted\\pub.dev\\firebase_core-3.11.0\\

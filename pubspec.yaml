@@ -30,7 +30,8 @@ dependencies:
   cloud_firestore: ^5.6.3 
   numberpicker: ^2.1.2
   flutter_credit_card: ^3.0.0
-  
+  cloudpayments: ^0.3.0
+  my_wave_animation: ^0.0.1 
 
 dev_dependencies:
   flutter_test:

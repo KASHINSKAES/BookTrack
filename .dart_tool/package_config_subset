@@ -54,6 +54,10 @@ cloud_firestore_web
 3.4
 file:///C:/firebase/hosted/pub.dev/cloud_firestore_web-4.4.3/
 file:///C:/firebase/hosted/pub.dev/cloud_firestore_web-4.4.3/lib/
+cloudpayments
+2.12
+file:///C:/firebase/hosted/pub.dev/cloudpayments-0.3.0/
+file:///C:/firebase/hosted/pub.dev/cloudpayments-0.3.0/lib/
 collection
 3.4
 file:///C:/firebase/hosted/pub.dev/collection-1.19.1/
@@ -194,6 +198,10 @@ meta
 2.12
 file:///C:/firebase/hosted/pub.dev/meta-1.16.0/
 file:///C:/firebase/hosted/pub.dev/meta-1.16.0/lib/
+my_wave_animation
+3.2
+file:///C:/firebase/hosted/pub.dev/my_wave_animation-0.0.1/
+file:///C:/firebase/hosted/pub.dev/my_wave_animation-0.0.1/lib/
 nested
 2.12
 file:///C:/firebase/hosted/pub.dev/nested-1.0.0/
