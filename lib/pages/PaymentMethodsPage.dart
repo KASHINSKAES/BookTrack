@@ -154,21 +154,24 @@ Widget _buildCard(double scale, BuildContext context) {
                           child: Container(
                             constraints: BoxConstraints(
                               maxHeight: MediaQuery.of(context).size.height *
-                                  0.8, // Ограничиваем высоту
+                                  0.426, // Ограничиваем высоту
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
                                 Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Text(
-                                    "Введите данные карты",
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 24 * scale,
-                                    ),
-                                  ),
-                                ),
+                                    padding: EdgeInsets.only(top: 16 * scale),
+                                    child: SizedBox(
+                                      width: scale * 190,
+                                      child: Text(
+                                        "Введите данные карты",
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 24 * scale,
+                                        ),
+                                        softWrap: true,
+                                      ),
+                                    )),
                                 Expanded(
                                   child: AddCardScreen(),
                                 ),

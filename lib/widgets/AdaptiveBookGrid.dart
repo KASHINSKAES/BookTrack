@@ -4,7 +4,7 @@ import 'constants.dart';
 import '/pages/BookDetailScreen.dart';
 
 class AdaptiveBookGrid extends StatelessWidget {
-  final List<Map<String, String>> books = [
+  final List<Map<String, String>> books = const [
     {
       "title": "Бонсай",
       "author": "Алехандро Самбра",
@@ -38,40 +38,41 @@ class AdaptiveBookGrid extends StatelessWidget {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Container(
-        padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-            topRight: Radius.circular(AppDimensions.baseCircual * scale),
-          ),
+      padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+          topRight: Radius.circular(AppDimensions.baseCircual * scale),
         ),
-        child: Padding(
-          padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
-          child: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
-              mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
-              childAspectRatio: AppDimensions.baseImageWidth /
-                  (AppDimensions.baseImageHeight + 40 * scale),
-            ),
-            itemCount: books.length,
-            itemBuilder: (context, index) {
-              final book = books[index];
-              return BookCard(
-                title: book["title"]!,
-                author: book["author"]!,
-                image: book["image"]!,
-                imageWidth: AppDimensions.baseImageWidth * scale,
-                imageHeight: AppDimensions.baseImageHeight * scale,
-                textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
-                textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
-                textSpacing: 6.0 * scale,
-              );
-            },
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
+            mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
+            childAspectRatio: AppDimensions.baseImageWidth /
+                (AppDimensions.baseImageHeight + 40 * scale),
           ),
-        ));
+          itemCount: books.length,
+          itemBuilder: (context, index) {
+            final book = books[index];
+            return BookCard(
+              title: book["title"]!,
+              author: book["author"]!,
+              image: book["image"]!,
+              imageWidth: AppDimensions.baseImageWidth * scale,
+              imageHeight: AppDimensions.baseImageHeight * scale,
+              textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
+              textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
+              textSpacing: 6.0 * scale,
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 
@@ -86,6 +87,7 @@ class BookCard extends StatelessWidget {
   final double textSpacing;
 
   const BookCard({
+    Key? key,
     required this.title,
     required this.author,
     required this.image,
@@ -94,14 +96,16 @@ class BookCard extends StatelessWidget {
     required this.textSizeTitle,
     required this.textSizeAuthor,
     required this.textSpacing,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return BookDetailScreen(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailScreen(
               bookTitle: title,
               authorName: author,
               bookImageUrl: image,
@@ -109,58 +113,56 @@ class BookCard extends StatelessWidget {
               reviewCount: 100,
               pages: 320,
               age: 16,
-            );
-          }));
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            image.isEmpty
-                ? Container(
-                    width: imageWidth,
-                    height: imageHeight,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFD521B),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: SvgPicture.asset(
-                      image,
-                      width: imageWidth,
-                      height: imageHeight,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-            SizedBox(height: textSpacing),
+            ),
+          ),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (image.isEmpty)
             Container(
-              width: imageWidth, // Ensure the text has a defined width
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: textSizeTitle,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xff03044E),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              width: imageWidth,
+              height: imageHeight,
+              decoration: BoxDecoration(
+                color: const Color(0xffFD521B),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SvgPicture.asset(
+                image,
+                width: imageWidth,
+                height: imageHeight,
+                fit: BoxFit.cover,
+                cacheColorFilter: true, // Кэширование SVG
               ),
             ),
-            SizedBox(height: textSpacing / 2),
-            Container(
-              width: imageWidth, // Ensure the text has a defined width
-              child: Text(
-                author,
-                style: TextStyle(
-                  fontSize: textSizeAuthor,
-                  color: const Color(0xff575757),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+          SizedBox(height: textSpacing),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: textSizeTitle,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xff03044E),
             ),
-          ],
-        ));
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: textSpacing / 2),
+          Text(
+            author,
+            style: TextStyle(
+              fontSize: textSizeAuthor,
+              color: const Color(0xff575757),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 }
