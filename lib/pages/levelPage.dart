@@ -67,25 +67,27 @@ class _LevelScreenState extends State<LevelScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(Icons.emoji_events, "3179 XP"),
-          _buildStatItem(Icons.book, "432 стр"),
+          _buildStatItem(Icons.emoji_events, "3179","XP"),
+          _buildStatItem(Icons.book, "432","стр"),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String text) {
+  Widget _buildStatItem(IconData icon, String text, String textValue) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.blue[100],
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.blueColor,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blue),
+          Icon(icon, color: Colors.black),
           SizedBox(width: 8),
           Text(text, style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(width: 8),
+          Text(textValue, style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -111,15 +113,35 @@ class _LevelScreenState extends State<LevelScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.orange,
-                    child: Text(
-                      reward["level"].toString(),
-                      style: TextStyle(color: Colors.white, fontSize: 32),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                 Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            Colors.orange.shade300,
+            Colors.orange.shade700,
+          ],
+          stops: [0.1, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          reward["level"].toString(),
+          style: TextStyle(color: Colors.white, fontSize: 32),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ),
                   Row(
                     children: [
                       Text(
@@ -190,7 +212,7 @@ class LevelProgressWidget extends StatelessWidget {
                   width: maxWidth,
                   margin: const EdgeInsets.symmetric(horizontal: 30),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: AppColors.blueColor,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
@@ -207,13 +229,30 @@ class LevelProgressWidget extends StatelessWidget {
                 // Левый круг (текущий уровень)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Container(
-                    margin: EdgeInsets.only(
-                        left: 30), // 22 - половина радиуса круга
-                    child: CircleAvatar(
-                      radius: 22,
-                      backgroundColor: Colors.orange,
-                      child: Text(
+                  child:         Container(
+                     margin: const EdgeInsets.only(left: 30),
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            Colors.orange.shade300,
+            Colors.orange.shade700,
+          ],
+          stops: [0.1, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: Offset(0, 0),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
                         "$currentLevel",
                         style: const TextStyle(
                           fontSize: 20,
@@ -221,8 +260,8 @@ class LevelProgressWidget extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                    ),
-                  ),
+      ),
+    ),
                 ),
                 // Правый круг (следующий уровень)
                 Align(
@@ -231,7 +270,7 @@ class LevelProgressWidget extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 30),
                     child: CircleAvatar(
                       radius: 22,
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: AppColors.blueColor,
                       child: Text(
                         "$nextLevel",
                         style: const TextStyle(
