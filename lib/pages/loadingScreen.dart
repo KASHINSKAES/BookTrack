@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/main.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +35,6 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return AnimatedSwitcher(
       duration: const Duration(seconds: 30),
