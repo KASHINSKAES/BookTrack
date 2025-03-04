@@ -1,4 +1,5 @@
 import 'package:booktrack/firebase_options.dart';
+import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/pages/loadingScreen.dart';
@@ -27,6 +28,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
+        ChangeNotifierProvider(
+      create: (_) => BrightnessProvider()),
         ChangeNotifierProvider(
             create: (context) => ReadingStatsProvider()..loadData()),
         ChangeNotifierProvider(create: (context) => SettingsProvider()),

@@ -18,7 +18,6 @@ dependencies:
   table_calendar: ^3.0.8
   easy_pie_chart: ^1.0.1
   flutter_svg: ^2.0.0
-  
   carousel_slider: ^5.0.0
   syncfusion_flutter_sliders: ^20.4.54
   cupertino_icons: ^1.0.8
@@ -32,6 +31,7 @@ dependencies:
   flutter_credit_card: ^3.0.0
   cloudpayments: ^0.3.0
   my_wave_animation: ^0.0.1 
+  screen_brightness: ^2.1.1
 
 dev_dependencies:
   flutter_test:
@@ -57,3 +57,12 @@ flutter:
     - family: MyFlutter
       fonts:
         - asset: fonts/MyFlutter.ttf
+    - family: Rubik
+      fonts:
+        - asset: fonts/Rubik.ttf
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter.ttf
+    - family: AdventPro
+      fonts:
+        - asset: fonts/AdventPro.ttf
