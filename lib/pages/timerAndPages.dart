@@ -97,12 +97,11 @@ class _TimerPage extends State<TimerPage> {
                               MaterialStateProperty.all(AppColors.background),
                         ),
                         onPressed: () {
-                          if (selectedHours > 0) {
+                          if (selectedPages > 0) {
                             // Обновляем значение в AppState
                             Provider.of<AppState>(context, listen: false)
                                 .updateReadingPagesPurpose(selectedPages);
-                            Navigator.pop(
-                                context); // Возвращаемся на предыдущую страницу
+                            // Возвращаемся на предыдущую страницу
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -189,7 +188,7 @@ class _TimerPage extends State<TimerPage> {
                         ),
                         onPressed: () {
                           int totalSeconds = (selectedHours * 3600) +
-                             ( selectedMinutes * 60) +
+                              (selectedMinutes * 60) +
                               selectedSeconds;
                           if (totalSeconds > 0) {
                             // Обновляем значение в AppState

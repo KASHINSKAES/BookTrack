@@ -17,6 +17,13 @@ class SettingsProvider with ChangeNotifier {
   double _brightness = 50.0;
   double get brightness => _brightness;
 
+
+  // Сеттер для размера шрифта
+  set fontSize(double value) {
+    _fontSize = value;
+    notifyListeners(); // Уведомляем слушателей об изменении
+  }
+
   // Установка стиля фона
   void setBackgroundStyle(int style) {
     _selectedBackgroundStyle = style;
