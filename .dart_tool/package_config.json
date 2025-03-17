@@ -591,7 +591,7 @@
     },
     {
       "name": "web",
-      "rootUri": "file:///C:/firebase/hosted/pub.dev/web-1.1.0",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/web-1.1.1",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -620,7 +620,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-03-04T20:31:10.028714Z",
+  "generated": "2025-03-05T16:01:15.482891Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

@@ -1,0 +1,137 @@
+/// firestore в JSON
+
+
+import 'package:web/web.dart' as web;
+import 'dart:js_interop'; // Импортируем dart:html с псевдонимом
+import 'dart:convert'; // Для работы с jsonEncode и utf8.encode
+import 'dart:js_interop' as web;
+
+
+
+
+
+
+ElevatedButton(
+                          onPressed: () async {
+                            FirestoreExporter exporter = FirestoreExporter();
+                            await exporter.exportData(
+                                'users', 'users-export.json');
+                          },
+                          child: Text('Экспортировать данные users'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            FirestoreExporter exporter = FirestoreExporter();
+                            await exporter.exportData(
+                                'books', 'books-export.json');
+                          },
+                          child: Text('Экспортировать данные books'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            FirestoreExporter exporter = FirestoreExporter();
+                            await exporter.exportData(
+                                'chat', 'chat-export.json');
+                          },
+                          child: Text('Экспортировать данные chat'),
+                        ),
+
+
+
+                        dynamic convertFirestoreData(dynamic data) {
+  if (data is Timestamp) {
+    // Преобразуем Timestamp в строку
+    return data.toDate().toIso8601String();
+  } else if (data is Map) {
+    // Рекурсивно обрабатываем Map
+    return data.map<String, dynamic>((key, value) {
+      return MapEntry(key.toString(), convertFirestoreData(value));
+    });
+  } else if (data is List) {
+    // Рекурсивно обрабатываем List
+    return data.map((item) => convertFirestoreData(item)).toList();
+  } else {
+    // Возвращаем данные как есть
+    return data;
+  }
+}
+
+class FirestoreExporter {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Функция для экспорта коллекции и подколлекций
+  Future<Map<String, dynamic>> exportCollectionAndSubcollections(
+      String collectionPath) async {
+    final Map<String, dynamic> result = {};
+
+    // Получаем документы из коллекции
+    final QuerySnapshot snapshot =
+        await _firestore.collection(collectionPath).get();
+
+    // Обрабатываем каждый документ
+    for (final doc in snapshot.docs) {
+      final docData = doc.data() as Map<String, dynamic>;
+      final docId = doc.id;
+
+      // Преобразуем данные документа
+      final convertedData = convertFirestoreData(docData);
+
+      // Добавляем данные документа в результат
+      result[docId] = convertedData;
+
+      // Получаем список подколлекций из поля "subcollections"
+      final subcollectionsDynamic = docData['subcollections'] as List<dynamic>?;
+      final subcollectionNames = subcollectionsDynamic?.cast<String>() ?? [];
+
+      // Обрабатываем каждую подколлекцию
+      for (final subcollectionName in subcollectionNames) {
+        final subcollectionPath = '$collectionPath/$docId/$subcollectionName';
+        final subcollectionData =
+            await exportCollectionAndSubcollections(subcollectionPath);
+
+        // Добавляем данные подколлекции в результат
+        result[docId][subcollectionName] = subcollectionData;
+      }
+    }
+
+    return result;
+  }
+
+  // Экспорт данных в файл
+  Future<void> exportData(String collectionPath, String fileName) async {
+    try {
+      // Получаем данные из коллекции и подколлекций
+      final data = await exportCollectionAndSubcollections(collectionPath);
+
+      // Преобразуем данные в JSON
+      final jsonData = jsonEncode(data);
+
+      // Преобразуем JSON в Uint8List
+      final uint8List = utf8.encode(jsonData);
+
+      // Создаем Blob
+      final blobParts = [uint8List.toJS].toJS as web.JSArray<web.BlobPart>;
+      final blob =
+          web.Blob(blobParts, web.BlobPropertyBag(type: 'application/json'));
+
+      // Создаем URL для Blob
+      final url = web.URL.createObjectURL(blob);
+
+      // Создаем ссылку для скачивания
+      final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+      anchor.href = url;
+      anchor.download = fileName;
+
+      // Создаем событие клика
+      final event = web.MouseEvent('click', web.MouseEventInit());
+      anchor.dispatchEvent(event);
+
+      // Освобождаем URL
+      web.URL.revokeObjectURL(url);
+
+      print('Данные экспортированы в $fileName');
+    } catch (e) {
+      print('Ошибка при экспорте данных: $e');
+    }
+  }
+}

@@ -1,13 +1,12 @@
 import 'package:booktrack/MyFlutterIcons.dart';
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/AppState.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
-import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 Future<String> fetchText() async {
@@ -21,87 +20,293 @@ Future<String> fetchText() async {
 
   for (var doc in snapshot.docs) {
     final data = doc.data();
-    text += data['text']; // Предположим, что поле с текстом называется 'text'
+    text += data['text'];
   }
 
   return text;
 }
 
-class textBook extends StatefulWidget {
+class TextBook extends StatefulWidget {
   final VoidCallback onBack;
-  textBook({super.key, required this.onBack});
+  TextBook({super.key, required this.onBack});
 
   @override
-  State<textBook> createState() => _TextBookState();
+  State<TextBook> createState() => _TextBookState();
 }
 
-class _TextBookState extends State<textBook> {
+class _TextBookState extends State<TextBook> {
   String textBook = '';
   bool isLoading = true;
+  List<String> pages = [];
+  int currentPage = 0;
+  DateTime? startReadingTime;
+  double goalMinutes = 0; // Минуты цели чтения
+  int goalPages = 0; // Прогресс чтения в процентах
+  int totalReadingTimeInSeconds = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData(); // Загружаем данные книги
+    _loadCurrentPage().then((page) {
+      setState(() {
+        currentPage = page; // Устанавливаем текущую страницу
+      });
+    });
+    _startReadingTimer(); // Запускаем таймер чтения
   }
 
-  Future<void> _loadData() async {
-    final data = await fetchText();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Получаем данные из Provider после инициализации контекста
+    final appState = Provider.of<AppState>(context, listen: false);
     setState(() {
-      textBook = data;
-      isLoading = false;
+      goalMinutes = appState.readingMinutesPurpose / 60.round();
+      goalPages = appState.readingPagesPurpose;
     });
+  }
+
+  // Запуск таймера чтения
+  void _startReadingTimer() {
+    startReadingTime = DateTime.now();
+  }
+
+  // Остановка таймера чтения
+  void _stopReadingTimer() {
+    if (startReadingTime != null) {
+      final endReadingTime = DateTime.now();
+      final difference = endReadingTime.difference(startReadingTime!);
+      totalReadingTimeInSeconds += difference.inSeconds;
+      startReadingTime = null;
+    }
+  }
+
+  // Загрузка данных книги
+  Future<void> _loadData() async {
+    try {
+      final data = await fetchText(); // Получаем текст книги
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      setState(() {
+        textBook = data;
+        isLoading = false;
+        pages = _splitTextIntoPages(
+          textBook,
+          context,
+          settings.fontSize,
+          _getFontFamily(settings.selectedFontFamily),
+        );
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка загрузки текста: $e')),
+      );
+    }
+  }
+
+  // Разбиение текста на страницы
+  List<String> _splitTextIntoPages(
+    String text,
+    BuildContext context,
+    double fontSize,
+    String fontFamily,
+  ) {
+    List<String> pages = [];
+    int start = 0;
+    int charsPerPage =
+        _calculateCharsPerPage(context, text, fontSize, fontFamily);
+
+    while (start < text.length) {
+      int end = start + charsPerPage;
+      if (end >= text.length) {
+        end = text.length;
+      } else {
+        while (end > start && text[end] != ' ' && text[end] != '\n') {
+          end--;
+        }
+      }
+
+      pages.add(text.substring(start, end).trim());
+      start = end;
+    }
+
+    return pages;
+  }
+
+  // Расчет количества символов на странице
+  int _calculateCharsPerPage(
+    BuildContext context,
+    String text,
+    double fontSize,
+    String fontFamily,
+  ) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontFamily: fontFamily,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    );
+
+    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
+    final charsPerLine = textPainter
+        .getPositionForOffset(Offset(
+          MediaQuery.of(context).size.width - 32,
+          fontSize,
+        ))
+        .offset;
+
+    final linesPerPage =
+        (MediaQuery.of(context).size.height - 200) ~/ (fontSize * 1.5);
+
+    return charsPerLine * linesPerPage;
+  }
+
+  // Загрузка текущей страницы из SharedPreferences
+  Future<int> _loadCurrentPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('currentPage') ?? 0;
+  }
+
+  // Сохранение текущей страницы в SharedPreferences
+  Future<void> _saveCurrentPage(int page) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('currentPage', page);
+  }
+
+  // Сохранение прогресса чтения в Firestore
+  Future<void> _saveReadingProgress() async {
+    final firestore = FirebaseFirestore.instance;
+    final userId = 'user_1'; // Замените на реальный ID пользователя
+    if (userId == null) return;
+
+    final readingProgressRef = firestore
+        .collection('users')
+        .doc(userId)
+        .collection('reading_progress')
+        .doc('book_1');
+
+    final readingProgressData = {
+      'totalPages': pages.length,
+      'currentPage': currentPage,
+      'dateLastRead': DateTime.now(),
+      'totalReadingTimeInSeconds': totalReadingTimeInSeconds,
+    };
+
+    await readingProgressRef.set(readingProgressData, SetOptions(merge: true));
+  }
+
+  // Сохранение ежедневного прогресса чтения в коллекцию reading_goals
+  Future<void> _saveDailyReadingProgress() async {
+    final firestore = FirebaseFirestore.instance;
+    final userId = 'user_1'; // Замените на реальный ID пользователя
+
+    if (userId == null) return;
+
+    final today = DateTime.now();
+    final goalId = 'goal_${today.year}_${today.month}_${today.day}';
+
+    final readingGoalsRef = firestore
+        .collection('users')
+        .doc(userId)
+        .collection('reading_goals')
+        .doc(goalId);
+
+    // Обновляем данные
+    final dailyProgressData = {
+      'readPages':
+          currentPage, // Текущее количество прочитанных страниц за день
+      'date': DateTime.now(),
+      'goalPages': goalPages, // Цель по страницам за день
+      'readMinutes': totalReadingTimeInSeconds ~/
+          60, // Текущее количество прочитанных минут за день
+      'goalMinutes': goalMinutes, // Цель по минутам за день
+      'weekStart': DateTime(today.year, today.month,
+          today.day - today.weekday + 1), // Начало недели
+    };
+
+    // Сохраняем данные
+    await readingGoalsRef.set(dailyProgressData, SetOptions(merge: true));
+  }
+
+  // Обработка изменения страницы
+  void _onPageChanged(int index) {
+    setState(() {
+      currentPage = index;
+    });
+    _saveCurrentPage(index); // Сохраняем текущую страницу
+    _saveReadingProgress(); // Сохраняем общий прогресс
+    _saveDailyReadingProgress(); // Сохраняем ежедневный прогресс
+  }
+
+  @override
+  void dispose() {
+    _stopReadingTimer(); // Останавливаем таймер
+    _saveReadingProgress(); // Сохраняем прогресс перед закрытием
+    _saveDailyReadingProgress(); // Сохраняем ежедневный прогресс
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
     final settings = Provider.of<SettingsProvider>(context);
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(
-            size: 35 * scale,
-            MyFlutterApp.back,
-            color: Colors.white,
-          ),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: widget.onBack,
         ),
         actions: [
           IconButton(
-            icon: const Icon(
-              MyFlutterApp.search1,
-              color: Colors.white,
-            ),
+            icon: Icon(Icons.search, color: Colors.white),
             onPressed: widget.onBack,
           ),
           IconButton(
-            icon: const Icon(
-              MyFlutterApp.search1,
-              color: Colors.white,
-            ),
+            icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () => _showTextEditor(scale, settings),
           ),
         ],
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Container(
-                padding: EdgeInsets.all(16.0),
-                color: _getBackgroundColor(
-                    settings.selectedBackgroundStyle), // Фон контейнера
-                child: Text(
-                  textBook,
-                  style: TextStyle(
-                    fontSize: settings.fontSize,
-                    fontFamily: _getFontFamily(settings.selectedFontFamily),
-                    color: _getTextColor(
-                        settings.selectedBackgroundStyle), // Цвет текста
+          : Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: PageController(initialPage: currentPage),
+                    itemCount: pages.length,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      return SingleChildScrollView(
+                        child: Container(
+                          padding: EdgeInsets.all(16.0),
+                          color: _getBackgroundColor(
+                              settings.selectedBackgroundStyle),
+                          child: Text(
+                            pages[index],
+                            style: TextStyle(
+                              fontSize: settings.fontSize,
+                              fontFamily:
+                                  _getFontFamily(settings.selectedFontFamily),
+                              color: _getTextColor(
+                                  settings.selectedBackgroundStyle),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
+              ],
             ),
     );
   }
