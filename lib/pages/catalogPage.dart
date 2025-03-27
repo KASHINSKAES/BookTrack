@@ -1,5 +1,6 @@
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/widgets/BookListPage.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 
 // CatalogPage с обработчиком нажатий на категории
@@ -83,6 +84,7 @@ class BookCategory extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
+              color: AppColors.textPrimary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -92,7 +94,7 @@ class BookCategory extends StatelessWidget {
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: 10,
+            itemCount: 5,
             itemBuilder: (context, index) {
               return GestureDetector(
                 onTap: () {

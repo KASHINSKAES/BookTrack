@@ -260,7 +260,12 @@ class _TextBookState extends State<TextBook> {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
+      backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
       appBar: AppBar(
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: widget.onBack,

@@ -13,6 +13,7 @@ import 'package:booktrack/pages/statistikPages.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -20,53 +21,73 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            icon: Icon(MyFlutter.setting),
-            onPressed: () {
-              // Действие для настроек
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Container(
-          color: AppColors.background,
-          child: Stack(
-            children: [
-              // Добавляем пятна (blobs)
-              Positioned(
-                top: 0,
-                left: -40 * scale,
-                child: BlobShape(
-                  width: 200 * scale,
-                  height: 200 * scale,
-                  blobType: 'blob2',
-                ),
-              ),
-              Positioned(
-                top: 10 * scale,
-                left: 140 * scale,
-                child: BlobShape(
-                  width: 200 * scale,
-                  height: 200 * scale,
-                  blobType: 'blob3',
-                ),
-              ),
-              Column(
-                children: [
-                  _buildProfileHeader(scale),
-                  _buildWhiteContainer(scale, context),
-                ],
+    return Material(
+        color: Colors.transparent,
+        child: Scaffold(
+          extendBodyBehindAppBar:
+              true, // Это ключевой параметр - позволяет контенту заходить под AppBar
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            elevation: 0,
+
+            scrolledUnderElevation: 0, // Убирает тень при скролле
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            backgroundColor: Colors.transparent,
+            systemOverlayStyle: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent, // Прозрачный статус-бар
+              statusBarIconBrightness:
+                  Brightness.dark, // Иконки статус-бара (темные/светлые)
+              statusBarBrightness: Brightness.light,
+            ),
+
+            actions: [
+              IconButton(
+                icon: Icon(MyFlutter.setting,
+                    color: Colors.black), // Явно задаем цвет иконки
+                onPressed: () {
+                  // Действие для настроек
+                },
               ),
             ],
           ),
-        ),
-      ),
-    );
+          body: SingleChildScrollView(
+            padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight),
+            child: Container(
+              color: AppColors.background,
+              child: Stack(
+                children: [
+                  // Добавляем пятна (blobs)
+                  Positioned(
+                    top: 0,
+                    left: -40 * scale,
+                    child: BlobShape(
+                      width: 200 * scale,
+                      height: 200 * scale,
+                      blobType: 'blob2',
+                    ),
+                  ),
+                  Positioned(
+                    top: 10 * scale,
+                    left: 140 * scale,
+                    child: BlobShape(
+                      width: 200 * scale,
+                      height: 200 * scale,
+                      blobType: 'blob3',
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      _buildProfileHeader(scale),
+                      _buildWhiteContainer(scale, context),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ));
   }
 
   // Верхний блок с аватаром

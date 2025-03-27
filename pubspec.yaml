@@ -33,6 +33,8 @@ dependencies:
   my_wave_animation: ^0.0.1 
   screen_brightness: ^2.1.1
   web: ^1.1.1
+  extended_phone_number_input: ^1.0.2
+  pinput: ^5.0.1
 
 dev_dependencies:
   flutter_test:

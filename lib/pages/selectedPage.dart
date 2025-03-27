@@ -269,50 +269,24 @@ class SectionTitle extends StatelessWidget {
 class BookList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, String>> books = [
-      {
-        "title": "Бонсай",
-        "author": "Алехандро Самбра",
-        "image": "images/img1.svg"
-      },
-      {
-        "title": "Янтарь рассе",
-        "author": "Люцида Аквила",
-        "image": "images/img2.svg"
-      },
-      {"title": "Греческие и ", "author": "Филипп Матышак", "image": ""},
-      {
-        "title": "Безмолвное чтение. Том 1. Жюльен",
-        "author": "Priest",
-        "image": "images/img15.svg"
-      },
-      {
-        "title": "Евгений Онегин",
-        "author": "Александр Пушкин",
-        "image": "images/img4.svg"
-      },
-      {
-        "title": "Мастер и Маргарита",
-        "author": "Михаил Булгаков",
-        "image": "images/img5.svg"
-      },
-    ];
-
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: List.generate(
-          books.length,
+          Book.books.length,
           (index) => Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
                 BookCard(
-                  title: books[index]["title"]!,
-                  author: books[index]["author"]!,
-                  image: books[index]["image"]!,
+                  title: Book.books[index].title,
+                  author: Book.books[index].author,
+                  image: Book.books[index].image,
+                  bookRating: Book.books[index].bookRating,
+                  reviewCount: Book.books[index].reviewCount,
+                  scale: scale,
                   imageWidth: AppDimensions.baseImageWidth * scale,
                   imageHeight: AppDimensions.baseImageHeight * scale,
                   textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
