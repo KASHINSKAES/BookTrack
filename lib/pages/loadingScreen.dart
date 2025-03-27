@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:booktrack/main.dart';
+import 'package:booktrack/pages/AuthWrap.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -28,7 +29,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       // Переход на основной экран
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const BottomNavigationBarEX()),
+        MaterialPageRoute(builder: (context) =>  AuthWrapper()),
       );
     });
   }
@@ -39,7 +40,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     return AnimatedSwitcher(
       duration: const Duration(seconds: 30),
       child: isLoaded
-          ? const BottomNavigationBarEX() // Переход на основной экран
+          ? AuthWrapper() // Переход на основной экран
           : Scaffold(
               backgroundColor: Colors.white,
               body: Stack(

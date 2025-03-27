@@ -1,38 +1,10 @@
+import 'package:booktrack/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'constants.dart';
 import '/pages/BookDetailScreen.dart';
 
 class AdaptiveBookGrid extends StatelessWidget {
-  final List<Map<String, String>> books = const [
-    {
-      "title": "Бонсай",
-      "author": "Алехандро Самбра",
-      "image": "images/img1.svg"
-    },
-    {
-      "title": "Янтарь рассе...",
-      "author": "Люцида Аквила",
-      "image": "images/img2.svg"
-    },
-    {"title": "Греческие и ...", "author": "Филипп Матышак", "image": ""},
-    {
-      "title": "Безмолвное чтение. Том 1. Жюльен",
-      "author": "Priest",
-      "image": "images/img15.svg"
-    },
-    {
-      "title": "Евгений Онегин",
-      "author": "Александр Пушкин",
-      "image": "images/img4.svg"
-    },
-    {
-      "title": "Мастер и Маргарита",
-      "author": "Михаил Булгаков",
-      "image": "images/img5.svg"
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
@@ -51,23 +23,26 @@ class AdaptiveBookGrid extends StatelessWidget {
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
+            crossAxisSpacing: AppDimensions.baseCrossAxisSpacingBlock * scale,
             mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
             childAspectRatio: AppDimensions.baseImageWidth /
                 (AppDimensions.baseImageHeight + 40 * scale),
           ),
-          itemCount: books.length,
+          itemCount: Book.books.length,
           itemBuilder: (context, index) {
-            final book = books[index];
+            final book = Book.books[index];
             return BookCard(
-              title: book["title"]!,
-              author: book["author"]!,
-              image: book["image"]!,
+              title: book.title,
+              author: book.author,
+              image: book.image,
+              bookRating: book.bookRating,
+              reviewCount: book.reviewCount,
               imageWidth: AppDimensions.baseImageWidth * scale,
               imageHeight: AppDimensions.baseImageHeight * scale,
               textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
               textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
               textSpacing: 6.0 * scale,
+              scale: scale,
             );
           },
         ),
@@ -80,6 +55,9 @@ class BookCard extends StatelessWidget {
   final String title;
   final String author;
   final String image;
+  final double bookRating;
+  final double scale;
+  final int reviewCount;
   final double imageWidth;
   final double imageHeight;
   final double textSizeTitle;
@@ -91,6 +69,9 @@ class BookCard extends StatelessWidget {
     required this.title,
     required this.author,
     required this.image,
+    required this.bookRating,
+    required this.scale,
+    required this.reviewCount,
     required this.imageWidth,
     required this.imageHeight,
     required this.textSizeTitle,
@@ -141,6 +122,27 @@ class BookCard extends StatelessWidget {
               ),
             ),
           SizedBox(height: textSpacing),
+          Row(
+            children: [
+              Icon(MyFlutterApp.star, color: AppColors.orange, size: 13),
+              Text(
+                bookRating.toString(),
+                style: TextStyle(
+                    fontSize: 12 * scale,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.orange),
+              ),
+              SizedBox(width: 6 * scale),
+              Icon(MyFlutterApp.chat, color: AppColors.grey, size: 10),
+              Text(
+                reviewCount.toString(),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.grey,
+                ),
+              ),
+            ],
+          ),
           Text(
             title,
             style: TextStyle(

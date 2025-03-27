@@ -136,7 +136,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(
+                top: 16.0, left: 16.0, right: 16.0, bottom: 150.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -344,8 +345,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             Row(
               children: List.generate(
                 5,
-                (index) =>
-                    Icon(Icons.star, size: 24 * scale, color: AppColors.orange),
+                (index) => Icon(MyFlutterApp.star,
+                    size: 24 * scale, color: AppColors.orange),
               ),
             ),
             Text(
@@ -373,12 +374,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Widget _buildReviewCard(String text, double scale) {
+    const maxChars = 150;
+    final isLongText = text.length > maxChars;
+    final displayText = isLongText ? text.substring(0, maxChars) : text;
+
     return Container(
       width: 350 * scale,
       margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
       padding: EdgeInsets.all(16 * scale),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
+        color: AppColors.blueColorLight,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -391,6 +396,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Верхняя часть с аватаркой и рейтингом (оставляем без изменений)
           Row(
             children: [
               CircleAvatar(
@@ -408,43 +414,82 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                       style: TextStyle(
                         fontSize: 16 * scale,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     Text(
                       "13 марта 2022",
-                      style:
-                          TextStyle(fontSize: 12 * scale, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 13 * scale, color: Color(0xff575656)),
                     ),
                   ],
+                ),
+              ),
+              Row(
+                children: List.generate(
+                  5,
+                  (index) => Icon(MyFlutterApp.star,
+                      size: 18 * scale, color: AppColors.orange),
                 ),
               ),
             ],
           ),
           SizedBox(height: 8 * scale),
-          Row(
-            children: List.generate(
-              5,
-              (index) =>
-                  Icon(Icons.star, size: 16 * scale, color: AppColors.orange),
-            ),
-          ),
-          SizedBox(height: 8 * scale),
-          SizedBox(
-            width: 400 * scale,
-            child: SingleChildScrollView(
-              physics: NeverScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 400),
-                child: Text(
-                  text,
-                  style: TextStyle(fontSize: 14 * scale, color: Colors.black),
-                  softWrap: true,
-                  maxLines: null,
-                  overflow: TextOverflow.visible,
-                ),
-              ),
-            ),
+
+          // Текст отзыва с возможностью раскрытия
+          StatefulBuilder(
+            builder: (context, setState) {
+              bool isExpanded = false;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Text(
+                        isExpanded ? text : displayText,
+                        style: TextStyle(
+                            fontSize: 14 * scale, color: AppColors.textPrimary),
+                      ),
+                      if (isLongText && !isExpanded) ...[
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 40 * scale,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withOpacity(0.1),
+                                  AppColors.blueColorLight.withOpacity(0.9),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (isLongText)
+                    TextButton(
+                      onPressed: () {
+                        setState(() => isExpanded = !isExpanded);
+                      },
+                      child: Text(
+                        isExpanded ? "Свернуть" : "Далее",
+                        style: TextStyle(
+                          fontSize: 14 * scale,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),

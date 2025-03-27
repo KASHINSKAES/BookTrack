@@ -38,10 +38,12 @@ class _BookListPageState extends State<BookListPage> {
       title: Text(
         widget.category,
         style: TextStyle(
-          fontSize: 20 * scale,
+          fontSize: 24 * scale,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
+        softWrap: true,
+        maxLines: 2,
         textAlign: TextAlign.center,
       ),
       backgroundColor: AppColors.background,
@@ -116,7 +118,7 @@ class _BookListPageState extends State<BookListPage> {
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            crossAxisSpacing: AppDimensions.baseCrossAxisSpacing * scale,
+            crossAxisSpacing: AppDimensions.baseCrossAxisSpacingBlock * scale,
             mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
             childAspectRatio: AppDimensions.baseImageWidth /
                 (AppDimensions.baseImageHeight + 40 * scale),
@@ -125,9 +127,12 @@ class _BookListPageState extends State<BookListPage> {
           itemBuilder: (context, index) {
             final book = Book.books[index];
             return BookCard(
+              scale: scale,
               title: book.title,
               author: book.author,
               image: book.image,
+              bookRating: book.bookRating,
+              reviewCount: book.reviewCount,
               imageWidth: AppDimensions.baseImageWidth * scale,
               imageHeight: AppDimensions.baseImageHeight * scale,
               textSizeTitle: AppDimensions.baseTextSizeTitle * scale,

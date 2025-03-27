@@ -98,6 +98,18 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "contact_picker_platform_interface",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/contact_picker_platform_interface-4.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "contact_picker_web",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/contact_picker_web-4.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "convert",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/convert-3.1.2",
       "packageUri": "lib/",
@@ -132,6 +144,12 @@
       "rootUri": "file:///C:/firebase/hosted/pub.dev/equatable-2.0.7",
       "packageUri": "lib/",
       "languageVersion": "2.12"
+    },
+    {
+      "name": "extended_phone_number_input",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/extended_phone_number_input-1.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.16"
     },
     {
       "name": "fake_async",
@@ -236,6 +254,12 @@
       "languageVersion": "3.7"
     },
     {
+      "name": "fluttercontactpicker",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/fluttercontactpicker-4.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "glob",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/glob-2.1.3",
       "packageUri": "lib/",
@@ -270,6 +294,12 @@
       "rootUri": "file:///C:/firebase/hosted/pub.dev/intl_translation-0.18.0",
       "packageUri": "lib/",
       "languageVersion": "2.17"
+    },
+    {
+      "name": "js",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/js-0.6.7",
+      "packageUri": "lib/",
+      "languageVersion": "2.19"
     },
     {
       "name": "leak_tracker",
@@ -378,6 +408,24 @@
       "rootUri": "file:///C:/firebase/hosted/pub.dev/petitparser-6.1.0",
       "packageUri": "lib/",
       "languageVersion": "3.5"
+    },
+    {
+      "name": "phone_number_metadata",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/phone_number_metadata-4.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.14"
+    },
+    {
+      "name": "phone_numbers_parser",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/phone_numbers_parser-4.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.14"
+    },
+    {
+      "name": "pinput",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/pinput-5.0.1",
+      "packageUri": "lib/",
+      "languageVersion": "2.15"
     },
     {
       "name": "platform",
@@ -554,6 +602,12 @@
       "languageVersion": "3.5"
     },
     {
+      "name": "universal_platform",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/universal_platform-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "vector_graphics",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/vector_graphics-1.1.18",
       "packageUri": "lib/",
@@ -620,7 +674,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-03-05T16:01:15.482891Z",
+  "generated": "2025-03-27T19:37:54.830973Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

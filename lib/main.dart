@@ -18,6 +18,7 @@ import '/widgets/BookListPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

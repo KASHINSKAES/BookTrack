@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+<meta-data
+  android:name="firebase_auth_emulator_host"
+  android:value="10.0.2.2:9099" />
     <application
         android:label="booktrack"
         android:name="${applicationName}"
