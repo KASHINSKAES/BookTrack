@@ -1,450 +1,473 @@
-import 'package:booktrack/main.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:booktrack/auth_service.dart';
+import 'package:booktrack/database_service.dart';
+import 'package:booktrack/models/userModels.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:phone_form_field/phone_form_field.dart';
 import 'package:pinput/pinput.dart';
 import 'dart:math';
 
-class AuthWrapper extends StatelessWidget {
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        return snapshot.hasData ? BottomNavigationBarEX() : AuthWrapperLogin();
-      },
-    );
-  }
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class AuthWrapperLogin extends StatefulWidget {
-  @override
-  _AuthWrapperLoginState createState() => _AuthWrapperLoginState();
-}
-
-class _AuthWrapperLoginState extends State<AuthWrapperLogin> {
+class _AuthScreenState extends State<AuthScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
-  final _contactController = TextEditingController();
+
+  final _emailController = TextEditingController();
+  final _phoneController = PhoneController(null);
+  final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _surnameController = TextEditingController();
   final _codeController = TextEditingController();
-  bool _isEmail = true;
-  bool _codeSent = false;
-  String _generatedCode = '';
-  bool _isLoading = false;
 
-  String _generate6DigitCode() =>
-      (100000 + Random().nextInt(900000)).toString();
+  bool _isCodeSent = false;
+  bool _isEmailAuth = true;
+  bool _usePassword = false;
+  String? _verificationId;
+  String? _generatedCode;
 
-  Future<void> _sendVerificationCode() async {
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _codeController.dispose();
+    _nameController.dispose();
+    _surnameController.dispose();
+    super.dispose();
+  }
+
+  String _generate6DigitCode() {
+    final code = (100000 + Random().nextInt(900000)).toString();
+    print('Сгенерирован код: $code');
+    return code;
+  }
+
+  Future<void> _handleEmailSubmit() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
       _generatedCode = _generate6DigitCode();
-      final contact = _contactController.text.trim();
-
-      try {
-        if (_isEmail) {
-          // Для email используем Firebase Auth
-          await _sendEmailCode(contact);
-        } else {
-          // Для телефона - кастомная реализация
-          await _sendSmsCode(contact);
-        }
-        setState(() {
-          _codeSent = true;
-          _isLoading = false;
-        });
-      } catch (e) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: ${e.toString()}')),
-        );
-      }
+      setState(() {
+        _isCodeSent = true;
+        _isEmailAuth = true;
+        _usePassword = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Код отправлен на ${_emailController.text}')),
+      );
+      print('Тестовый код для email: $_generatedCode');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CodeVerificationScreen(
+                  email: _emailController.text,
+                  generatedCode: _generatedCode.toString(),
+                  isEmailAuth: true,
+                  onCodeVerified: _onCodeVerified,
+                )),
+      );
     }
   }
 
-  Future<void> _sendEmailCode(String email) async {
-    // Сохраняем код в Firestore
-    await FirebaseFirestore.instance
-        .collection('verification_codes')
-        .doc(email)
-        .set({
-      'code': _generatedCode,
-      'createdAt': FieldValue.serverTimestamp(),
-      'type': 'email'
-    });
-
-    // В реальном приложении здесь должен быть вызов Cloud Function для отправки email
-    debugPrint('Email code for $email: $_generatedCode');
-  }
-
-  Future<void> _sendSmsCode(String phone) async {
-    // Сохраняем код в Firestore
-    await FirebaseFirestore.instance
-        .collection('verification_codes')
-        .doc(phone)
-        .set({
-      'code': _generatedCode,
-      'createdAt': FieldValue.serverTimestamp(),
-      'type': 'phone'
-    });
-
-    // В реальном приложении здесь должен быть вызов SMS API
-    debugPrint('SMS code for $phone: $_generatedCode');
-  }
-
-  Future<void> _verifyCode() async {
-    setState(() => _isLoading = true);
-    final contact = _contactController.text.trim();
-    final code = _codeController.text.trim();
-
-    try {
-      if (_isEmail) {
-        await _verifyEmailCode(contact, code);
-      } else {
-        await _verifyPhoneCode(contact, code);
-      }
-    } on FirebaseAuthException catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: ${e.message ?? "Неверный код"}')),
-      );
-    } catch (e) {
-      setState(() => _isLoading = false);
+  Future<void> _handlePhoneSubmit() async {
+    if (_formKey.currentState!.validate() && _phoneController.value != null) {
+      _generatedCode = _generate6DigitCode();
+      setState(() {
+        _isCodeSent = true;
+        _isEmailAuth = false;
+        _usePassword = false;
+        _verificationId = 'mock_verification_id';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Произошла ошибка. Пожалуйста, попробуйте позже.')),
+            content: Text('Код отправлен на ваш телефон: $_generatedCode')),
       );
-      debugPrint('Ошибка при проверке кода: $e');
-    }
-  }
-
-  Future<void> _verifyEmailCode(String email, String code) async {
-    // Проверяем код с добавлением времени жизни
-    final doc = await FirebaseFirestore.instance
-        .collection('verification_codes')
-        .doc(email)
-        .get();
-
-    if (!doc.exists) {
-      throw FirebaseAuthException(
-          code: 'invalid-code', message: 'Код не найден');
-    }
-
-    // Проверяем срок действия кода (5 минут)
-    final createdAt = doc['createdAt'] as Timestamp;
-    if (DateTime.now().difference(createdAt.toDate()).inMinutes > 5) {
-      throw FirebaseAuthException(
-          code: 'expired-code', message: 'Срок действия кода истёк');
-    }
-
-    if (doc['code'] != code) {
-      throw FirebaseAuthException(
-          code: 'invalid-code', message: 'Неверный код');
-    }
-
-    // Проверяем существование пользователя
-    final userQuery = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-
-    if (userQuery.docs.isNotEmpty) {
-      try {
-        await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: email, password: 'temp_${code}');
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found') {
-          // Если пользователь не найден, переходим к регистрации
-          await RegistrationScreen(
-            email: email,
-            phone: null,
-          );
-        } else {
-          rethrow;
-        }
-      }
-    } else {
-      await RegistrationScreen(
-        email: email,
-        phone: null,
+      print('Тестовый код для телефона: $_generatedCode');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CodeVerificationScreen(
+                  phoneNumber: _phoneController.value!.international,
+                  generatedCode: _generatedCode,
+                  isEmailAuth: false,
+                  onCodeVerified: _onCodeVerified,
+                )),
       );
     }
   }
 
-  Future<void> _verifyPhoneCode(String phone, String code) async {
+  Future<void> _signInWithPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
     try {
-      // 1. Проверяем доступ к Firestore
-      final doc = await FirebaseFirestore.instance
-          .collection('verification_codes')
-          .doc(phone)
-          .get()
-          .timeout(const Duration(seconds: 10));
-
-      if (!doc.exists) {
-        throw FirebaseAuthException(
-          code: 'code-not-found',
-          message: 'Код не найден. Запросите новый код.',
-        );
+      final user = await AuthService().signInWithEmailAndPassword(
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (user != null) {
+        await _checkUserExists(user.uid);
       }
-
-      // 2. Проверяем срок действия (5 минут)
-      final createdAt = (doc['createdAt'] as Timestamp).toDate();
-      if (DateTime.now().difference(createdAt).inMinutes > 5) {
-        throw FirebaseAuthException(
-          code: 'code-expired',
-          message: 'Срок действия кода истёк. Запросите новый.',
-        );
-      }
-
-      // 3. Сравниваем коды
-      if (doc['code'] != code) {
-        throw FirebaseAuthException(
-          code: 'invalid-code',
-          message: 'Неверный код подтверждения',
-        );
-      }
-
-      // 4. Проверяем существование пользователя
-      final userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('phone', isEqualTo: phone)
-          .limit(1)
-          .get();
-
-      if (userQuery.docs.isNotEmpty) {
-        // Вход через анонимную аутентификацию
-        await FirebaseAuth.instance.signInAnonymously();
-      } else {
-        // Регистрация нового пользователя
-        await RegistrationScreen(
-          email: null,
-          phone: phone,
-        );
-      }
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') {
-        // Специальная обработка ошибки доступа
-        throw FirebaseAuthException(
-          code: 'permission-error',
-          message: 'Ошибка доступа. Попробуйте позже.',
-        );
-      }
-      rethrow;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка входа: ${e.toString()}')),
+      );
     }
+  }
+
+  Future<void> _checkUserExists(String? uid) async {
+    if (uid == null) return;
+
+    try {
+      final exists = await DatabaseService().checkUserExists(uid);
+      if (exists) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => RegistrationScreen(
+                    email: _emailController.text,
+                    phoneNumber: _phoneController.value?.international,
+                    onUserRegistered: _onUserRegistered,
+                  )),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Ошибка проверки пользователя: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _onCodeVerified(bool isValid) async {
+    if (isValid) {
+      await _checkUserExists(FirebaseAuth.instance.currentUser?.uid);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Неверный код подтверждения')),
+      );
+    }
+  }
+
+  Future<void> _onUserRegistered() async {
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Вход')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: _isLoading
-            ? Center(child: CircularProgressIndicator())
-            : _codeSent
-                ? _buildCodeVerification()
-                : _buildContactInput(),
-      ),
-    );
-  }
-
-  Widget _buildContactInput() {
-    return Form(
-      key: _formKey,
-      child: Column(
+      appBar: AppBar(title: const Text('Регистрация/Вход')),
+      body: Column(
         children: [
-          TextFormField(
-            controller: _contactController,
-            decoration: InputDecoration(
-              labelText: _isEmail ? 'Email' : 'Номер телефона',
-              hintText: _isEmail ? 'example@mail.com' : '+71234567890',
-            ),
-            keyboardType:
-                _isEmail ? TextInputType.emailAddress : TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return _isEmail ? 'Введите email' : 'Введите номер телефона';
-              }
-              if (_isEmail &&
-                  !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value)) {
-                return 'Введите корректный email';
-              }
-              if (!_isEmail && !RegExp(r'^\+?[0-9]{10,15}$').hasMatch(value)) {
-                return 'Введите корректный номер телефона';
-              }
-              return null;
-            },
-          ),
-          SizedBox(height: 20),
-          Row(
-            children: [
-              Text(_isEmail
-                  ? 'Использовать номер телефона'
-                  : 'Использовать email'),
-              Switch(
-                value: _isEmail,
-                onChanged: (value) {
-                  setState(() {
-                    _isEmail = value;
-                    _contactController.clear();
-                  });
-                },
-              ),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'По почте'),
+              Tab(text: 'По телефону'),
             ],
           ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _sendVerificationCode,
-            child: Text('Получить код'),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildEmailAuthTab(),
+                _buildPhoneAuthTab(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCodeVerification() {
-    return Column(
-      children: [
-        Text(
-            'Введите 6-значный код, отправленный на ${_isEmail ? _contactController.text : "ваш телефон"}'),
-        SizedBox(height: 20),
-        Pinput(
-          length: 6,
-          controller: _codeController,
-          defaultPinTheme: PinTheme(
-            width: 56,
-            height: 56,
-            textStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildEmailAuthTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+              validator: (value) =>
+                  value?.contains('@') ?? false ? null : 'Некорректный email',
             ),
-          ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _usePassword = !_usePassword);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(_usePassword
+                        ? 'Использовать код'
+                        : 'Использовать пароль'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_usePassword) ...[
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Пароль'),
+                obscureText: true,
+                validator: (value) =>
+                    value!.length > 5 ? null : 'Минимум 6 символов',
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _signInWithPassword,
+                child: const Text('Войти'),
+              ),
+            ] else ...[
+              ElevatedButton(
+                onPressed: _handleEmailSubmit,
+                child: const Text('Получить код'),
+              ),
+            ],
+          ],
         ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _verifyCode,
-          child: Text('Подтвердить'),
+      ),
+    );
+  }
+
+  Widget _buildPhoneAuthTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            PhoneFormField(
+              controller: _phoneController,
+              validator: PhoneValidator.validMobile(),
+              defaultCountry: 'RU',
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _usePassword = !_usePassword);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(_usePassword
+                        ? 'Использовать код'
+                        : 'Использовать пароль'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_usePassword) ...[
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Пароль'),
+                obscureText: true,
+                validator: (value) =>
+                    value!.length > 5 ? null : 'Минимум 6 символов',
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  _checkUserExists(FirebaseAuth.instance.currentUser?.uid);
+                },
+                child: const Text('Войти'),
+              ),
+            ] else ...[
+              ElevatedButton(
+                onPressed: _handlePhoneSubmit,
+                child: const Text('Получить код'),
+              ),
+            ],
+          ],
         ),
-        TextButton(
-          onPressed: () => setState(() => _codeSent = false),
-          child: Text('Изменить ${_isEmail ? 'email' : 'номер телефона'}'),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class RegistrationScreen extends StatefulWidget {
+class CodeVerificationScreen extends StatelessWidget {
   final String? email;
-  final String? phone;
+  final String? phoneNumber;
+  final String? generatedCode;
+  final bool isEmailAuth;
+  final Function(bool) onCodeVerified;
 
-  const RegistrationScreen({this.email, this.phone, Key? key})
-      : super(key: key);
-
-  @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
-}
-
-class _RegistrationScreenState extends State<RegistrationScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _surnameController = TextEditingController();
-  bool _isLoading = false;
-
-  Future<void> _completeRegistration() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-
-      try {
-        final userData = {
-          'name': _nameController.text.trim(),
-          'surname': _surnameController.text.trim(),
-          if (widget.email != null) 'email': widget.email,
-          if (widget.phone != null) 'phone': widget.phone,
-          'createdAt': FieldValue.serverTimestamp(),
-          // Другие поля по умолчанию
-        };
-
-        if (widget.email != null) {
-          // Создаем пользователя через email/password
-          final credential = await FirebaseAuth.instance
-              .createUserWithEmailAndPassword(
-                  email: widget.email!,
-                  password:
-                      'temp_${DateTime.now().millisecondsSinceEpoch}' // Временный пароль
-                  );
-
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(credential.user!.uid)
-              .set(userData);
-        } else {
-          // Для телефона - анонимная аутентификация
-          final credential = await FirebaseAuth.instance.signInAnonymously();
-
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(credential.user!.uid)
-              .set(userData);
-        }
-
-        // Переход в приложение
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => BottomNavigationBarEX()),
-        );
-      } catch (e) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка регистрации: ${e.toString()}')),
-        );
-      }
-    }
-  }
+  const CodeVerificationScreen({
+    super.key,
+    required this.generatedCode,
+    required this.isEmailAuth,
+    required this.onCodeVerified,
+    this.email,
+    this.phoneNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final _codeController = TextEditingController();
+
     return Scaffold(
-      appBar: AppBar(title: Text('Регистрация')),
+      appBar: AppBar(title: const Text('Подтверждение кода')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              'Введите 6-значный код, отправленный на ${isEmailAuth ? email : phoneNumber}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 20),
+            Pinput(
+              length: 6,
+              controller: _codeController,
+              defaultPinTheme: PinTheme(
+                width: 56,
+                height: 56,
+                textStyle:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final isValid = _verifyUserCode(
+                    _codeController.text, generatedCode.toString());
+                onCodeVerified(isValid);
+              },
+              child: const Text('Подтвердить'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Назад'),
+            ),
+            if (generatedCode != null)
+              Text('Тестовый код: $generatedCode',
+                  style: const TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _verifyUserCode(String inputCode, String generatedCode) {
+    final isValid = inputCode == generatedCode;
+    print(
+        'Проверка кода: $inputCode, ожидаемый: $generatedCode, результат: $isValid');
+    return isValid;
+  }
+}
+
+class RegistrationScreen extends StatelessWidget {
+  final String? email;
+  final String? phoneNumber;
+  final Function() onUserRegistered;
+
+  const RegistrationScreen({
+    super.key,
+    required this.onUserRegistered,
+    this.email,
+    this.phoneNumber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final _formKey = GlobalKey<FormState>();
+    final _nameController = TextEditingController();
+    final _surnameController = TextEditingController();
+    final _passwordController = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Регистрация')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
-              Text(widget.email != null
-                  ? 'Регистрация для ${widget.email}'
-                  : 'Регистрация для ${widget.phone}'),
-              SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
-                decoration: InputDecoration(labelText: 'Имя'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Введите имя';
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: 'Имя'),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Введите имя' : null,
               ),
               TextFormField(
                 controller: _surnameController,
-                decoration: InputDecoration(labelText: 'Фамилия'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Введите фамилию';
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: 'Фамилия'),
               ),
-              SizedBox(height: 20),
-              _isLoading
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _completeRegistration,
-                      child: Text('Завершить регистрацию'),
-                    ),
+              if (email != null)
+                TextFormField(
+                  initialValue: email,
+                  readOnly: true,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+              if (phoneNumber != null)
+                TextFormField(
+                  initialValue: phoneNumber,
+                  readOnly: true,
+                  decoration: const InputDecoration(labelText: 'Телефон'),
+                ),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Пароль'),
+                obscureText: true,
+                validator: (value) =>
+                    value!.length > 5 ? null : 'Минимум 6 символов',
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    try {
+                      final user = UserModel(
+                        uid: FirebaseAuth.instance.currentUser?.uid ??
+                            'new_user_${DateTime.now().millisecondsSinceEpoch}',
+                        name: _nameController.text,
+                        subname: _surnameController.text,
+                        email: email,
+                        phone: phoneNumber,
+                        password: _passwordController.text,
+                      );
+
+                      await DatabaseService().createUser(user);
+                      onUserRegistered();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Ошибка: ${e.toString()}')),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Зарегистрироваться'),
+              ),
             ],
           ),
         ),

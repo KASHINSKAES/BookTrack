@@ -18,8 +18,6 @@ import '/widgets/BookListPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -29,8 +27,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
-        ChangeNotifierProvider(
-      create: (_) => BrightnessProvider()),
+        ChangeNotifierProvider(create: (_) => BrightnessProvider()),
         ChangeNotifierProvider(
             create: (context) => ReadingStatsProvider()..loadData()),
         ChangeNotifierProvider(create: (context) => SettingsProvider()),

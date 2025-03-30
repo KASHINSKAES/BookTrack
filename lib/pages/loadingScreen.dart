@@ -29,7 +29,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       // Переход на основной экран
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) =>  AuthWrapper()),
+        MaterialPageRoute(builder: (context) =>  AuthScreen()),
       );
     });
   }
@@ -40,7 +40,7 @@ class _LoadingScreenState extends State<LoadingScreen>
     return AnimatedSwitcher(
       duration: const Duration(seconds: 30),
       child: isLoaded
-          ? AuthWrapper() // Переход на основной экран
+          ? AuthScreen() // Переход на основной экран
           : Scaffold(
               backgroundColor: Colors.white,
               body: Stack(

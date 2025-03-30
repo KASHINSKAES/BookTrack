@@ -50,4 +50,7 @@ buildscript {
     dependencies {
         classpath 'com.google.gms:google-services:4.3.15' // или последняя версия
     }
+    dependencies {
+    implementation "androidx.browser:browser:1.4.0" // Требуется для капчи
+    }
 }
