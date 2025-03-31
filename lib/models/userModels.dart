@@ -1,3 +1,4 @@
+// ignore: file_names
 class UserModel {
   final String uid;
   final String? name;

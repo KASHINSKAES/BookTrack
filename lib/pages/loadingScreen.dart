@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:booktrack/main.dart';
-import 'package:booktrack/pages/AuthWrap.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
