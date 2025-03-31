@@ -42,14 +42,13 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-     apiKey: "AIzaSyC3U262Pciu3HNyyAJtY3rky1pjW7RiHZE",
-  authDomain: "izla-a2a3d.firebaseapp.com",
-  projectId: "izla-a2a3d",
-  storageBucket: "izla-a2a3d.firebasestorage.app",
-  messagingSenderId: "178335024089",
-  appId: "1:178335024089:web:c2f670b88742678937cfc8",
-  measurementId: "G-S06XFDJ2TB"
-  );
+      apiKey: "AIzaSyC3U262Pciu3HNyyAJtY3rky1pjW7RiHZE",
+      authDomain: "izla-a2a3d.firebaseapp.com",
+      projectId: "izla-a2a3d",
+      storageBucket: "izla-a2a3d.firebasestorage.app",
+      messagingSenderId: "178335024089",
+      appId: "1:178335024089:web:c2f670b88742678937cfc8",
+      measurementId: "G-S06XFDJ2TB");
 
   // Добавьте конфигурации для других платформ, если необходимо...
 }

@@ -3,6 +3,10 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
+	<key>FirebaseAppCheckEnabled</key>
+	<false/>
+	<key>FirebasePhoneAuthAutoVerify</key>
+	<false/>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Booktrack</string>

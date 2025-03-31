@@ -1,36 +1,73 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Your App</title>
-    <!-- Подключение Firebase SDK как модулей -->
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-      import { getAuth } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
-      import { getFirestore } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+<head>
+  <meta charset="UTF-8">
+  <title>Your App</title>
+  <!-- Подключение Flutter Web -->
+  <script src="flutter.js" defer></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
 
-      // Ваша конфигурация Firebase
-      const firebaseConfig = {
-  apiKey: "AIzaSyC3U262Pciu3HNyyAJtY3rky1pjW7RiHZE",
-  authDomain: "izla-a2a3d.firebaseapp.com",
-  projectId: "izla-a2a3d",
-  storageBucket: "izla-a2a3d.firebasestorage.app",
-  messagingSenderId: "178335024089",
-  appId: "1:178335024089:web:c2f670b88742678937cfc8",
-  measurementId: "G-S06XFDJ2TB"
-};
+  <script>
+    // Конфигурация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC3U262Pciu3HNyyAJtY3rky1pjW7RiHZE",
+      authDomain: "izla-a2a3d.firebaseapp.com",
+      projectId: "izla-a2a3d",
+      storageBucket: "izla-a2a3d.firebasestorage.app",
+      messagingSenderId: "178335024089",
+      appId: "1:178335024089:web:c2f670b88742678937cfc8",
+      measurementId: "G-S06XFDJ2TB"
+    };
 
-      // Инициализация Firebase
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
+    // Инициализация Firebase
+    firebase.initializeApp(firebaseConfig);
+  firebase.auth().settings.appVerificationDisabledForTesting = true;
+  </script>
+</head>
+<body>
+  <!-- Этот div ОБЯЗАТЕЛЕН для Flutter Web -->
+  <div id="flutter-target"></div>
 
-      // Проверка инициализации
-      console.log("Firebase initialized:", app);
-    </script>
-  </head>
-  <body>
-    <script src="main.dart.js"></script>
+  <script>
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('flutter_service_worker.js?v=123456')
+          .then(reg => console.log('Service Worker registered', reg))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
     
-  </body>
+    // Инициализация Flutter Web
+    window.addEventListener('load', function() {
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: '123456'
+        }
+      }).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
+      });
+    });
+  </script>
+</body>
+<script>
+  // Настройка Firestore для веба
+  firebase.firestore().settings({
+    experimentalForceLongPolling: true,
+    merge: true,
+    ignoreUndefinedProperties: true
+  });
+
+  // Обработка ошибок соединения
+  firebase.firestore().enablePersistence()
+    .catch(err => {
+      console.log('Persistence failed:', err);
+    });
+</script>
 </html>

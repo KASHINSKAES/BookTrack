@@ -1,54 +1,59 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
-const twilio = require('twilio'); // Для SMS
+const twilio = require('twilio');
 
 admin.initializeApp();
+const db = admin.firestore();
+const twilioClient = new twilio(
+  process.env.TWILIO_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
-// 1. Настройка email (Gmail пример)
-const gmailEmail = 'ваш@gmail.com';
-const gmailPassword = 'ваш-пароль-приложения'; // Не основной пароль!
-
-const mailTransport = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: gmailEmail,
-    pass: gmailPassword,
-  },
-});
-
-// 2. Настройка Twilio (для SMS)
-const twilioAccountSid = 'ACxxxxxxxxxx';
-const twilioAuthToken = 'ваш-токен';
-const twilioClient = twilio(twilioAccountSid, twilioAuthToken);
-
-// 3. Cloud Function для отправки email
-exports.sendEmailVerification = functions.https.onCall(async (data, context) => {
-  const email = data.email;
-  const code = data.code;
-
-  const mailOptions = {
-    from: `BookApp <${gmailEmail}>`,
-    to: email,
-    subject: 'Ваш код подтверждения',
-    text: `Ваш код для входа: ${code}`,
-    html: `<p>Ваш код для входа: <strong>${code}</strong></p>`,
-  };
-
-  await mailTransport.sendMail(mailOptions);
-  return { success: true };
-});
-
-// 4. Cloud Function для отправки SMS
-exports.sendSmsVerification = functions.https.onCall(async (data, context) => {
+exports.sendCode = functions.https.onCall(async (data, context) => {
   const phone = data.phone;
-  const code = data.code;
+  if (!phone) throw new functions.https.HttpsError('invalid-argument', 'Phone required');
 
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
+
+  await db.collection('verificationCodes').add({
+    phone,
+    code,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt,
+  });
+
+  // Реальная отправка SMS (для теста используйте console.log)
   await twilioClient.messages.create({
-    body: `Ваш код подтверждения: ${code}`,
-    from: '+1234567890', // Ваш Twilio номер
+    body: `Ваш код: ${code}`,
     to: phone,
+    from: '+1234567890', // Ваш Twilio номер
   });
 
   return { success: true };
+});
+
+exports.verifyCode = functions.https.onCall(async (data, context) => {
+  const { phone, code } = data;
+  if (!phone || !code) throw new functions.https.HttpsError('invalid-argument', 'Invalid data');
+
+  const snapshot = await db.collection('verificationCodes')
+    .where('phone', '==', phone)
+    .where('code', '==', code)
+    .where('expiresAt', '>', new Date())
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    throw new functions.https.HttpsError('not-found', 'Invalid code');
+  }
+
+  await snapshot.docs[0].ref.delete();
+
+  const user = await db.collection('users')
+    .where('phone', '==', phone)
+    .limit(1)
+    .get();
+
+  return { userExists: !user.empty };
 });

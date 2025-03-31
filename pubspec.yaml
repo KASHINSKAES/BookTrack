@@ -35,6 +35,8 @@ dependencies:
   web: ^1.1.1
   extended_phone_number_input: ^1.0.2
   pinput: ^5.0.1
+  phone_form_field: ^4.3.1
+  cloud_functions: ^5.4.0
 
 dev_dependencies:
   flutter_test:
