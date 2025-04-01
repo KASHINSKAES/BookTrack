@@ -1,4 +1,5 @@
 import 'package:booktrack/main.dart';
+import 'package:booktrack/pages/LoginPAGES/auth_enums.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,8 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _formKey = GlobalKey<FormState>();
+  final _emailFormKey = GlobalKey<FormState>();
+  final _phoneFormKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _phoneController = PhoneController(null);
@@ -52,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _sendSmsCode() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_phoneFormKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -73,17 +75,25 @@ class _AuthScreenState extends State<AuthScreen>
     }
   }
 
-  Future<bool> _verifyCode(String phone, String enteredCode) async {
+  Future<VerificationStatus> _verifyCode(
+      String phone, String enteredCode) async {
     try {
-      // Простая проверка кода без Firestore для теста
       if (enteredCode != _generatedCode) {
-        debugPrint('Ожидался: $_generatedCode, Получен: $enteredCode');
-        return false;
+        return VerificationStatus.invalidCode;
       }
-      return true;
+
+      final snapshot = await _firestore
+          .collection('users')
+          .where('phoneNumber ', isEqualTo: phone)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isEmpty
+          ? VerificationStatus.newUser
+          : VerificationStatus.existingUser;
     } catch (e) {
-      debugPrint('Ошибка проверки кода: $e');
-      return false;
+      debugPrint('Ошибка верификации: $e');
+      return VerificationStatus.error;
     }
   }
   // Future<void> _registerNewUser(String phone) async {
@@ -98,24 +108,24 @@ class _AuthScreenState extends State<AuthScreen>
   // }
 
   Future<void> _showCodeVerificationScreen(String phone) async {
-    final verified = await Navigator.push<bool>(
+    final status = await Navigator.push<VerificationStatus>(
       context,
       MaterialPageRoute(
         builder: (context) => CodeVerificationScreen(
+          onCodeVerified: (code) => _verifyCode(phone, code),
           phoneNumber: phone,
-          correctCode: _generatedCode!, // передаем сгенерированный код
-          onCodeVerified: (enteredCode) async {
-            return await _verifyCode(
-                phone, enteredCode); // передаем введенный код
-          },
+          correctCode: _generatedCode.toString(),
         ),
       ),
     );
 
-    if (verified == true) {
+    if (status == VerificationStatus.existingUser) {
+      // Вход
       Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+          context, MaterialPageRoute(builder: (_) => BottomNavigationBarEX()));
+    } else if (status == VerificationStatus.newUser) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Новый номер')),
       );
     }
   }
@@ -171,7 +181,7 @@ class _AuthScreenState extends State<AuthScreen>
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
-        key: _formKey,
+        key: _emailFormKey,
         child: Column(
           children: [
             TextFormField(
@@ -195,14 +205,18 @@ class _AuthScreenState extends State<AuthScreen>
                 child: const Text('Войти'),
               ),
             ] else ...[
-              ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Тестовая отправка кода на email')),
+              Builder(
+                builder: (innerContext) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      ScaffoldMessenger.of(innerContext).showSnackBar(
+                        const SnackBar(
+                            content: Text('Тестовая отправка кода на email')),
+                      );
+                    },
+                    child: const Text('Получить код'),
                   );
                 },
-                child: const Text('Получить код'),
               ),
             ],
             TextButton(
@@ -230,7 +244,7 @@ class _AuthScreenState extends State<AuthScreen>
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
-        key: _formKey,
+        key: _phoneFormKey,
         child: Column(
           children: [
             PhoneFormField(
@@ -241,6 +255,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 20),
             if (_usePassword) ...[
               TextFormField(
+                key: ValueKey(_usePassword),
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Пароль'),
                 obscureText: true,
@@ -289,7 +304,7 @@ class _AuthScreenState extends State<AuthScreen>
 class CodeVerificationScreen extends StatefulWidget {
   final String phoneNumber;
   final String correctCode;
-  final Future<bool> Function(String enteredCode) onCodeVerified;
+  final Future<VerificationStatus> Function(String) onCodeVerified;
 
   const CodeVerificationScreen({
     super.key,
@@ -359,18 +374,26 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                       });
 
                       try {
-                        final verified =
-                            await widget.onCodeVerified(enteredCode);
-                        if (verified) {
-                          Navigator.pop(context, true);
-                        } else {
-                          setState(() => _errorMessage = 'Неверный код');
+                        final status = await widget.onCodeVerified(enteredCode);
+
+                        switch (status) {
+                          case VerificationStatus.existingUser:
+                            Navigator.pop(context, status);
+                            break;
+                          case VerificationStatus.newUser:
+                            Navigator.pop(context, status);
+                            break;
+                          case VerificationStatus.invalidCode:
+                            setState(() => _errorMessage = 'Неверный код');
+                            break;
+                          case VerificationStatus.error:
+                            setState(() => _errorMessage = 'Ошибка сервера');
                         }
                       } catch (e) {
                         setState(
                             () => _errorMessage = 'Ошибка: ${e.toString()}');
                       } finally {
-                        setState(() => _isLoading = false);
+                        if (mounted) setState(() => _isLoading = false);
                       }
                     },
               child: _isLoading
