@@ -1,9 +1,13 @@
 import 'package:booktrack/main.dart';
+import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobAuth.dart';
+import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/pages/LoginPAGES/auth_enums.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:phone_form_field/phone_form_field.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:pinput/pinput.dart';
 import 'dart:math';
 
@@ -21,7 +25,9 @@ class _AuthScreenState extends State<AuthScreen>
   final _phoneFormKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
-  final _phoneController = PhoneController(null);
+  final _phoneController = TextEditingController();
+  String _phoneNumber = '';
+  String _mail = '';
   final _passwordController = TextEditingController();
   final _codeController = TextEditingController();
 
@@ -62,12 +68,32 @@ class _AuthScreenState extends State<AuthScreen>
     });
 
     try {
-      final phone = _phoneController.value?.international ?? '';
       _generatedCode = _generate6DigitCode();
 
-      debugPrint('Код подтверждения для $phone: $_generatedCode');
+      debugPrint('Код подтверждения для $_phoneNumber: $_generatedCode');
 
-      await _showCodeVerificationScreen(phone);
+      await _showCodeVerificationScreen(_phoneNumber);
+    } catch (e) {
+      setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sendMailCode() async {
+    if (!_emailFormKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      _generatedCode = _generate6DigitCode();
+
+      debugPrint('Код подтверждения для $_mail: $_generatedCode');
+
+      await _showCodeVerificationScreenMail(_mail);
     } catch (e) {
       setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
     } finally {
@@ -96,16 +122,28 @@ class _AuthScreenState extends State<AuthScreen>
       return VerificationStatus.error;
     }
   }
-  // Future<void> _registerNewUser(String phone) async {
-  //   try {
-  //     await _firestore.collection('users').add({
-  //       'phone': phone,
-  //       'createdAt': FieldValue.serverTimestamp(),
-  //     });
-  //   } catch (e) {
-  //     throw Exception('Не удалось зарегистрировать пользователя');
-  //   }
-  // }
+
+  Future<VerificationStatus> _verifyCodeMail(
+      String mail, String enteredCode) async {
+    try {
+      if (enteredCode != _generatedCode) {
+        return VerificationStatus.invalidCode;
+      }
+
+      final snapshot = await _firestore
+          .collection('users')
+          .where('email ', isEqualTo: mail)
+          .limit(1)
+          .get();
+
+      return snapshot.docs.isEmpty
+          ? VerificationStatus.newUser
+          : VerificationStatus.existingUser;
+    } catch (e) {
+      debugPrint('Ошибка верификации: $e');
+      return VerificationStatus.error;
+    }
+  }
 
   Future<void> _showCodeVerificationScreen(String phone) async {
     final status = await Navigator.push<VerificationStatus>(
@@ -115,6 +153,7 @@ class _AuthScreenState extends State<AuthScreen>
           onCodeVerified: (code) => _verifyCode(phone, code),
           phoneNumber: phone,
           correctCode: _generatedCode.toString(),
+          isEmail: false,
         ),
       ),
     );
@@ -124,9 +163,41 @@ class _AuthScreenState extends State<AuthScreen>
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => BottomNavigationBarEX()));
     } else if (status == VerificationStatus.newUser) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Новый номер')),
-      );
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (_) => RegistrationScreen(
+                    phone: phone,
+                    isEmail: false,
+                  )));
+    }
+  }
+
+  Future<void> _showCodeVerificationScreenMail(String mail) async {
+    final status = await Navigator.push<VerificationStatus>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CodeVerificationScreen(
+          onCodeVerified: (code) => _verifyCodeMail(mail, code),
+          email: mail,
+          correctCode: _generatedCode.toString(),
+          isEmail: true,
+        ),
+      ),
+    );
+
+    if (status == VerificationStatus.existingUser) {
+      // Вход
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => BottomNavigationBarEX()));
+    } else if (status == VerificationStatus.newUser) {
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (_) => RegistrationScreen(
+                    email: mail,
+                    isEmail: true,
+                  )));
     }
   }
 
@@ -153,28 +224,42 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Регистрация/Вход')),
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'По почте'),
-              Tab(text: 'По телефону'),
-            ],
+        backgroundColor: Colors.white,
+        body: Stack(alignment: Alignment.center, children: [
+          Positioned.fill(
+            child: AnimatedWaveScreenAuthWrap(),
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 135),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildEmailAuthTab(),
-                _buildPhoneAuthTab(),
+                SvgPicture.asset(
+                  "images/logoRegist.svg",
+                ),
+                TabBar(
+                  dividerColor: Colors.white,
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'Email'),
+                    Tab(text: 'Телефон'),
+                  ],
+                  labelStyle: TextStyle(fontFamily: 'MPLUSRounded1c'),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildEmailAuthTab(),
+                      _buildPhoneAuthTab(),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+          )
+        ]));
   }
 
   Widget _buildEmailAuthTab() {
@@ -186,15 +271,30 @@ class _AuthScreenState extends State<AuthScreen>
           children: [
             TextFormField(
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
+              decoration: InputDecoration(
+                  labelText: 'Ваш Email',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(35.0),
+                      borderSide:
+                          BorderSide(color: AppColors.background, width: 2))),
               validator: (value) =>
                   value?.contains('@') ?? false ? null : 'Некорректный email',
+              onChanged: (mail) {
+                setState(() {
+                  _mail = mail;
+                });
+              },
             ),
             const SizedBox(height: 20),
             if (_usePassword) ...[
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Пароль'),
+                decoration: InputDecoration(
+                    labelText: 'Пароль',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35.0),
+                        borderSide:
+                            BorderSide(color: AppColors.background, width: 2))),
                 obscureText: true,
                 validator: (value) =>
                     value!.length > 5 ? null : 'Минимум 6 символов',
@@ -208,18 +308,24 @@ class _AuthScreenState extends State<AuthScreen>
               Builder(
                 builder: (innerContext) {
                   return ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(innerContext).showSnackBar(
-                        const SnackBar(
-                            content: Text('Тестовая отправка кода на email')),
-                      );
-                    },
-                    child: const Text('Получить код'),
+                    style: ButtonStyle(
+                      side: MaterialStateProperty.all(
+                        const BorderSide(
+                          color: AppColors.background,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    onPressed: _sendMailCode,
+                    child: _isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text('Получить код'),
                   );
                 },
               ),
             ],
             TextButton(
+              style: ButtonStyle(),
               onPressed: () {
                 setState(() => _usePassword = !_usePassword);
               },
@@ -247,17 +353,60 @@ class _AuthScreenState extends State<AuthScreen>
         key: _phoneFormKey,
         child: Column(
           children: [
-            PhoneFormField(
-              controller: _phoneController,
-              validator: PhoneValidator.validMobile(),
-              defaultCountry: 'RU',
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IntlPhoneField(
+                controller: _phoneController,
+                decoration: InputDecoration(
+                    labelText: 'Номер телефона',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35.0),
+                        borderSide:
+                            BorderSide(color: AppColors.background, width: 2))),
+                initialCountryCode: 'RU',
+                onChanged: (phone) {
+                  setState(() {
+                    _phoneNumber = phone.completeNumber;
+                  });
+                },
+                validator: (phone) {
+                  // Если поле пустое — разрешаем (необязательное поле)
+                  if (phone == null || phone.number.isEmpty) {
+                    return null;
+                  }
+
+                  // Если введён текст вместо номера (например, "abc")
+                  if (!RegExp(r'^[0-9]+$').hasMatch(phone.number)) {
+                    return 'Номер должен содержать только цифры';
+                  }
+
+                  // Дополнительная проверка на длину номера (если нужно)
+                  if (phone.number.length <= 10) {
+                    return 'Номер слишком короткий';
+                  }
+
+                  return null; // Валидация пройдена
+                },
+                showCountryFlag: true,
+                dropdownDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             if (_usePassword) ...[
               TextFormField(
                 key: ValueKey(_usePassword),
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Пароль'),
+                decoration: InputDecoration(
+                    labelText: 'Пароль',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(35.0),
+                        borderSide:
+                            BorderSide(color: AppColors.background, width: 2))),
                 obscureText: true,
                 validator: (value) =>
                     value!.length > 5 ? null : 'Минимум 6 символов',
@@ -302,13 +451,18 @@ class _AuthScreenState extends State<AuthScreen>
 }
 
 class CodeVerificationScreen extends StatefulWidget {
-  final String phoneNumber;
-  final String correctCode;
+  final String? phoneNumber; // Необязательный (может быть null)
+  final String? email; // Необязательный (может быть null)
+  final String
+      correctCode; // Код верификации (может быть необязательным, если нужен)
+  final bool isEmail; // Обязательный параметр
   final Future<VerificationStatus> Function(String) onCodeVerified;
 
   const CodeVerificationScreen({
     super.key,
-    required this.phoneNumber,
+    this.phoneNumber,
+    this.email,
+    required this.isEmail,
     required this.correctCode,
     required this.onCodeVerified,
   });
@@ -325,13 +479,12 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Подтверждение кода')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Text(
-              'Введите 6-значный код, отправленный на ${widget.phoneNumber}',
+              'Введите 6-значный код, отправленный на ${widget.isEmail ? widget.email : widget.phoneNumber}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 20),

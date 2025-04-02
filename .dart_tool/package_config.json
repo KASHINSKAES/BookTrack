@@ -290,6 +290,12 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "fluttertoast",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/fluttertoast-8.2.12",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "glob",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/glob-2.1.3",
       "packageUri": "lib/",
@@ -316,6 +322,12 @@
     {
       "name": "intl",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/intl-0.17.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "intl_phone_field",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/intl_phone_field-3.2.0",
       "packageUri": "lib/",
       "languageVersion": "2.12"
     },
@@ -710,7 +722,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-04-01T14:05:49.098078Z",
+  "generated": "2025-04-02T12:25:15.979849Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",
