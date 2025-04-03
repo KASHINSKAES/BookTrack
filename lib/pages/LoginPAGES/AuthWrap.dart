@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:intl_phone_field/phone_number.dart';
 import 'package:pinput/pinput.dart';
 import 'dart:math';
 
@@ -30,12 +31,15 @@ class _AuthScreenState extends State<AuthScreen>
   String _mail = '';
   final _passwordController = TextEditingController();
   final _codeController = TextEditingController();
-
   bool _isLoading = false;
-  bool _isEmailAuth = true;
   bool _usePassword = false;
   String? _errorMessage;
   String? _generatedCode;
+
+  String? _validateEmail(String? value) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
+  }
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -60,7 +64,10 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _sendSmsCode() async {
-    if (!_phoneFormKey.currentState!.validate()) return;
+    if (_phoneFormKey.currentState == null) return;
+
+    // Проверяем валидность всей формы
+    if (_phoneFormKey.currentState?.validate() != true) return;
 
     setState(() {
       _isLoading = true;
@@ -223,6 +230,8 @@ class _AuthScreenState extends State<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
         backgroundColor: Colors.white,
         body: Stack(alignment: Alignment.center, children: [
@@ -245,7 +254,10 @@ class _AuthScreenState extends State<AuthScreen>
                     Tab(text: 'Email'),
                     Tab(text: 'Телефон'),
                   ],
-                  labelStyle: TextStyle(fontFamily: 'MPLUSRounded1c'),
+                  labelStyle:
+                      TextStyle(fontFamily: 'MPLUSRounded1c', fontSize: 24),
+                  indicatorColor: AppColors.background,
+                  labelColor: AppColors.background,
                 ),
                 Expanded(
                   child: TabBarView(
@@ -263,6 +275,8 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Widget _buildEmailAuthTab() {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -272,13 +286,30 @@ class _AuthScreenState extends State<AuthScreen>
             TextFormField(
               controller: _emailController,
               decoration: InputDecoration(
-                  labelText: 'Ваш Email',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(35.0),
-                      borderSide:
-                          BorderSide(color: AppColors.background, width: 2))),
-              validator: (value) =>
-                  value?.contains('@') ?? false ? null : 'Некорректный email',
+                labelText: 'Ваш Email',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
+                ),
+              ),
+              validator: _validateEmail,
               onChanged: (mail) {
                 setState(() {
                   _mail = mail;
@@ -290,25 +321,65 @@ class _AuthScreenState extends State<AuthScreen>
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                    labelText: 'Пароль',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(35.0),
-                        borderSide:
-                            BorderSide(color: AppColors.background, width: 2))),
+                  labelText: 'Пароль',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                ),
                 obscureText: true,
                 validator: (value) =>
                     value!.length > 5 ? null : 'Минимум 6 символов',
               ),
               const SizedBox(height: 20),
               ElevatedButton(
+                style: ButtonStyle(
+                  fixedSize: MaterialStateProperty.all(
+                    Size(
+                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      35 * scale.clamp(0.5, 2.0),
+                    ),
+                  ),
+                  side: MaterialStateProperty.all(
+                    const BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                ),
                 onPressed: _signInWithEmail,
-                child: const Text('Войти'),
+                child: const Text('Войти',
+                    style:
+                        TextStyle(fontSize: 20, color: AppColors.textPrimary)),
               ),
             ] else ...[
               Builder(
                 builder: (innerContext) {
                   return ElevatedButton(
                     style: ButtonStyle(
+                      fixedSize: MaterialStateProperty.all(
+                        Size(
+                          260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                          35 * scale.clamp(0.5, 2.0),
+                        ),
+                      ),
                       side: MaterialStateProperty.all(
                         const BorderSide(
                           color: AppColors.background,
@@ -319,18 +390,21 @@ class _AuthScreenState extends State<AuthScreen>
                     onPressed: _sendMailCode,
                     child: _isLoading
                         ? const CircularProgressIndicator()
-                        : const Text('Получить код'),
+                        : const Text('Получить код',
+                            style: TextStyle(
+                                fontSize: 20, color: AppColors.textPrimary)),
                   );
                 },
               ),
             ],
             TextButton(
-              style: ButtonStyle(),
               onPressed: () {
                 setState(() => _usePassword = !_usePassword);
               },
               child: Text(
-                  _usePassword ? 'Использовать код' : 'Использовать пароль'),
+                _usePassword ? 'Использовать код' : 'Использовать пароль',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ),
             if (_errorMessage != null)
               Padding(
@@ -347,85 +421,141 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Widget _buildPhoneAuthTab() {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
         key: _phoneFormKey,
         child: Column(
           children: [
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: IntlPhoneField(
-                controller: _phoneController,
-                decoration: InputDecoration(
-                    labelText: 'Номер телефона',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(35.0),
-                        borderSide:
-                            BorderSide(color: AppColors.background, width: 2))),
-                initialCountryCode: 'RU',
-                onChanged: (phone) {
-                  setState(() {
-                    _phoneNumber = phone.completeNumber;
-                  });
-                },
-                validator: (phone) {
-                  // Если поле пустое — разрешаем (необязательное поле)
-                  if (phone == null || phone.number.isEmpty) {
-                    return null;
-                  }
-
-                  // Если введён текст вместо номера (например, "abc")
-                  if (!RegExp(r'^[0-9]+$').hasMatch(phone.number)) {
-                    return 'Номер должен содержать только цифры';
-                  }
-
-                  // Дополнительная проверка на длину номера (если нужно)
-                  if (phone.number.length <= 10) {
-                    return 'Номер слишком короткий';
-                  }
-
-                  return null; // Валидация пройдена
-                },
-                showCountryFlag: true,
-                dropdownDecoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+            IntlPhoneField(
+              controller: _phoneController,
+              showCursor: false,
+              invalidNumberMessage: " Номер слишком короткий",
+              decoration: InputDecoration(
+                labelText: 'Номер телефона',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(35.0),
+                  borderSide: BorderSide(
+                    color: AppColors.background,
+                    width: 2,
+                  ),
                 ),
               ),
+              initialCountryCode: 'RU',
+              onChanged: (phone) {
+                setState(() {
+                  _phoneNumber = phone.completeNumber;
+                });
+              },
+              validator: (phone) {
+                final num = phone?.number ?? '';
+                if (num == '') return 'Введите номер телефона';
+                if (!RegExp(r'^[0-9]+$').hasMatch(num)) return 'Только цифры';
+                if (num.length < 10) return 'Минимум 10 цифр';
+                return null;
+              },
+              showCountryFlag: true,
+              dropdownDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            const SizedBox(height: 20),
             if (_usePassword) ...[
               TextFormField(
                 key: ValueKey(_usePassword),
                 controller: _passwordController,
                 decoration: InputDecoration(
-                    labelText: 'Пароль',
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(35.0),
-                        borderSide:
-                            BorderSide(color: AppColors.background, width: 2))),
+                  labelText: 'Пароль',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(35.0),
+                    borderSide: BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                ),
                 obscureText: true,
                 validator: (value) =>
                     value!.length > 5 ? null : 'Минимум 6 символов',
               ),
               const SizedBox(height: 20),
               ElevatedButton(
+                style: ButtonStyle(
+                  fixedSize: MaterialStateProperty.all(
+                    Size(
+                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      35 * scale.clamp(0.5, 2.0),
+                    ),
+                  ),
+                  side: MaterialStateProperty.all(
+                    const BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Тестовый вход по паролю')),
                   );
                 },
-                child: const Text('Войти'),
+                child: const Text('Войти',
+                    style:
+                        TextStyle(fontSize: 20, color: AppColors.textPrimary)),
               ),
             ] else ...[
               ElevatedButton(
+                style: ButtonStyle(
+                  fixedSize: MaterialStateProperty.all(
+                    Size(
+                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      35 * scale.clamp(0.5, 2.0),
+                    ),
+                  ),
+                  side: MaterialStateProperty.all(
+                    const BorderSide(
+                      color: AppColors.background,
+                      width: 2,
+                    ),
+                  ),
+                ),
                 onPressed: _sendSmsCode,
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text('Получить код'),
+                    : const Text(
+                        'Получить код',
+                        style: TextStyle(
+                            fontSize: 20, color: AppColors.textPrimary),
+                      ),
               ),
             ],
             TextButton(
@@ -433,7 +563,8 @@ class _AuthScreenState extends State<AuthScreen>
                 setState(() => _usePassword = !_usePassword);
               },
               child: Text(
-                  _usePassword ? 'Использовать код' : 'Использовать пароль'),
+                  _usePassword ? 'Использовать код' : 'Использовать пароль',
+                  style: TextStyle(color: AppColors.textPrimary)),
             ),
             if (_errorMessage != null)
               Padding(
@@ -478,92 +609,122 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text(
-              'Введите 6-значный код, отправленный на ${widget.isEmail ? widget.email : widget.phoneNumber}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 20),
-            Pinput(
-              length: 6,
-              controller: _codeController,
-              defaultPinTheme: PinTheme(
-                width: 56,
-                height: 56,
-                textStyle:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(12),
+        backgroundColor: Colors.white,
+        body: Stack(alignment: Alignment.center, children: [
+          Positioned.fill(
+            child: AnimatedWaveScreenAuthWrap(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Введите 6-значный код, отправленный на ${widget.isEmail ? widget.email : widget.phoneNumber}',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 24,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            if (_errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
+                const SizedBox(height: 20),
+                Pinput(
+                  length: 6,
+                  controller: _codeController,
+                  defaultPinTheme: PinTheme(
+                    width: 56,
+                    height: 56,
+                    textStyle: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.w600),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-              ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      final enteredCode = _codeController.text;
-                      if (enteredCode.length != 6) {
-                        setState(() => _errorMessage = 'Введите 6 цифр');
-                        return;
-                      }
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ButtonStyle(
+                    fixedSize: MaterialStateProperty.all(
+                      Size(
+                        260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                        35 * scale.clamp(0.5, 2.0),
+                      ),
+                    ),
+                    side: MaterialStateProperty.all(
+                      const BorderSide(
+                        color: AppColors.background,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          final enteredCode = _codeController.text;
+                          if (enteredCode.length != 6) {
+                            setState(() => _errorMessage = 'Введите 6 цифр');
+                            return;
+                          }
 
-                      setState(() {
-                        _isLoading = true;
-                        _errorMessage = null;
-                      });
+                          setState(() {
+                            _isLoading = true;
+                            _errorMessage = null;
+                          });
 
-                      try {
-                        final status = await widget.onCodeVerified(enteredCode);
+                          try {
+                            final status =
+                                await widget.onCodeVerified(enteredCode);
 
-                        switch (status) {
-                          case VerificationStatus.existingUser:
-                            Navigator.pop(context, status);
-                            break;
-                          case VerificationStatus.newUser:
-                            Navigator.pop(context, status);
-                            break;
-                          case VerificationStatus.invalidCode:
-                            setState(() => _errorMessage = 'Неверный код');
-                            break;
-                          case VerificationStatus.error:
-                            setState(() => _errorMessage = 'Ошибка сервера');
-                        }
-                      } catch (e) {
-                        setState(
-                            () => _errorMessage = 'Ошибка: ${e.toString()}');
-                      } finally {
-                        if (mounted) setState(() => _isLoading = false);
-                      }
-                    },
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Подтвердить'),
+                            switch (status) {
+                              case VerificationStatus.existingUser:
+                                Navigator.pop(context, status);
+                                break;
+                              case VerificationStatus.newUser:
+                                Navigator.pop(context, status);
+                                break;
+                              case VerificationStatus.invalidCode:
+                                setState(() => _errorMessage = 'Неверный код');
+                                break;
+                              case VerificationStatus.error:
+                                setState(
+                                    () => _errorMessage = 'Ошибка сервера');
+                            }
+                          } catch (e) {
+                            setState(() =>
+                                _errorMessage = 'Ошибка: ${e.toString()}');
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        },
+                  child: _isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('Подтвердить',
+                          style: TextStyle(
+                              fontSize: 20, color: AppColors.textPrimary)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Назад',
+                      style: TextStyle(
+                          fontSize: 20, color: AppColors.textPrimary)),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text('Тестовый код: ${widget.correctCode}',
-                style: const TextStyle(color: Colors.grey, fontSize: 16)),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Назад'),
-            ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ]));
   }
 
   @override
