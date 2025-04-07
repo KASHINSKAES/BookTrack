@@ -3,6 +3,7 @@ import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobRegistr.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/svg.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class RegistrationScreen extends StatefulWidget {
     this.phone,
     this.email,
     required this.isEmail,
-  }); //
+  });
 
   @override
   _RegistrationScreenState createState() => _RegistrationScreenState();
@@ -36,11 +37,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     super.initState();
 
     // Устанавливаем начальные значения
-      if (widget.isEmail && widget.email != null) {
-        _emailController.text = widget.email!;
-      } else if (!widget.isEmail && widget.phone != null) {
-        _phoneController.text = widget.phone!;
-      }
+    if (widget.isEmail && widget.email != null) {
+      _emailController.text = widget.email!;
+    } else if (!widget.isEmail && widget.phone != null) {
+      _phoneController.text = widget.phone!;
+    }
   }
 
   String? _validateName(String? value) {
@@ -56,17 +57,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Создаем документ в Firestore
-      final userDoc = FirebaseFirestore.instance.collection('users').doc();
+      UserCredential userCredential;
+      if (widget.isEmail) {
+        userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+      } else {
+        // Если регистрация по номеру телефона, используем другой метод
+        // Например, отправка SMS и верификация кода
+        // В данном примере предполагается, что верификация уже пройдена
+        userCredential = await FirebaseAuth.instance.signInWithCredential(
+          PhoneAuthProvider.credential(
+            verificationId: '', // Установите правильный verificationId
+            smsCode: '', // Установите правильный smsCode
+          ),
+        );
+      }
+
+      // Создаем документ в Firestore
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid);
 
       final userData = {
-        'id': userDoc.id,
+        'id': userCredential.user!.uid,
         'name': _nameController.text,
-        'phone': widget.phone, // Номер из предыдущего экрана
-        'email':
-            _emailController.text.isNotEmpty ? _emailController.text : null,
-        'password': _passwordController
-            .text, // ⚠️ В реальном приложении не храните пароль в Firestore!
+        'phone': widget.phone,
+        'email': _emailController.text.isNotEmpty ? _emailController.text : null,
         'subcollections': [
           'reading_progress',
           'reading_goals',
@@ -85,7 +101,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       await userDoc.set(userData);
 
-      // 2. Переход на главный экран
+      // Переход на главный экран
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
@@ -123,224 +139,216 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: Stack(alignment: Alignment.center, children: [
+      backgroundColor: Colors.white,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
           Positioned.fill(
             child: AnimatedWaveScreenRegisthWrap(),
           ),
           Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: 23 * scale, vertical: 125 * scale),
+              horizontal: 23 * scale,
+              vertical: 125 * scale,
+            ),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SvgPicture.asset(
-                    "images/AthLogo.svg",
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset("images/AthLogo.svg"),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 23 * scale,
+                    vertical: 23 * scale,
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 23 * scale, vertical: 23 * scale),
-                    child: Form(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                labelText: 'Имя*',
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Имя*',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
-                              validator: _validateName,
-                            ),
-                            SizedBox(height: 30),
-                            TextFormField(
-                              controller: _subnameController,
-                              decoration: InputDecoration(
-                                labelText: 'Фамилия',
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 30 * scale),
-                            TextFormField(
-                              controller: _phoneController,
-                              readOnly: true,
-                              decoration: InputDecoration(
-                                labelText: 'Номер телефона',
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                            validator: _validateName,
+                          ),
+                          SizedBox(height: 30),
+                          TextFormField(
+                            controller: _subnameController,
+                            decoration: InputDecoration(
+                              labelText: 'Фамилия',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
                             ),
-                            SizedBox(height: 30 * scale),
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                labelText: 'Email',
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                          ),
+                          SizedBox(height: 30 * scale),
+                          TextFormField(
+                            controller: _phoneController,
+                            readOnly: true,
+                            decoration: InputDecoration(
+                              labelText: 'Номер телефона',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
-                              keyboardType: TextInputType.emailAddress,
-                              onChanged: (_) =>
-                                  _formKey.currentState?.validate(),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
                             ),
-                            SizedBox(height: 30 * scale),
-                            TextFormField(
-                              controller: _passwordController,
-                              decoration: InputDecoration(
-                                labelText: 'Пароль*',
-                                border: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(35 * scale),
-                                  borderSide: BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                          ),
+                          SizedBox(height: 30 * scale),
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
-                              obscureText: true,
-                              validator: _validatePassword,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
                             ),
-                            SizedBox(height: 20 * scale),
-                            if (_isLoading)
-                              const CircularProgressIndicator()
-                            else
-                              ElevatedButton(
-                                style: ButtonStyle(
-                                  fixedSize: MaterialStateProperty.all(
-                                    Size(
-                                      260 *
-                                          scale.clamp(
-                                              0.5, 2.0), // Ограничиваем масштаб
-                                      35 * scale.clamp(0.5, 2.0),
-                                    ),
-                                  ),
-                                  side: MaterialStateProperty.all(
-                                    const BorderSide(
-                                      color: AppColors.background,
-                                      width: 2,
-                                    ),
+                            keyboardType: TextInputType.emailAddress,
+                            onChanged: (_) => _formKey.currentState?.validate(),
+                          ),
+                          SizedBox(height: 30 * scale),
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              labelText: 'Пароль*',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(35 * scale),
+                                borderSide: BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            obscureText: true,
+                            validator: _validatePassword,
+                          ),
+                          SizedBox(height: 20 * scale),
+                          if (_isLoading)
+                            const CircularProgressIndicator()
+                          else
+                            ElevatedButton(
+                              style: ButtonStyle(
+                                fixedSize: MaterialStateProperty.all(
+                                  Size(
+                                    260 * scale.clamp(0.5, 2.0),
+                                    35 * scale.clamp(0.5, 2.0),
                                   ),
                                 ),
-                                onPressed: _registerUser,
-                                child: Text('Зарегистрироваться',
-                                    style: TextStyle(
-                                        fontSize: 20,
-                                        color: AppColors.textPrimary)),
+                                side: MaterialStateProperty.all(
+                                  const BorderSide(
+                                    color: AppColors.background,
+                                    width: 2,
+                                  ),
+                                ),
                               ),
-                          ],
-                        ),
+                              onPressed: _registerUser,
+                              child: Text(
+                                'Зарегистрироваться',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                ]),
-          )
-        ]));
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

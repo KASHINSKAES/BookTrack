@@ -1,17 +1,19 @@
 // ignore: file_names
 class UserModel {
-  final String uid;
-  final String? name;
-  final String? subname;
-  final String? email;
-  final String? phone;
-  final String? password;
-  final DateTime? birthDate;
-  final int totalBonuses;
-  final int pagesReadTotal;
-  final List<String> savedBooks;
-  final List<String> readBooks;
-  final List<String> subcollections;
+   String uid;
+   String? name;
+   String? subname;
+   String? email;
+   String? phone;
+   String? password;
+   DateTime? birthDate;
+   int totalBonuses;
+   int pagesReadTotal;
+   List<String> savedBooks;
+   List<String> readBooks;
+   List<String> subcollections;
+
+   String? get userId => uid;
 
   UserModel({
     required this.uid,
@@ -34,6 +36,7 @@ class UserModel {
       'levels',
       'bonus_history'
     ],
+    String? surname,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -44,7 +47,8 @@ class UserModel {
       email: data['email'],
       phone: data['phone'],
       password: data['password'],
-      birthDate: data['birthDate'] != null ? DateTime.parse(data['birthDate']) : null,
+      birthDate:
+          data['birthDate'] != null ? DateTime.parse(data['birthDate']) : null,
       totalBonuses: data['totalBonuses'] ?? 0,
       pagesReadTotal: data['pagesReadTotal'] ?? 0,
       savedBooks: List<String>.from(data['saved_books'] ?? []),
@@ -68,4 +72,5 @@ class UserModel {
       'subcollections': subcollections,
     };
   }
+
 }
