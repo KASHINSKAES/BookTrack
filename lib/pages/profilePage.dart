@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/pages/PaymentMethodsPage.dart';
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
@@ -15,6 +17,7 @@ import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -118,6 +121,8 @@ class ProfilePage extends StatelessWidget {
 
   // Белый блок с закругленными углами
   Widget _buildWhiteContainer(double scale, BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userModel = authProvider.userModel;
     return Container(
       width: double.infinity,
       constraints: BoxConstraints(
@@ -137,6 +142,19 @@ class ProfilePage extends StatelessWidget {
           _buildAchievementsSection(scale, context),
           _buildChatSection(scale, context),
           _buildSettingsSection(scale, context),
+          SizedBox(height: scale * 20),
+          TextButton(
+              onPressed: () async {
+                await authProvider.logout();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => AuthScreen()),
+                );
+              },
+              child: Text(
+                'Выйти',
+                style: TextStyle(fontSize: 24 * scale, color: Colors.red),
+              ))
         ],
       ),
     );

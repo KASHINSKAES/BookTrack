@@ -1,12 +1,14 @@
 import 'dart:math';
 
 import 'package:booktrack/main.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -19,28 +21,34 @@ class _LoadingScreenState extends State<LoadingScreen>
     with SingleTickerProviderStateMixin {
   bool isLoaded = false;
 
+  bool isAuthenticatedUser = false;
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
-      setState(() {
-        isLoaded = true;
-      });
-      // Переход на основной экран
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) =>  AuthScreen()),
-      );
+    _checkAuthentication();
+  }
+
+  Future<void> _checkAuthentication() async {
+    await Future.delayed(Duration(seconds: 3)); // Имитация загрузки
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    bool isAuthenticated = authProvider.userModel != null;
+
+    setState(() {
+      isAuthenticatedUser = isAuthenticated;
+      isLoaded = true; // Обновляем состояние загрузки
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     return AnimatedSwitcher(
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: 0),
       child: isLoaded
-          ? AuthScreen() // Переход на основной экран
+          ? isAuthenticatedUser
+              ? BottomNavigationBarEX()
+              : AuthScreen()
           : Scaffold(
               backgroundColor: Colors.white,
               body: Stack(

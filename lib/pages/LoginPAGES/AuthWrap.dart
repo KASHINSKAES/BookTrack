@@ -1,16 +1,15 @@
 import 'package:booktrack/main.dart';
 import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobAuth.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
-import 'package:booktrack/pages/LoginPAGES/auth_enums.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthEnums.dart';
+import 'package:booktrack/pages/LoginPAGES/SmsCodePages.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:intl_phone_field/phone_number.dart';
-import 'package:pinput/pinput.dart';
-import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -34,19 +33,16 @@ class _AuthScreenState extends State<AuthScreen>
   bool _isLoading = false;
   bool _usePassword = false;
   String? _errorMessage;
-  String? _generatedCode;
-
-  String? _validateEmail(String? value) {
-    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
-  }
+  String? _verificationId;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _checkUserLoggedIn();
   }
 
   @override
@@ -59,14 +55,26 @@ class _AuthScreenState extends State<AuthScreen>
     super.dispose();
   }
 
-  String _generate6DigitCode() {
-    return (100000 + Random().nextInt(900000)).toString();
+  Future<void> _checkUserLoggedIn() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+    if (userId != null) {
+      // Пользователь уже вошел в систему
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+      );
+    }
+  }
+
+  String? _validateEmail(String? value) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
   }
 
   Future<void> _sendSmsCode() async {
     if (_phoneFormKey.currentState == null) return;
 
-    // Проверяем валидность всей формы
     if (_phoneFormKey.currentState?.validate() != true) return;
 
     setState(() {
@@ -75,11 +83,24 @@ class _AuthScreenState extends State<AuthScreen>
     });
 
     try {
-      _generatedCode = _generate6DigitCode();
-
-      debugPrint('Код подтверждения для $_phoneNumber: $_generatedCode');
-
-      await _showCodeVerificationScreen(_phoneNumber);
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: _phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          await _auth.signInWithCredential(credential);
+          _saveUserId();
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() => _errorMessage = 'Ошибка: ${e.message}');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          _verificationId = verificationId;
+          _showCodeVerificationScreen(_phoneNumber);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
+        timeout: Duration(
+            seconds:
+                60), // Установите таймаут для автоматического получения кода
+      );
     } catch (e) {
       setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
     } finally {
@@ -96,11 +117,14 @@ class _AuthScreenState extends State<AuthScreen>
     });
 
     try {
-      _generatedCode = _generate6DigitCode();
-
-      debugPrint('Код подтверждения для $_mail: $_generatedCode');
-
-      await _showCodeVerificationScreenMail(_mail);
+      await _auth.sendSignInLinkToEmail(
+        email: _mail,
+        actionCodeSettings: ActionCodeSettings(
+          url: 'https://your-app.firebaseapp.com',
+          handleCodeInApp: true,
+        ),
+      );
+      _showCodeVerificationScreenMail(_mail);
     } catch (e) {
       setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
     } finally {
@@ -111,45 +135,40 @@ class _AuthScreenState extends State<AuthScreen>
   Future<VerificationStatus> _verifyCode(
       String phone, String enteredCode) async {
     try {
-      if (enteredCode != _generatedCode) {
-        return VerificationStatus.invalidCode;
-      }
-
-      final snapshot = await _firestore
-          .collection('users')
-          .where('phoneNumber ', isEqualTo: phone)
-          .limit(1)
-          .get();
-
-      return snapshot.docs.isEmpty
-          ? VerificationStatus.newUser
-          : VerificationStatus.existingUser;
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: enteredCode,
+      );
+      await _auth.signInWithCredential(credential);
+      _saveUserId();
+      return VerificationStatus.existingUser;
     } catch (e) {
       debugPrint('Ошибка верификации: $e');
-      return VerificationStatus.error;
+      return VerificationStatus.invalidCode;
     }
   }
 
   Future<VerificationStatus> _verifyCodeMail(
       String mail, String enteredCode) async {
     try {
-      if (enteredCode != _generatedCode) {
-        return VerificationStatus.invalidCode;
+      UserCredential userCredential = await _auth.signInWithEmailLink(
+        email: mail,
+        emailLink: enteredCode,
+      );
+      if (userCredential.user != null) {
+        _saveUserId();
+        return VerificationStatus.existingUser;
       }
-
-      final snapshot = await _firestore
-          .collection('users')
-          .where('email ', isEqualTo: mail)
-          .limit(1)
-          .get();
-
-      return snapshot.docs.isEmpty
-          ? VerificationStatus.newUser
-          : VerificationStatus.existingUser;
+      return VerificationStatus.error;
     } catch (e) {
       debugPrint('Ошибка верификации: $e');
-      return VerificationStatus.error;
+      return VerificationStatus.invalidCode;
     }
+  }
+
+  Future<void> _saveUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userId', _auth.currentUser!.uid);
   }
 
   Future<void> _showCodeVerificationScreen(String phone) async {
@@ -159,24 +178,26 @@ class _AuthScreenState extends State<AuthScreen>
         builder: (context) => CodeVerificationScreen(
           onCodeVerified: (code) => _verifyCode(phone, code),
           phoneNumber: phone,
-          correctCode: _generatedCode.toString(),
           isEmail: false,
         ),
       ),
     );
 
     if (status == VerificationStatus.existingUser) {
-      // Вход
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => BottomNavigationBarEX()));
+        context,
+        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+      );
     } else if (status == VerificationStatus.newUser) {
       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (_) => RegistrationScreen(
-                    phone: phone,
-                    isEmail: false,
-                  )));
+        context,
+        MaterialPageRoute(
+          builder: (_) => RegistrationScreen(
+            phone: phone,
+            isEmail: false,
+          ),
+        ),
+      );
     }
   }
 
@@ -187,35 +208,38 @@ class _AuthScreenState extends State<AuthScreen>
         builder: (context) => CodeVerificationScreen(
           onCodeVerified: (code) => _verifyCodeMail(mail, code),
           email: mail,
-          correctCode: _generatedCode.toString(),
           isEmail: true,
         ),
       ),
     );
 
     if (status == VerificationStatus.existingUser) {
-      // Вход
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => BottomNavigationBarEX()));
+        context,
+        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+      );
     } else if (status == VerificationStatus.newUser) {
       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (_) => RegistrationScreen(
-                    email: mail,
-                    isEmail: true,
-                  )));
+        context,
+        MaterialPageRoute(
+          builder: (_) => RegistrationScreen(
+            email: mail,
+            isEmail: true,
+          ),
+        ),
+      );
     }
   }
 
   Future<void> _signInWithEmail() async {
     setState(() => _isLoading = true);
     try {
-      final user = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final user = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       if (user.user != null) {
+        _saveUserId();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
@@ -233,8 +257,10 @@ class _AuthScreenState extends State<AuthScreen>
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: Stack(alignment: Alignment.center, children: [
+      backgroundColor: Colors.white,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
           Positioned.fill(
             child: AnimatedWaveScreenAuthWrap(),
           ),
@@ -244,9 +270,7 @@ class _AuthScreenState extends State<AuthScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SvgPicture.asset(
-                  "images/logoRegist.svg",
-                ),
+                SvgPicture.asset("images/logoRegist.svg"),
                 TabBar(
                   dividerColor: Colors.white,
                   controller: _tabController,
@@ -271,7 +295,9 @@ class _AuthScreenState extends State<AuthScreen>
               ],
             ),
           )
-        ]));
+        ],
+      ),
+    );
   }
 
   Widget _buildEmailAuthTab() {
@@ -353,7 +379,7 @@ class _AuthScreenState extends State<AuthScreen>
                 style: ButtonStyle(
                   fixedSize: MaterialStateProperty.all(
                     Size(
-                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      260 * scale.clamp(0.5, 2.0),
                       35 * scale.clamp(0.5, 2.0),
                     ),
                   ),
@@ -376,7 +402,7 @@ class _AuthScreenState extends State<AuthScreen>
                     style: ButtonStyle(
                       fixedSize: MaterialStateProperty.all(
                         Size(
-                          260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                          260 * scale.clamp(0.5, 2.0),
                           35 * scale.clamp(0.5, 2.0),
                         ),
                       ),
@@ -512,7 +538,7 @@ class _AuthScreenState extends State<AuthScreen>
                 style: ButtonStyle(
                   fixedSize: MaterialStateProperty.all(
                     Size(
-                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      260 * scale.clamp(0.5, 2.0),
                       35 * scale.clamp(0.5, 2.0),
                     ),
                   ),
@@ -537,7 +563,7 @@ class _AuthScreenState extends State<AuthScreen>
                 style: ButtonStyle(
                   fixedSize: MaterialStateProperty.all(
                     Size(
-                      260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
+                      260 * scale.clamp(0.5, 2.0),
                       35 * scale.clamp(0.5, 2.0),
                     ),
                   ),
@@ -551,11 +577,9 @@ class _AuthScreenState extends State<AuthScreen>
                 onPressed: _sendSmsCode,
                 child: _isLoading
                     ? const CircularProgressIndicator()
-                    : const Text(
-                        'Получить код',
+                    : const Text('Получить код',
                         style: TextStyle(
-                            fontSize: 20, color: AppColors.textPrimary),
-                      ),
+                            fontSize: 20, color: AppColors.textPrimary)),
               ),
             ],
             TextButton(
@@ -563,8 +587,9 @@ class _AuthScreenState extends State<AuthScreen>
                 setState(() => _usePassword = !_usePassword);
               },
               child: Text(
-                  _usePassword ? 'Использовать код' : 'Использовать пароль',
-                  style: TextStyle(color: AppColors.textPrimary)),
+                _usePassword ? 'Использовать код' : 'Использовать пароль',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ),
             if (_errorMessage != null)
               Padding(
@@ -578,158 +603,5 @@ class _AuthScreenState extends State<AuthScreen>
         ),
       ),
     );
-  }
-}
-
-class CodeVerificationScreen extends StatefulWidget {
-  final String? phoneNumber; // Необязательный (может быть null)
-  final String? email; // Необязательный (может быть null)
-  final String
-      correctCode; // Код верификации (может быть необязательным, если нужен)
-  final bool isEmail; // Обязательный параметр
-  final Future<VerificationStatus> Function(String) onCodeVerified;
-
-  const CodeVerificationScreen({
-    super.key,
-    this.phoneNumber,
-    this.email,
-    required this.isEmail,
-    required this.correctCode,
-    required this.onCodeVerified,
-  });
-
-  @override
-  State<CodeVerificationScreen> createState() => _CodeVerificationScreenState();
-}
-
-class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
-  final _codeController = TextEditingController();
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
-    return Scaffold(
-        backgroundColor: Colors.white,
-        body: Stack(alignment: Alignment.center, children: [
-          Positioned.fill(
-            child: AnimatedWaveScreenAuthWrap(),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Введите 6-значный код, отправленный на ${widget.isEmail ? widget.email : widget.phoneNumber}',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 24,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Pinput(
-                  length: 6,
-                  controller: _codeController,
-                  defaultPinTheme: PinTheme(
-                    width: 56,
-                    height: 56,
-                    textStyle: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.w600),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  style: ButtonStyle(
-                    fixedSize: MaterialStateProperty.all(
-                      Size(
-                        260 * scale.clamp(0.5, 2.0), // Ограничиваем масштаб
-                        35 * scale.clamp(0.5, 2.0),
-                      ),
-                    ),
-                    side: MaterialStateProperty.all(
-                      const BorderSide(
-                        color: AppColors.background,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  onPressed: _isLoading
-                      ? null
-                      : () async {
-                          final enteredCode = _codeController.text;
-                          if (enteredCode.length != 6) {
-                            setState(() => _errorMessage = 'Введите 6 цифр');
-                            return;
-                          }
-
-                          setState(() {
-                            _isLoading = true;
-                            _errorMessage = null;
-                          });
-
-                          try {
-                            final status =
-                                await widget.onCodeVerified(enteredCode);
-
-                            switch (status) {
-                              case VerificationStatus.existingUser:
-                                Navigator.pop(context, status);
-                                break;
-                              case VerificationStatus.newUser:
-                                Navigator.pop(context, status);
-                                break;
-                              case VerificationStatus.invalidCode:
-                                setState(() => _errorMessage = 'Неверный код');
-                                break;
-                              case VerificationStatus.error:
-                                setState(
-                                    () => _errorMessage = 'Ошибка сервера');
-                            }
-                          } catch (e) {
-                            setState(() =>
-                                _errorMessage = 'Ошибка: ${e.toString()}');
-                          } finally {
-                            if (mounted) setState(() => _isLoading = false);
-                          }
-                        },
-                  child: _isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('Подтвердить',
-                          style: TextStyle(
-                              fontSize: 20, color: AppColors.textPrimary)),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Назад',
-                      style: TextStyle(
-                          fontSize: 20, color: AppColors.textPrimary)),
-                ),
-              ],
-            ),
-          ),
-        ]));
-  }
-
-  @override
-  void dispose() {
-    _codeController.dispose();
-    super.dispose();
   }
 }

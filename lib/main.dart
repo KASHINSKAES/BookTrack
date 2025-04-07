@@ -1,5 +1,6 @@
 import 'package:booktrack/firebase_options.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/pages/loadingScreen.dart';
@@ -30,6 +31,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => BrightnessProvider()),
         ChangeNotifierProvider(
             create: (context) => ReadingStatsProvider()..loadData()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => SettingsProvider()),
       ],
       child: const MyApp(), // Используем MyApp как корневой виджет
