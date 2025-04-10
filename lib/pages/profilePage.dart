@@ -2,12 +2,12 @@ import 'dart:math';
 
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/Chat/roomsPages.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/pages/PaymentMethodsPage.dart';
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
-import 'package:booktrack/pages/chatPage.dart';
 import 'package:booktrack/pages/languagePages.dart';
 import 'package:booktrack/pages/levelPage.dart';
 import 'package:booktrack/pages/loveQuote.dart';
@@ -22,6 +22,8 @@ import 'package:provider/provider.dart';
 class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Material(
@@ -121,7 +123,7 @@ class ProfilePage extends StatelessWidget {
 
   // Белый блок с закругленными углами
   Widget _buildWhiteContainer(double scale, BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = Provider.of<AuthProviders>(context);
     final userModel = authProvider.userModel;
     return Container(
       width: double.infinity,
@@ -145,11 +147,19 @@ class ProfilePage extends StatelessWidget {
           SizedBox(height: scale * 20),
           TextButton(
               onPressed: () async {
-                await authProvider.logout();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => AuthScreen()),
-                );
+                try {
+                  await authProvider.logout();
+
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => AuthScreen()),
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Ошибка при выходе: $e');
+                }
               },
               child: Text(
                 'Выйти',
@@ -264,6 +274,8 @@ class ProfilePage extends StatelessWidget {
 
   // Блок "Чат"
   Widget _buildChatSection(double scale, BuildContext context) {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
     return Padding(
       padding: EdgeInsets.only(top: 16.0 * scale),
       child: Container(
@@ -286,9 +298,11 @@ class ProfilePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => ChatPage(onBack: () {
+                  builder: (context) => RoomListPage(
+                      onBack: () {
                         Navigator.pop(context);
-                      })),
+                      },
+                      currentUser: userModel!)),
             );
           },
           scale: scale,

@@ -1,19 +1,22 @@
 // ignore: file_names
-class UserModel {
-   String uid;
-   String? name;
-   String? subname;
-   String? email;
-   String? phone;
-   String? password;
-   DateTime? birthDate;
-   int totalBonuses;
-   int pagesReadTotal;
-   List<String> savedBooks;
-   List<String> readBooks;
-   List<String> subcollections;
 
-   String? get userId => uid;
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+
+class UserModel {
+  String uid;
+  String? name;
+  String? subname;
+  String? email;
+  String? phone;
+  String? password;
+  DateTime? birthDate;
+  int totalBonuses;
+  int pagesReadTotal;
+  List<String> savedBooks;
+  List<String> readBooks;
+  List<String> subcollections;
+
+  String? get userId => uid;
 
   UserModel({
     required this.uid,
@@ -73,4 +76,30 @@ class UserModel {
     };
   }
 
+  factory UserModel.fromFirestore(Map<String, dynamic> data) {
+    return UserModel(
+      uid: data['id'],
+      name: data['name'],
+    );
+  }
+
+  get displayName => null;
+
+  Map<String, dynamic> toFirestore() => {
+        'uid': uid,
+        'name': name,
+      };
 }
+
+extension UserModelExtensions on UserModel {
+  /// Конвертирует ваш UserModel в User для flutter_chat_ui
+  types.User toChatUser() {
+    return types.User(
+      id: uid,
+      firstName: name?.split(' ').first ?? 'Без имени',
+      lastName: name!.split(' ').length > 1 ? name?.split(' ')[1] : '',
+    );
+  }
+}
+
+

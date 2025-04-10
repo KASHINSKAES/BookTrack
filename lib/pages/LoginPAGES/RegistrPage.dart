@@ -1,14 +1,17 @@
 import 'package:booktrack/main.dart';
+import 'package:booktrack/models/userModels.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobRegistr.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  final String? phone;
   final String? email;
+  final String? phone;
   final bool isEmail;
 
   const RegistrationScreen({
@@ -19,24 +22,27 @@ class RegistrationScreen extends StatefulWidget {
   });
 
   @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _subnameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _subnameController = TextEditingController();
 
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _prefillInitialData();
+  }
 
-    // Устанавливаем начальные значения
+  void _prefillInitialData() {
     if (widget.isEmail && widget.email != null) {
       _emailController.text = widget.email!;
     } else if (!widget.isEmail && widget.phone != null) {
@@ -44,45 +50,37 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
-  String? _validateName(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Пожалуйста, введите имя';
-    }
-    return null;
-  }
-
   Future<void> _registerUser() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || !mounted) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
-      UserCredential userCredential;
-      if (widget.isEmail) {
-        userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
-      } else {
-        // Если регистрация по номеру телефона, используем другой метод
-        // Например, отправка SMS и верификация кода
-        // В данном примере предполагается, что верификация уже пройдена
-        userCredential = await FirebaseAuth.instance.signInWithCredential(
-          PhoneAuthProvider.credential(
-            verificationId: '', // Установите правильный verificationId
-            smsCode: '', // Установите правильный smsCode
-          ),
-        );
-      }
+      // 1. Регистрация в Firebase Auth
+      final userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-      // Создаем документ в Firestore
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid);
+      if (userCredential.user == null) throw Exception('User creation failed');
+
+      // 2. Создание документа пользователя в Firestore
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid);
 
       final userData = {
         'id': userCredential.user!.uid,
-        'name': _nameController.text,
-        'phone': widget.phone,
-        'email': _emailController.text.isNotEmpty ? _emailController.text : null,
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': _emailController.text.trim(),
+        'totalBonuses': 0,
+        'pagesReadTotal': 0,
+        'createdAt': FieldValue.serverTimestamp(),
         'subcollections': [
           'reading_progress',
           'reading_goals',
@@ -94,50 +92,78 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ],
         'saved_books': [],
         'read_books': [],
-        'totalBonuses': 0,
-        'pagesReadTotal': 0,
-        'createdAt': FieldValue.serverTimestamp(),
       };
 
       await userDoc.set(userData);
 
-      // Переход на главный экран
-      Navigator.pushReplacement(
-        context,
+      // 3. Обновление состояния в провайдере
+      if (!mounted) return;
+      final authProvider = Provider.of<AuthProviders>(context, listen: false);
+      await authProvider.login(UserModel(
+        uid: userCredential.user!.uid,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+      ));
+
+      // 4. Переход на главный экран с очисткой стека
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+        (route) => false,
       );
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorMessage = _getAuthErrorMessage(e.code));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка регистрации: $e')),
-      );
+      setState(() => _errorMessage = 'Ошибка регистрации: ${e.toString()}');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Пожалуйста, введите пароль';
+  String _getAuthErrorMessage(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'Этот email уже используется';
+      case 'invalid-email':
+        return 'Некорректный email';
+      case 'weak-password':
+        return 'Пароль слишком простой';
+      default:
+        return 'Ошибка регистрации';
     }
-    if (value.length < 6) {
-      return 'Пароль должен содержать минимум 6 символов';
-    }
-    return null;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _subnameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
+  }
+
+  String? _validateRussianPhone(String? value) {
+    final phoneRegex = RegExp(r'^(\+7|8)[0-9]{10}$');
+    return phoneRegex.hasMatch(value ?? '')
+        ? null
+        : 'Некорректный номер телефона';
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return 'Введите пароль';
+    if (value.length < 6) return 'Минимум 6 символов';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -192,7 +218,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                 ),
                               ),
                             ),
-                            validator: _validateName,
                           ),
                           SizedBox(height: 30),
                           TextFormField(
@@ -226,6 +251,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           TextFormField(
                             controller: _phoneController,
                             readOnly: true,
+                            validator: _validateRussianPhone,
                             decoration: InputDecoration(
                               labelText: 'Номер телефона',
                               border: OutlineInputBorder(
@@ -254,8 +280,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           SizedBox(height: 30 * scale),
                           TextFormField(
                             controller: _emailController,
+                            validator: _validateEmail,
                             decoration: InputDecoration(
-                              labelText: 'Email',
+                              labelText: 'Email*',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(35 * scale),
                                 borderSide: BorderSide(

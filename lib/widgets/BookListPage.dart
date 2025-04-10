@@ -1,4 +1,6 @@
+import 'package:booktrack/pages/filter/filterProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'constants.dart';
 import '/widgets/AdaptiveBookGrid.dart';
 import 'package:booktrack/icons.dart';
@@ -186,10 +188,11 @@ class _BookListPageState extends State<BookListPage> {
     showModalBottomSheet(
       backgroundColor: Colors.white,
       context: context,
-      isScrollControlled: true, // Позволяет сделать листаемое содержимое
+      isScrollControlled: true,
       builder: (context) {
-        final height =
-            MediaQuery.of(context).size.height * 0.8; // Занимает 80% экрана
+        final filterProvider =
+            Provider.of<FilterProvider>(context, listen: false);
+        final height = MediaQuery.of(context).size.height * 0.8;
 
         return SizedBox(
           height: height,
@@ -201,16 +204,17 @@ class _BookListPageState extends State<BookListPage> {
               children: [
                 SizedBox(height: 16.0 * scale),
                 _CustomSwitchTile(
-                  value: switched1,
-                  onChanged: (value) => setState(() => switched1 = value),
+                  value: filterProvider.isSubscription,
+                  onChanged: (value) =>
+                      filterProvider.toggleSubscription(value),
                   title: "Подписка",
                   scale: scale,
                   subtitle: "Книги доступные по подписке",
                 ),
                 Divider(color: AppColors.background),
                 _CustomSwitchTile(
-                  value: switched2,
-                  onChanged: (value) => setState(() => switched2 = value),
+                  value: filterProvider.isExclusive,
+                  onChanged: (value) => filterProvider.toggleExclusive(value),
                   title: "Эксклюзивно",
                   scale: scale,
                   subtitle: "Эксклюзивные книги только в нашем приложении",
@@ -235,9 +239,9 @@ class _BookListPageState extends State<BookListPage> {
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Текст',
                             icon: Icons.book,
-                            isSelected: selectedFormat == 'Текст',
-                            onTap: () =>
-                                setState(() => selectedFormat = 'Текст'),
+                            isSelected:
+                                filterProvider.selectedFormat == 'Текст',
+                            onTap: () => filterProvider.setFormat('Текст'),
                           ),
                           SizedBox(width: 8.0 * scale),
                           _SelectableButton(
@@ -245,9 +249,9 @@ class _BookListPageState extends State<BookListPage> {
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Аудио',
                             icon: Icons.audiotrack,
-                            isSelected: selectedFormat == 'Аудио',
-                            onTap: () =>
-                                setState(() => selectedFormat = 'Аудио'),
+                            isSelected:
+                                filterProvider.selectedFormat == 'Аудио',
+                            onTap: () => filterProvider.setFormat('Аудио'),
                           ),
                         ],
                       ),
@@ -269,36 +273,38 @@ class _BookListPageState extends State<BookListPage> {
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Русский',
                             flag: '🇷🇺',
-                            isSelected: selectedLanguage == 'Русский',
-                            onTap: () =>
-                                setState(() => selectedLanguage = 'Русский'),
+                            isSelected:
+                                filterProvider.selectedLanguage == 'Русский',
+                            onTap: () => filterProvider.setLanguage('Русский'),
                           ),
                           _SelectableLanguageButton(
                             textSizeButton:
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Английский',
                             flag: '🇬🇧',
-                            isSelected: selectedLanguage == 'Английский',
+                            isSelected:
+                                filterProvider.selectedLanguage == 'Английский',
                             onTap: () =>
-                                setState(() => selectedLanguage = 'Английский'),
+                                filterProvider.setLanguage('Английский'),
                           ),
                           _SelectableLanguageButton(
                             textSizeButton:
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Японский',
                             flag: '🇯🇵',
-                            isSelected: selectedLanguage == 'Японский',
-                            onTap: () =>
-                                setState(() => selectedLanguage = 'Японский'),
+                            isSelected:
+                                filterProvider.selectedLanguage == 'Японский',
+                            onTap: () => filterProvider.setLanguage('Японский'),
                           ),
                           _SelectableLanguageButton(
                             textSizeButton:
                                 AppDimensions.baseTextSizeButton * scale,
                             label: 'Французский',
                             flag: '🇫🇷',
-                            isSelected: selectedLanguage == 'Французский',
-                            onTap: () => setState(
-                                () => selectedLanguage = 'Французский'),
+                            isSelected: filterProvider.selectedLanguage ==
+                                'Французский',
+                            onTap: () =>
+                                filterProvider.setLanguage('Французский'),
                           ),
                         ],
                       ),
@@ -307,10 +313,10 @@ class _BookListPageState extends State<BookListPage> {
                 ),
                 Divider(color: AppColors.background),
                 _CustomSwitchTile(
-                  value: switched3,
-                  onChanged: (value) => setState(() => switched3 = value),
+                  value: filterProvider.isHighRated,
+                  onChanged: (value) => filterProvider.toggleHighRated(value),
                   title: "Высшая оценка",
-                  subtitle: "Книги с рейтингом 4 и высше",
+                  subtitle: "Книги с рейтингом 4 и выше",
                   scale: scale,
                 ),
                 SizedBox(height: 16.0 * scale),

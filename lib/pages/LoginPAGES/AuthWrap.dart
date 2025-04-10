@@ -1,15 +1,14 @@
 import 'package:booktrack/main.dart';
+import 'package:booktrack/models/userModels.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobAuth.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
-import 'package:booktrack/pages/LoginPAGES/AuthEnums.dart';
-import 'package:booktrack/pages/LoginPAGES/SmsCodePages.dart';
 import 'package:booktrack/widgets/constants.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -20,29 +19,100 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
   final _emailFormKey = GlobalKey<FormState>();
   final _phoneFormKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  String _phoneNumber = '';
-  String _mail = '';
   final _passwordController = TextEditingController();
   final _codeController = TextEditingController();
-  bool _isLoading = false;
+  String _mail = '';
+  String _phoneNumber = '';
   bool _usePassword = false;
-  String? _errorMessage;
-  String? _verificationId;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _checkUserLoggedIn();
+    _checkExistingAuth();
+  }
+
+  Future<void> _checkExistingAuth() async {
+    final auth = Provider.of<AuthProviders>(context, listen: false);
+    if (auth.userModel != null && mounted) {
+      _redirectToHome();
+    }
+  }
+
+  Future<void> _redirectToHome() async {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _signInWithEmail() async {
+    if (!_emailFormKey.currentState!.validate() || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 1. Аутентификация в Firebase
+      final userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (userCredential.user == null || !mounted) return;
+
+      // 2. Создаем модель пользователя
+      final userModel = UserModel(
+        uid: userCredential.user!.uid,
+        email: userCredential.user!.email ?? _emailController.text.trim(),
+        // другие обязательные поля
+      );
+
+      // 3. Сохраняем в провайдер
+      final auth = Provider.of<AuthProviders>(context, listen: false);
+      await auth.login(userModel);
+
+      // 4. Перенаправляем
+      if (mounted) _redirectToHome();
+    } on FirebaseAuthException catch (e) {
+      setState(() => _errorMessage = _getAuthErrorMessage(e.code));
+    } catch (e) {
+      setState(() => _errorMessage = 'Ошибка авторизации');
+      debugPrint('Auth error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _getAuthErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'Пользователь не найден';
+      case 'wrong-password':
+        return 'Неверный пароль';
+      case 'invalid-email':
+        return 'Некорректный email';
+      default:
+        return 'Ошибка авторизации';
+    }
+  }
+
+  String? _validateEmail(String? value) {
+    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
   }
 
   @override
@@ -53,203 +123,6 @@ class _AuthScreenState extends State<AuthScreen>
     _passwordController.dispose();
     _codeController.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkUserLoggedIn() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userId = prefs.getString('userId');
-    if (userId != null) {
-      // Пользователь уже вошел в систему
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
-      );
-    }
-  }
-
-  String? _validateEmail(String? value) {
-    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    return emailRegex.hasMatch(value ?? '') ? null : 'Некорректный email';
-  }
-
-  Future<void> _sendSmsCode() async {
-    if (_phoneFormKey.currentState == null) return;
-
-    if (_phoneFormKey.currentState?.validate() != true) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: _phoneNumber,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-          _saveUserId();
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          setState(() => _errorMessage = 'Ошибка: ${e.message}');
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          _verificationId = verificationId;
-          _showCodeVerificationScreen(_phoneNumber);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-        timeout: Duration(
-            seconds:
-                60), // Установите таймаут для автоматического получения кода
-      );
-    } catch (e) {
-      setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _sendMailCode() async {
-    if (!_emailFormKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await _auth.sendSignInLinkToEmail(
-        email: _mail,
-        actionCodeSettings: ActionCodeSettings(
-          url: 'https://your-app.firebaseapp.com',
-          handleCodeInApp: true,
-        ),
-      );
-      _showCodeVerificationScreenMail(_mail);
-    } catch (e) {
-      setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<VerificationStatus> _verifyCode(
-      String phone, String enteredCode) async {
-    try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId!,
-        smsCode: enteredCode,
-      );
-      await _auth.signInWithCredential(credential);
-      _saveUserId();
-      return VerificationStatus.existingUser;
-    } catch (e) {
-      debugPrint('Ошибка верификации: $e');
-      return VerificationStatus.invalidCode;
-    }
-  }
-
-  Future<VerificationStatus> _verifyCodeMail(
-      String mail, String enteredCode) async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailLink(
-        email: mail,
-        emailLink: enteredCode,
-      );
-      if (userCredential.user != null) {
-        _saveUserId();
-        return VerificationStatus.existingUser;
-      }
-      return VerificationStatus.error;
-    } catch (e) {
-      debugPrint('Ошибка верификации: $e');
-      return VerificationStatus.invalidCode;
-    }
-  }
-
-  Future<void> _saveUserId() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userId', _auth.currentUser!.uid);
-  }
-
-  Future<void> _showCodeVerificationScreen(String phone) async {
-    final status = await Navigator.push<VerificationStatus>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CodeVerificationScreen(
-          onCodeVerified: (code) => _verifyCode(phone, code),
-          phoneNumber: phone,
-          isEmail: false,
-        ),
-      ),
-    );
-
-    if (status == VerificationStatus.existingUser) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
-      );
-    } else if (status == VerificationStatus.newUser) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RegistrationScreen(
-            phone: phone,
-            isEmail: false,
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showCodeVerificationScreenMail(String mail) async {
-    final status = await Navigator.push<VerificationStatus>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CodeVerificationScreen(
-          onCodeVerified: (code) => _verifyCodeMail(mail, code),
-          email: mail,
-          isEmail: true,
-        ),
-      ),
-    );
-
-    if (status == VerificationStatus.existingUser) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
-      );
-    } else if (status == VerificationStatus.newUser) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RegistrationScreen(
-            email: mail,
-            isEmail: true,
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _signInWithEmail() async {
-    setState(() => _isLoading = true);
-    try {
-      final user = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      if (user.user != null) {
-        _saveUserId();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => BottomNavigationBarEX()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } finally {
-      setState(() => _isLoading = false);
-    }
   }
 
   @override
@@ -413,7 +286,7 @@ class _AuthScreenState extends State<AuthScreen>
                         ),
                       ),
                     ),
-                    onPressed: _sendMailCode,
+                    onPressed: () {},
                     child: _isLoading
                         ? const CircularProgressIndicator()
                         : const Text('Получить код',
@@ -429,6 +302,22 @@ class _AuthScreenState extends State<AuthScreen>
               },
               child: Text(
                 _usePassword ? 'Использовать код' : 'Использовать пароль',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => RegistrationScreen(
+                            isEmail: false,
+                          )),
+                  (route) => false,
+                );
+              },
+              child: Text(
+                'Регистрироваться',
                 style: TextStyle(color: AppColors.textPrimary),
               ),
             ),
@@ -574,7 +463,7 @@ class _AuthScreenState extends State<AuthScreen>
                     ),
                   ),
                 ),
-                onPressed: _sendSmsCode,
+                onPressed: () {},
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : const Text('Получить код',
@@ -582,6 +471,14 @@ class _AuthScreenState extends State<AuthScreen>
                             fontSize: 20, color: AppColors.textPrimary)),
               ),
             ],
+            SizedBox(height: 5 * scale),
+            TextButton(
+              onPressed: () {},
+              child: Text(
+                'Регистрироваться',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+            ),
             TextButton(
               onPressed: () {
                 setState(() => _usePassword = !_usePassword);
