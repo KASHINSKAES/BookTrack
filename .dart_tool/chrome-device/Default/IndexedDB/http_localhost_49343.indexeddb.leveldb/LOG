@@ -1,0 +1,27 @@
+2025/04/08-15:19:07.906 32f8 Creating DB C:\Users\9875~1\AppData\Local\Temp\flutter_tools.8d76a333\flutter_tools_chrome_device.b735d73\Default\IndexedDB\http_localhost_49343.indexeddb.leveldb since it was missing.
+2025/04/08-15:19:07.909 32f8 Reusing MANIFEST C:\Users\9875~1\AppData\Local\Temp\flutter_tools.8d76a333\flutter_tools_chrome_device.b735d73\Default\IndexedDB\http_localhost_49343.indexeddb.leveldb/MANIFEST-000001
+2025/04/08-15:19:20.369 1bd4 Level-0 table #5: started
+2025/04/08-15:19:20.376 1bd4 Level-0 table #5: 1522 bytes OK
+2025/04/08-15:19:20.379 1bd4 Delete type=0 #3
+2025/04/08-15:19:20.379 32f8 Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/04/08-15:20:12.574 32f8 Level-0 table #7: started
+2025/04/08-15:20:12.578 32f8 Level-0 table #7: 6824 bytes OK
+2025/04/08-15:20:12.581 32f8 Delete type=0 #4
+2025/04/08-15:20:12.581 4424 Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/04/08-15:20:19.889 32f8 Level-0 table #9: started
+2025/04/08-15:20:20.024 32f8 Level-0 table #9: 3083 bytes OK
+2025/04/08-15:20:20.428 32f8 Delete type=0 #6
+2025/04/08-15:20:20.699 4424 Manual compaction at level-0 from '\x00\x05\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at '\x00\x05\x00\x00\x05' @ 227 : 1
+2025/04/08-15:20:20.699 4424 Compacting 1@0 + 1@1 files
+2025/04/08-15:20:20.876 4424 Generated table #10@0: 73 keys, 3227 bytes
+2025/04/08-15:20:20.876 4424 Compacted 1@0 + 1@1 files => 3227 bytes
+2025/04/08-15:20:21.118 4424 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/04/08-15:20:21.118 4424 Manual compaction at level-0 from '\x00\x05\x00\x00\x05' @ 227 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/04/08-15:20:57.596 3fb8 Compacting 1@1 + 1@2 files
+2025/04/08-15:20:57.651 3fb8 Generated table #11@1: 37 keys, 2816 bytes
+2025/04/08-15:20:57.652 3fb8 Compacted 1@1 + 1@2 files => 2816 bytes
+2025/04/08-15:20:57.717 3fb8 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/04/08-15:20:57.717 3fb8 Delete type=2 #5
+2025/04/08-15:20:57.717 3fb8 Delete type=2 #7
+2025/04/08-15:20:57.717 3fb8 Delete type=2 #9
+2025/04/08-15:20:57.717 3fb8 Delete type=2 #10

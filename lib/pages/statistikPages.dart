@@ -1,359 +1,167 @@
 import 'package:booktrack/icons.dart';
-import 'package:booktrack/pages/AppState.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:easy_pie_chart/easy_pie_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
-
-Future<Map<String, List<int>>> fetchReadingStats(String type) async {
-  final snapshot = await FirebaseFirestore.instance
-      .collection('users')
-      .doc('user_1')
-      .collection('reading_goals')
-      .orderBy('date')
-      .get();
-
-  final Map<String, List<int>> weeklyData = {};
-
-  for (var doc in snapshot.docs) {
-    final data = doc.data();
-    final date = (data['date'] as Timestamp).toDate();
-    final weekKey =
-        _getWeekKey(date); // Получаем ключ недели (например, "11.11-17.11")
-
-    // Инициализируем список для недели, если его ещё нет
-    if (!weeklyData.containsKey(weekKey)) {
-      weeklyData[weekKey] = List.filled(7, 0);
-    }
-
-    final weekday = (date.weekday % 7); // Приводим к началу недели (ВС–СБ)
-    if (type == "pages") {
-      weeklyData[weekKey]![weekday] =
-          (weeklyData[weekKey]![weekday] + (data['readPages'] ?? 0)).toInt();
-    } else if (type == "minutes") {
-      weeklyData[weekKey]![weekday] =
-          (weeklyData[weekKey]![weekday] + (data['readMinutes'] ?? 0)).toInt();
-    }
-  }
-
-  return weeklyData;
-}
-
-Future<Map<String, int>> fetchDailyReadingStats(String type) async {
-  final snapshot = await FirebaseFirestore.instance
-      .collection('users')
-      .doc('user_1')
-      .collection('reading_goals')
-      .orderBy('date')
-      .get();
-
-  final Map<String, int> dailyData = {};
-
-  for (var doc in snapshot.docs) {
-    final data = doc.data();
-    final date = (data['date'] as Timestamp).toDate();
-    final dayKey =
-        _formatDate(date); // Форматируем дату в строку (например, "2023-11-15")
-
-    if (type == "pages") {
-      dailyData[dayKey] =
-          ((dailyData[dayKey] ?? 0) + (data['readPages'] ?? 0)).toInt();
-    } else if (type == "minutes") {
-      dailyData[dayKey] =
-          ((dailyData[dayKey] ?? 0) + (data['readMinutes'] ?? 0)).toInt();
-    }
-  }
-
-  return dailyData;
-}
-
-// Вспомогательная функция для форматирования даты
-String _formatDate(DateTime date) {
-  return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-}
-
-// Вспомогательная функция для получения ключа недели
-String _getWeekKey(DateTime date) {
-  final startOfWeek = date.subtract(Duration(days: date.weekday % 7));
-  final endOfWeek = startOfWeek.add(Duration(days: 6));
-  return "${startOfWeek.day}.${startOfWeek.month}-${endOfWeek.day}.${endOfWeek.month}";
-}
 
 class StatisticsPage extends StatefulWidget {
   final VoidCallback onBack;
-  StatisticsPage({super.key, required this.onBack});
+  const StatisticsPage({super.key, required this.onBack});
 
   @override
   State<StatisticsPage> createState() => _StatisticsPageState();
 }
 
 class _StatisticsPageState extends State<StatisticsPage> {
-  int selectedWeekPages = 0;
-  int selectedWeekMinutes = 0;
   int selectedWeek = 0;
-  int selectedDay = 0;
-  
-  Map<String, List<int>> weeklyDataPages = {};
-  Map<String, List<int>> weeklyDataMinutes = {};
-  Map<String, int> dailyDataPages = {};
-  Map<String, int> dailyDataMinutes = {};
-  Map<String, int> dailyGoalPages = {}; // Целевые значения для страниц
-  Map<String, int> dailyGoalMinutes = {};
-  bool isLoading = true;
+  double scale = 1.0;
 
   @override
   void initState() {
     super.initState();
-    _loadDataMinutes();
-    _loadDataPages();
-    _loadData();
+    _loadInitialData();
   }
 
-  Future<void> _loadDataMinutes() async {
-    final data = await fetchReadingStats("minutes");
-    setState(() {
-      weeklyDataMinutes = data;
-      isLoading = false;
-    });
+  Future<void> _loadInitialData() async {
+    final provider = Provider.of<ReadingStatsProvider>(context, listen: false);
+    await provider.loadData(context);
   }
-
-  Future<void> _loadDataPages() async {
-    final data = await fetchReadingStats("pages");
-    setState(() {
-      weeklyDataPages = data;
-      isLoading = false;
-    });
-  }
-
-  Future<void> _loadData() async {
-    await _loadDataPagesDate();
-    await _loadDataMinutesDate();
-    setState(() {
-      isLoading = false;
-    });
-  }
-
-  Future<void> _loadDataPagesDate() async {
-    final data = await fetchDailyReadingStats("pages");
-    setState(() {
-      dailyDataPages = data;
-    });
-  }
-
-  Future<void> _loadDataMinutesDate() async {
-    final data = await fetchDailyReadingStats("minutes");
-    setState(() {
-      dailyDataMinutes = data;
-    });
-  }
-
-  // final List<String> weeks = ["11.11-17.11", "18.11-24.11", "25.11-01.12"];
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ReadingStatsProvider>(context);
+    scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
+    if (provider.isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (provider.errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text(provider.errorMessage!)),
+      );
+    }
 
     if (provider.dailyDataPages.isEmpty) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    final weeksMinutes = weeklyDataMinutes.keys.toList();
-    final weeksPages = weeklyDataPages.keys.toList();
-    final currentWeekDataPages =
-        weeklyDataPages[weeksPages[selectedWeekPages]] ?? List.filled(7, 0);
-    final currentWeekDataMinutes =
-        weeklyDataMinutes[weeksMinutes[selectedWeekMinutes]] ?? List.filled(7, 0);
-
-    if (provider.dailyDataPages.isEmpty) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    /*final days = provider.dailyDataPages.keys.toList();
-    final selectedDate = provider.selectedDate;*/
-    final pages = provider.pages;
-    final minutes = provider.minutes;
-    final goalPages = provider.goalPages;
-    final goalMinutes = provider.goalMinutes;
-
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
-    Widget _buildDaySelector(ReadingStatsProvider provider) {
-      final days = provider.dailyDataPages.keys.toList();
-      if (days.isEmpty) {
-        return Center(child: Text("Нет данных"));
-      }
-
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            icon: Icon(Icons.chevron_left),
-            onPressed: provider.selectedDay > 0
-                ? () => provider.setSelectedDay(provider.selectedDay - 1)
-                : null,
-          ),
-          Text(days[provider.selectedDay],
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          IconButton(
-            icon: Icon(Icons.chevron_right),
-            onPressed: provider.selectedDay < days.length - 1
-                ? () => provider.setSelectedDay(provider.selectedDay + 1)
-                : null,
-          ),
-        ],
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text('Нет данных для отображения')),
       );
     }
 
-    Widget _buildWeekSelector() {
-      final weeks = weeklyDataPages.keys.toList();
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.chevron_left),
-                onPressed: selectedWeek > 0
-                    ? () => setState(() => selectedWeek--)
-                    : null,
-              ),
-              Text(weeks[selectedWeek],
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              IconButton(
-                icon: Icon(Icons.chevron_right),
-                onPressed: selectedWeek < weeks.length - 1
-                    ? () => setState(() => selectedWeek++)
-                    : null,
-              ),
-            ],
-          );
-        },
-      );
-    }
-
-    Widget buildChartCard2({required String title, required Widget child}) {
-      return Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
-                    softWrap: true,
-                  ),
-                  _buildWeekSelector(),
-                ],
-              ),
-              const SizedBox(height: 10),
-              SizedBox(height: 200, child: child),
-            ],
-          ),
-        ),
-      );
-    }
+    final weeks = provider.weeklyDataPages.keys.toList();
+    final currentWeekDataPages = 
+        provider.weeklyDataPages[weeks[selectedWeek]] ?? List.filled(7, 0);
+    final currentWeekDataMinutes = 
+        provider.weeklyDataMinutes[weeks[selectedWeek]] ?? List.filled(7, 0);
 
     return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(
-            'Статистика',
-            style: TextStyle(
-              fontSize: 32 * scale,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.background,
-          leading: IconButton(
-            icon: Icon(
-              size: 35 * scale,
-              MyFlutterApp.back,
-              color: Colors.white,
-            ),
-            onPressed: widget.onBack,
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(
+          'Статистика',
+          style: TextStyle(
+            fontSize: 32 * scale,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        body: SingleChildScrollView(
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 255, 255, 255),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-                topRight: Radius.circular(AppDimensions.baseCircual * scale),
-              ),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                buildChartCard2(
-                  title: "Страницы",
-                  child: _PagesBarChart(
-                    readingPages: currentWeekDataPages,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                buildChartCard2(
-                  title: "Время чтения",
-                  child: _ReadingTimeLineChart(
-                    readingTime: currentWeekDataMinutes,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _buildDaySelector(provider),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildChartCard(
-                      title: "Время чтения",
-                      child: TodayPieChart(
-                        progress: minutes.toDouble(),
-                        title: 'минут',
-                        value: '$minutes',
-                        icon: MyFlutterApp.clock,
-                        progressWant: goalMinutes.toDouble(),
-                      ),
-                    ),
-                    _buildChartCard(
-                      title: "Количество страниц",
-                      child: TodayPieChart(
-                        progress: pages.toDouble(),
-                        title: 'страниц',
-                        value: '$pages',
-                        icon: MyFlutterApp.book2,
-                        progressWant: goalPages.toDouble(),
-                      ),
-                    )
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _BooksReadToday(
-                        scale: scale,
-                      ),
-                    ))
-              ],
+        backgroundColor: AppColors.background,
+        leading: IconButton(
+          icon: Icon(
+            size: 35 * scale,
+            MyFlutterApp.back,
+            color: Colors.white,
+          ),
+          onPressed: widget.onBack,
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+              topRight: Radius.circular(AppDimensions.baseCircual * scale),
             ),
           ),
-        ));
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              _buildWeekChartCard(
+                title: "Страницы",
+                chart: _PagesBarChart(readingPages: currentWeekDataPages),
+                weeks: weeks,
+              ),
+              const SizedBox(height: 20),
+              _buildWeekChartCard(
+                title: "Время чтения",
+                chart: _ReadingTimeLineChart(readingTime: currentWeekDataMinutes),
+                weeks: weeks,
+              ),
+              const SizedBox(height: 20),
+              _buildDaySelector(provider),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildPieChartCard(
+                    title: "Время чтения",
+                    minutes: provider.minutes,
+                    goalMinutes: provider.goalMinutes,
+                  ),
+                  _buildPieChartCard(
+                    title: "Количество страниц",
+                    pages: provider.pages,
+                    goalPages: provider.goalPages, 
+                    minutes: provider.minutes,
+                    goalMinutes: provider.goalMinutes
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildBooksReadToday(scale),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
-  Widget _buildChartCard({required String title, required Widget child}) {
+  Widget _buildWeekChartCard({required String title, required Widget chart, required List<String> weeks}) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                _buildWeekSelector(weeks),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(height: 200, child: chart),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPieChartCard({required String title, required int minutes, required int goalMinutes, int? pages, int? goalPages}) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -363,23 +171,125 @@ class _StatisticsPageState extends State<StatisticsPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 120),
+              constraints: const BoxConstraints(maxWidth: 120),
               child: Text(
                 title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                softWrap: true,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 10),
-            SizedBox(height: 145, child: child),
+            SizedBox(
+              height: 145,
+              child: TodayPieChart(
+                progress: (pages ?? minutes).toDouble(),
+                progressWant: (goalPages ?? goalMinutes).toDouble(),
+                title: pages != null ? 'страниц' : 'минут',
+                value: (pages ?? minutes).toString(),
+                icon: pages != null ? MyFlutterApp.book2 : MyFlutterApp.clock,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDaySelector(ReadingStatsProvider provider) {
+    final days = provider.dailyDataPages.keys.toList();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: provider.selectedDay > 0
+              ? () => provider.setSelectedDay(provider.selectedDay - 1)
+              : null,
+        ),
+        Text(
+          provider.selectedDate,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: provider.selectedDay < days.length - 1
+              ? () => provider.setSelectedDay(provider.selectedDay + 1)
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeekSelector(List<String> weeks) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: selectedWeek > 0
+                  ? () => setState(() => selectedWeek--)
+                  : null,
+            ),
+            Text(
+              weeks[selectedWeek],
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: selectedWeek < weeks.length - 1
+                  ? () => setState(() => selectedWeek++)
+                  : null,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBooksReadToday(double scale) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                "Что вы читали сегодня",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: 3, // Замените на реальное количество книг
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) => ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SvgPicture.asset(
+                    "images/img1.svg",
+                    width: 150 * scale,
+                    height: 200 * scale,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+
 
 class _PagesBarChart extends StatelessWidget {
   final List<int> readingPages;

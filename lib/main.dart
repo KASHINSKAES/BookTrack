@@ -1,8 +1,10 @@
 import 'package:booktrack/firebase_options.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
+import 'package:booktrack/pages/filter/filterProvider.dart';
 import 'package:booktrack/pages/loadingScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +21,7 @@ import '/widgets/BookListPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await initializeDateFormatting('ru_RU', null);
 
   runApp(
@@ -29,12 +29,12 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
         ChangeNotifierProvider(create: (_) => BrightnessProvider()),
-        ChangeNotifierProvider(
-            create: (context) => ReadingStatsProvider()..loadData()),
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => ReadingStatsProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProviders()),
         ChangeNotifierProvider(create: (context) => SettingsProvider()),
+        ChangeNotifierProvider(create: (context) => FilterProvider()),
       ],
-      child: const MyApp(), // Используем MyApp как корневой виджет
+      child: const MyApp(),
     ),
   );
 }
@@ -47,8 +47,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'MPLUSRounded1c'),
-      home: const LoadingScreen(), // Загрузочный экран как первый экран
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProviders>(context);
+
+    if (authProvider.isLoading) {
+      return const LoadingScreen();
+    }
+
+    return authProvider.userModel != null 
+        ? const BottomNavigationBarEX()
+        : const AuthScreen();
   }
 }
 

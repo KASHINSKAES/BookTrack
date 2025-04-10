@@ -4,68 +4,139 @@ import 'package:booktrack/main.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
 
   @override
-  _LoadingScreenState createState() => _LoadingScreenState();
+  State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
-    with SingleTickerProviderStateMixin {
-  bool isLoaded = false;
-
-  bool isAuthenticatedUser = false;
+class _LoadingScreenState extends State<LoadingScreen> {
+  bool _showLoading = true;
+  bool _authCheckComplete = false;
+  bool _hasError = false;
+  late DateTime _startTime;
 
   @override
   void initState() {
     super.initState();
-    _checkAuthentication();
+    _startTime = DateTime.now();
+    _initializeApp();
   }
 
-  Future<void> _checkAuthentication() async {
-    await Future.delayed(Duration(seconds: 3)); // Имитация загрузки
+  Future<void> _initializeApp() async {
+    try {
+      final auth = Provider.of<AuthProviders>(context, listen: false);
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    bool isAuthenticated = authProvider.userModel != null;
+      // 1. Проверяем сохраненный userId
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
 
-    setState(() {
-      isAuthenticatedUser = isAuthenticated;
-      isLoaded = true; // Обновляем состояние загрузки
-    });
+      // 2. Если есть сохраненный ID, пробуем загрузить пользователя
+      if (userId != null && userId.isNotEmpty) {
+        await auth.loadUserData();
+      }
+
+      // 3. Проверяем текущего пользователя в Firebase Auth
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && auth.userModel == null) {
+        await auth.loadUserData();
+      }
+
+      // 4. Рассчитываем оставшееся время до 5 секунд
+      final elapsed = DateTime.now().difference(_startTime);
+      final remaining = Duration(seconds: 15) - elapsed;
+
+      if (remaining > Duration.zero) {
+        await Future.delayed(remaining);
+      }
+
+      if (mounted) {
+        setState(() {
+          _authCheckComplete = true;
+          _showLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Initialization error: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _authCheckComplete = true;
+          _showLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(seconds: 0),
-      child: isLoaded
-          ? isAuthenticatedUser
-              ? BottomNavigationBarEX()
-              : AuthScreen()
-          : Scaffold(
-              backgroundColor: Colors.white,
-              body: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: AnimatedWaveScreen(),
-                  ),
-                  Center(
-                    child: SvgPicture.asset(
-                      "images/logoLoadingScreen.svg",
-                    ),
-                  )
-                ],
-              ),
-            ),
+    if (_showLoading) {
+      return _buildLoadingScreen();
+    }
+
+    if (_hasError) {
+      return _buildErrorScreen();
+    }
+
+    return _redirectBasedOnAuth();
+  }
+
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(child: AnimatedWaveScreen()),
+          Center(child: SvgPicture.asset("images/logoLoadingScreen.svg")),
+        ],
+      ),
     );
+  }
+
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Ошибка загрузки'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _initializeApp,
+              child: const Text('Повторить'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _redirectBasedOnAuth() {
+    final auth = Provider.of<AuthProviders>(context);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (auth.userModel != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const BottomNavigationBarEX()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AuthScreen()),
+        );
+      }
+    });
+
+    return _buildLoadingScreen();
   }
 }
 

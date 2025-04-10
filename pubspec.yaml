@@ -39,6 +39,8 @@ dependencies:
   cloud_functions: ^5.4.0
   intl_phone_field: ^3.2.0
   fluttertoast: ^8.2.12
+  flutter_chat_ui: ^1.6.15
+  flutter_chat_types: ^3.6.2
 
 dev_dependencies:
   flutter_test:
