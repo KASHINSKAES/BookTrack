@@ -1,80 +1,178 @@
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LevelScreen extends StatefulWidget {
   final VoidCallback onBack;
-  LevelScreen({super.key, required this.onBack});
+  const LevelScreen({super.key, required this.onBack});
+
   @override
   _LevelScreenState createState() => _LevelScreenState();
 }
 
-class _LevelScreenState extends State<LevelScreen>
-    with SingleTickerProviderStateMixin {
-  double progress = 0.7; // Прогресс (0.0 - 1.0)
+class _LevelScreenState extends State<LevelScreen> {
+  late Future<Map<String, dynamic>> _userDataFuture;
+  late Future<QuerySnapshot> _levelsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
+    if (userModel == null || userModel.uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      _userDataFuture = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userModel.uid)
+          .get()
+          .then((doc) {
+        final data = doc.data() ?? {};
+        debugPrint(data.toString()); // Печатаем данные, а не Future
+        return data;
+      });
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
+
+    _levelsFuture = FirebaseFirestore.instance
+        .collection('game_levels')
+        .orderBy('level')
+        .get()
+        .then((querySnapshot) {
+      debugPrint(querySnapshot.docs.toString()); // Печатаем результаты запроса
+      return querySnapshot;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            'Уровень',
-            style: TextStyle(
-              fontSize: 32 * scale,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          backgroundColor: AppColors.background,
-          leading: IconButton(
-            icon: Icon(
-              size: 35 * scale,
-              MyFlutterApp.back,
-              color: Colors.white,
-            ),
-            onPressed: widget.onBack,
+      appBar: AppBar(
+        title: Text(
+          'Уровень',
+          style: TextStyle(
+            fontSize: 32 * scale,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         backgroundColor: AppColors.background,
-        body: Container(
-          padding: EdgeInsets.only(top: 20 * scale),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 255, 255, 255),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-              topRight: Radius.circular(AppDimensions.baseCircual * scale),
-            ),
+        leading: IconButton(
+          icon: Icon(
+            size: 35 * scale,
+            MyFlutterApp.back,
+            color: Colors.white,
           ),
-          child: Column(
-            children: [
-              LevelProgressWidget(
-                currentLevel: 7,
-                nextLevel: 8,
-                progress: 0.6, // 60% заполнение шкалы
+          onPressed: widget.onBack,
+        ),
+      ),
+      backgroundColor: AppColors.background,
+      body: FutureBuilder(
+        future: Future.wait([_userDataFuture, _levelsFuture]),
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            debugPrint(snapshot.toString());
+            return Center(child: Text('Ошибка загрузки данных'));
+          }
+
+          final userData = snapshot.data![0] as Map<String, dynamic>;
+          final levelsSnapshot = snapshot.data![1] as QuerySnapshot;
+
+          final stats = userData['stats'] ?? {};
+          final currentLevel = stats['current_level'] ?? 1;
+          final xp = stats['xp'] ?? 0;
+          final pages = stats['pages'] ?? 0;
+
+          final levels = levelsSnapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+
+          // Находим текущий и следующий уровни
+          final currentLevelData = levels.firstWhere(
+            (level) => level['level'] == currentLevel,
+            orElse: () => {'xp_required': 0, 'pages_required': 0},
+          );
+
+          final nextLevelData = levels.firstWhere(
+            (level) => level['level'] == currentLevel + 1,
+            orElse: () =>
+                {'xp_required': currentLevelData['xp_required'] + 1000},
+          );
+
+          final progress = _calculateProgress(
+            currentXP: xp,
+            currentLevelXP: currentLevelData['xp_required'],
+            nextLevelXP: nextLevelData['xp_required'],
+          );
+
+          return Container(
+            padding: EdgeInsets.only(top: 20 * scale),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+                topRight: Radius.circular(AppDimensions.baseCircual * scale),
               ),
-              _buildStats(),
-              Expanded(child: _buildRewardsList()),
-            ],
-          ),
-        ));
+            ),
+            child: Column(
+              children: [
+                LevelProgressWidget(
+                  currentLevel: currentLevel,
+                  nextLevel: currentLevel + 1,
+                  progress: progress,
+                ),
+                _buildStats(xp: xp.toString(), pages: pages.toString()),
+                Expanded(child: _buildRewardsList(levels, currentLevel)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
-  Widget _buildStats() {
+  double _calculateProgress({
+    required int currentXP,
+    required int currentLevelXP,
+    required int nextLevelXP,
+  }) {
+    final xpNeeded = nextLevelXP - currentLevelXP;
+    final xpEarned = currentXP - currentLevelXP;
+    return (xpEarned / xpNeeded).clamp(0.0, 1.0);
+  }
+
+  Widget _buildStats({required String xp, required String pages}) {
     return Padding(
       padding: EdgeInsets.all(16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(Icons.emoji_events, "3179","XP"),
-          _buildStatItem(Icons.book, "432","стр"),
+          _buildStatItem(Icons.emoji_events, xp, "XP"),
+          _buildStatItem(Icons.book, pages, "стр"),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String text, String textValue) {
+  Widget _buildStatItem(IconData icon, String value, String label) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
@@ -83,101 +181,111 @@ class _LevelScreenState extends State<LevelScreen>
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.black),
+          Icon(icon, color: AppColors.textPrimary),
           SizedBox(width: 8),
-          Text(text, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(width: 8),
-          Text(textValue, style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
   }
 
-  Widget _buildRewardsList() {
-    List<Map<String, dynamic>> rewards = [
-      {"level": 5, "points": 150, "status": "Получено"},
-      {"level": 6, "points": 150, "status": "Получено"},
-      {"level": 7, "points": 150, "status": "Получено"},
-      {"level": 8, "points": 150, "status": "Закрыто"},
-      {"level": 9, "points": 150, "status": "Закрыто"},
-    ];
-
+  Widget _buildRewardsList(
+      List<Map<String, dynamic>> levels, int currentLevel) {
     return ListView.builder(
-      itemCount: rewards.length,
+      itemCount: levels.length,
       itemBuilder: (context, index) {
-        final reward = rewards[index];
+        final level = levels[index];
+        final levelNumber = level['level'] as int;
+        final points = level['reward_points'] as int;
+        final isUnlocked = levelNumber <= currentLevel;
+
         return Card(
-            margin: EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                 Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            Colors.orange.shade300,
-            Colors.orange.shade700,
-          ],
-          stops: [0.1, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.5),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: Offset(0, 0),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          reward["level"].toString(),
-          style: TextStyle(color: Colors.white, fontSize: 32),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    ),
-                  Row(
-                    children: [
-                      Text(
-                        reward["points"].toString(),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: AppColors.textPrimary),
-                      ),
-                      Icon(
-                        MyFlutter.bonus,
-                        color: AppColors.orange,
-                        size: 21,
-                      )
-                    ],
+          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Круг с номером уровня
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: isUnlocked
+                          ? [Colors.orange.shade300, Colors.orange.shade700]
+                          : [Colors.grey.shade300, Colors.grey.shade700],
+                    ),
+                    boxShadow: isUnlocked
+                        ? [
+                            BoxShadow(
+                              color: Colors.orange.withOpacity(0.5),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                              offset: Offset(0, 0),
+                            ),
+                          ]
+                        : null,
                   ),
-                  SizedBox(width: 16),
-                  Text(
-                    reward["status"],
-                    style: TextStyle(
+                  child: Center(
+                    child: Text(
+                      levelNumber.toString(),
+                      style: TextStyle(color: Colors.white, fontSize: 32),
+                    ),
+                  ),
+                ),
+
+                // Бонусные очки
+                Row(
+                  children: [
+                    Text(
+                      points.toString(),
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
-                        color: AppColors.textPrimary),
+                        color: isUnlocked ? AppColors.textPrimary : Colors.grey,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      MyFlutter.bonus,
+                      color: isUnlocked ? AppColors.orange : Colors.grey,
+                      size: 21,
+                    ),
+                  ],
+                ),
+
+                // Статус
+                Text(
+                  _getStatusText(levelNumber, currentLevel),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: isUnlocked ? AppColors.textPrimary : Colors.grey,
                   ),
-                ],
-              ),
-            ));
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
+  }
+
+  String _getStatusText(int levelNumber, int currentLevel) {
+    if (levelNumber < currentLevel) return "Получено";
+    if (levelNumber == currentLevel) return "Текущий";
+    return "Закрыто";
   }
 }
 
 class LevelProgressWidget extends StatelessWidget {
   final int currentLevel;
   final int nextLevel;
-  final double progress; // от 0 до 1
+  final double progress;
 
   const LevelProgressWidget({
     Key? key,
@@ -193,90 +301,90 @@ class LevelProgressWidget extends StatelessWidget {
       children: [
         Text(
           "Ваш уровень $currentLevel",
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         LayoutBuilder(
           builder: (context, constraints) {
-            double maxWidth =
-                constraints.maxWidth - 60; // Оставляем отступы по бокам
-            double progressWidth =
-                maxWidth * progress; // Ширина заполненной линии
+            double maxWidth = constraints.maxWidth - 60;
+            double progressWidth = maxWidth * progress;
 
             return Stack(
               alignment: Alignment.centerLeft,
               children: [
-                // Фоновая линия прогресса
+                // Фоновая линия
                 Container(
                   height: 10,
                   width: maxWidth,
-                  margin: const EdgeInsets.symmetric(horizontal: 30),
+                  margin: EdgeInsets.symmetric(horizontal: 30),
                   decoration: BoxDecoration(
                     color: AppColors.blueColor,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-                // Заполненная часть прогресса
+                // Прогресс
                 Container(
                   height: 10,
                   width: progressWidth,
-                  margin: const EdgeInsets.symmetric(horizontal: 30),
+                  margin: EdgeInsets.symmetric(horizontal: 30),
                   decoration: BoxDecoration(
                     color: Colors.orange,
                     borderRadius: BorderRadius.circular(5),
                   ),
                 ),
-                // Левый круг (текущий уровень)
+                // Текущий уровень
                 Align(
                   alignment: Alignment.centerLeft,
-                  child:         Container(
-                     margin: const EdgeInsets.only(left: 30),
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            Colors.orange.shade300,
-            Colors.orange.shade700,
-          ],
-          stops: [0.1, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.5),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: Offset(0, 0),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
+                  child: Container(
+                    margin: EdgeInsets.only(left: 30),
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.orange.shade300,
+                          Colors.orange.shade700
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                          offset: Offset(0, 0),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
                         "$currentLevel",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-      ),
-    ),
+                    ),
+                  ),
                 ),
-                // Правый круг (следующий уровень)
+                // Следующий уровень
                 Align(
                   alignment: Alignment.centerRight,
                   child: Container(
-                    margin: const EdgeInsets.only(right: 30),
+                    margin: EdgeInsets.only(right: 30),
                     child: CircleAvatar(
                       radius: 22,
                       backgroundColor: AppColors.blueColor,
                       child: Text(
                         "$nextLevel",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
