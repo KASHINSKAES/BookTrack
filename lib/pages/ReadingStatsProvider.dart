@@ -194,8 +194,6 @@ class ReadingStatsProvider with ChangeNotifier {
     }
   }
 
-  // Вспомогательная функция для форматирования даты
-
   // Метод для изменения выбранного дня
   void setSelectedDay(int day) {
     selectedDay = day;
@@ -205,7 +203,11 @@ class ReadingStatsProvider with ChangeNotifier {
   // Геттер для выбранной даты
   String get selectedDate {
     final days = dailyDataPages.keys.toList();
-    return days[selectedDay];
+    if (days.isEmpty)
+      return _formatDate(
+          DateTime.now()); // Возвращаем текущую дату по умолчанию
+    return days[
+        selectedDay.clamp(0, days.length - 1)]; // Защита от выхода за границы
   }
 
   // Геттеры для данных выбранного дня

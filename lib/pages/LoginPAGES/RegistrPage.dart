@@ -1,6 +1,7 @@
 import 'package:booktrack/main.dart';
 import 'package:booktrack/models/userModels.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobRegistr.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -175,7 +176,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: 23 * scale,
-              vertical: 125 * scale,
+              vertical: 80 * scale,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -250,10 +251,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           SizedBox(height: 30 * scale),
                           TextFormField(
                             controller: _phoneController,
-                            readOnly: true,
                             validator: _validateRussianPhone,
                             decoration: InputDecoration(
-                              labelText: 'Номер телефона',
+                              labelText: 'Номер телефона*',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(35 * scale),
                                 borderSide: BorderSide(
@@ -306,7 +306,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               ),
                             ),
                             keyboardType: TextInputType.emailAddress,
-                            onChanged: (_) => _formKey.currentState?.validate(),
                           ),
                           SizedBox(height: 30 * scale),
                           TextFormField(
@@ -338,34 +337,41 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             obscureText: true,
                             validator: _validatePassword,
                           ),
-                          SizedBox(height: 20 * scale),
-                          if (_isLoading)
-                            const CircularProgressIndicator()
-                          else
-                            ElevatedButton(
-                              style: ButtonStyle(
-                                fixedSize: MaterialStateProperty.all(
-                                  Size(
-                                    260 * scale.clamp(0.5, 2.0),
-                                    35 * scale.clamp(0.5, 2.0),
-                                  ),
-                                ),
-                                side: MaterialStateProperty.all(
-                                  const BorderSide(
-                                    color: AppColors.background,
-                                    width: 2,
-                                  ),
+                          SizedBox(height: 5 * scale),
+                          ElevatedButton(
+                            style: ButtonStyle(
+                              fixedSize: MaterialStateProperty.all(
+                                Size(
+                                  260 * scale.clamp(0.5, 2.0),
+                                  35 * scale.clamp(0.5, 2.0),
                                 ),
                               ),
-                              onPressed: _registerUser,
-                              child: Text(
-                                'Зарегистрироваться',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: AppColors.textPrimary,
+                              side: MaterialStateProperty.all(
+                                const BorderSide(
+                                  color: AppColors.background,
+                                  width: 2,
                                 ),
                               ),
                             ),
+                            onPressed: _registerUser,
+                            child: Text(
+                              'Зарегистрироваться',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => AuthScreen())),
+                            child: const Text('Назад',
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary)),
+                          ),
                         ],
                       ),
                     ),

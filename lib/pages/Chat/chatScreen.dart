@@ -28,6 +28,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _loadMessages() async {
+    // Сначала проверьте, что пользователь является участником комнаты
+    final roomDoc = await FirebaseFirestore.instance
+        .collection('rooms')
+        .doc(widget.roomId)
+        .get();
+
+    if (!roomDoc.exists ||
+        !(roomDoc.data()?['members'] ?? []).contains(widget.currentUser.uid)) {
+      throw Exception('You are not a member of this room');
+    }
+
+    // Затем загружайте сообщения
     final snapshot = await FirebaseFirestore.instance
         .collection('rooms')
         .doc(widget.roomId)
@@ -82,6 +94,8 @@ class _ChatScreenState extends State<ChatScreen> {
         .update({
       'lastMessage': textMessage.text,
       'lastMessageTime': textMessage.createdAt,
+      'members': FieldValue.arrayUnion(
+          [widget.currentUser.uid]) // убедитесь, что пользователь в members
     });
   }
 

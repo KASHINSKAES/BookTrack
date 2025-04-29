@@ -6,20 +6,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 class RoomRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
- Stream<List<Room>> getRooms() {
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  if (userId == null) return Stream.value([]);
+  Stream<List<Room>> getRooms() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return Stream.value([]);
 
-  return _firestore
-      .collection('rooms')
-      .where('members', arrayContains: userId)  // Совпадает с индексом
-      .orderBy('lastMessageTime', descending: true)  // Совпадает с индексом
-      .snapshots()
-      .map((snapshot) => snapshot.docs.map((doc) => Room.fromFirestore({
-            ...doc.data(),
-            'id': doc.id,
-          })).toList());
-}
+    return _firestore
+        .collection('rooms')
+        .where('members', arrayContains: userId) // Совпадает с индексом
+        .orderBy('lastMessageTime', descending: true) // Совпадает с индексом
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Room.fromFirestore({
+                  ...doc.data(),
+                  'id': doc.id,
+                }))
+            .toList());
+  }
 
   Future<void> createRoom(String name, String userId,
       {required String otherUserId}) async {
