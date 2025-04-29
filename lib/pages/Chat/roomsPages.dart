@@ -112,7 +112,7 @@ class RoomListPage extends StatelessWidget {
                   subtitle: Text(room.lastMessage,
                       style: TextStyle(fontSize: 14 * scale)),
                   trailing: Text(
-                    '${room.lastMessageTime.hour}:${room.lastMessageTime.minute}',
+                    '${room.lastMessageTime.toDate().hour}:${room.lastMessageTime.toDate().minute.toString().padLeft(2, '0')}',
                     style: TextStyle(fontSize: 12 * scale),
                   ),
                   onTap: () => _openChat(context, room),

@@ -111,7 +111,8 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                           });
 
                           try {
-                            final status = await widget.onCodeVerified(enteredCode);
+                            final status =
+                                await widget.onCodeVerified(enteredCode);
 
                             switch (status) {
                               case VerificationStatus.existingUser:
@@ -124,10 +125,12 @@ class _CodeVerificationScreenState extends State<CodeVerificationScreen> {
                                 setState(() => _errorMessage = 'Неверный код');
                                 break;
                               case VerificationStatus.error:
-                                setState(() => _errorMessage = 'Ошибка сервера');
+                                setState(
+                                    () => _errorMessage = 'Ошибка сервера');
                             }
                           } catch (e) {
-                            setState(() => _errorMessage = 'Ошибка: ${e.toString()}');
+                            setState(() =>
+                                _errorMessage = 'Ошибка: ${e.toString()}');
                           } finally {
                             if (mounted) setState(() => _isLoading = false);
                           }

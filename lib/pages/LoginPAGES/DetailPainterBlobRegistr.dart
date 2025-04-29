@@ -108,8 +108,8 @@ class BlobPainterRegistrhWrap extends CustomPainter {
     } else {
       path.moveTo(0, size.height);
       for (double x = 0; x <= size.width; x++) {
-        double y = (size.height * 0.82) +
-            (size.height * 0.12 * (x / size.width) +
+        double y = (size.height * 0.90) +
+            (size.height * 0.08 * (x / size.width) +
                 waveHeight * sin((x + offset) * 2 * pi / waveLength));
         path.lineTo(x, y);
       }
