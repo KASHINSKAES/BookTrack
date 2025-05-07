@@ -555,7 +555,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BookScreen(bookId: 'book_3'),
+                  builder: (context) => BookScreen(bookId: 'book_3', onBack: () {
+                            Navigator.pop(context);
+                          },),
                 ),
               );
             },
