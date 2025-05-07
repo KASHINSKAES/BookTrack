@@ -1,264 +1,83 @@
-import 'package:booktrack/MyFlutterIcons.dart';
-import 'package:booktrack/pages/AppState.dart';
+import 'package:booktrack/icons2.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
+import 'package:booktrack/pages/epigraphWidgers.dart';
 import 'package:booktrack/widgets/constants.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:booktrack/pages/bookReposityr.dart';
+import 'package:booktrack/models/chaptersModel.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
-Future<String> fetchText() async {
-  final snapshot = await FirebaseFirestore.instance
-      .collection('books')
-      .doc('book_1')
-      .collection('chapters')
-      .get();
-
-  String text = '';
-
-  for (var doc in snapshot.docs) {
-    final data = doc.data();
-    text += data['text'];
-  }
-
-  return text;
-}
-
-class TextBook extends StatefulWidget {
+class BookScreen extends StatefulWidget {
+  final String bookId;
   final VoidCallback onBack;
-  TextBook({super.key, required this.onBack});
+
+  const BookScreen({required this.bookId, required this.onBack, Key? key})
+      : super(key: key);
 
   @override
-  State<TextBook> createState() => _TextBookState();
+  _BookScreenState createState() => _BookScreenState();
 }
 
-class _TextBookState extends State<TextBook> {
-  String textBook = '';
-  bool isLoading = true;
-  List<String> pages = [];
-  int currentPage = 0;
-  DateTime? startReadingTime;
-  double goalMinutes = 0; // Минуты цели чтения
-  int goalPages = 0; // Прогресс чтения в процентах
-  int totalReadingTimeInSeconds = 0;
+class _BookScreenState extends State<BookScreen> {
+  late Future<BookWithChapters> _bookData;
+  final BookRepository _repository = BookRepository();
+  int _currentPageIndex = 0;
+  late List<String> _allPages = [];
+  late List<String> _epigraph = [];
+  late List<Chapter> _chapters = [];
+  late BookWithChapters _bookDatas;
+  late List<int> _chapterPageStarts = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData(); // Загружаем данные книги
-    _loadCurrentPage().then((page) {
-      setState(() {
-        currentPage = page; // Устанавливаем текущую страницу
-      });
-    });
-    _startReadingTimer(); // Запускаем таймер чтения
+    _bookData =
+        _repository.getBookWithChapters(widget.bookId); // Initialize _bookData
+    _loadBookData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Получаем данные из Provider после инициализации контекста
-    final appState = Provider.of<AppState>(context, listen: false);
-    setState(() {
-      goalMinutes = appState.readingMinutesPurpose / 60.round();
-      goalPages = appState.readingPagesPurpose;
-    });
-  }
-
-  // Запуск таймера чтения
-  void _startReadingTimer() {
-    startReadingTime = DateTime.now();
-  }
-
-  // Остановка таймера чтения
-  void _stopReadingTimer() {
-    if (startReadingTime != null) {
-      final endReadingTime = DateTime.now();
-      final difference = endReadingTime.difference(startReadingTime!);
-      totalReadingTimeInSeconds += difference.inSeconds;
-      startReadingTime = null;
-    }
-  }
-
-  // Загрузка данных книги
-  Future<void> _loadData() async {
+  Future<void> _loadBookData() async {
     try {
-      final data = await fetchText(); // Получаем текст книги
-      final settings = Provider.of<SettingsProvider>(context, listen: false);
-      setState(() {
-        textBook = data;
-        isLoading = false;
-        pages = _splitTextIntoPages(
-          textBook,
-          context,
-          settings.fontSize,
-          _getFontFamily(settings.selectedFontFamily),
-        );
-      });
+      final book = await _repository.getBookWithChapters(widget.bookId);
+      if (mounted) {
+        setState(() {
+          _bookDatas = book; // Сохраняем весь объект
+          _chapters = book.chapters;
+          _precalculateAllPages(book);
+        });
+      }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка загрузки текста: $e')),
-      );
+      debugPrint('Error loading book: $e');
     }
   }
 
-  // Разбиение текста на страницы
-  List<String> _splitTextIntoPages(
-    String text,
-    BuildContext context,
-    double fontSize,
-    String fontFamily,
-  ) {
-    List<String> pages = [];
-    int start = 0;
-    int charsPerPage =
-        _calculateCharsPerPage(context, text, fontSize, fontFamily);
+  void _precalculateAllPages(BookWithChapters book) {
+    _allPages = [];
+    _epigraph = [];
+    _chapterPageStarts = [];
 
-    while (start < text.length) {
-      int end = start + charsPerPage;
-      if (end >= text.length) {
-        end = text.length;
+    for (var chapter in book.chapters) {
+      _chapterPageStarts.add(_allPages.length);
+
+      // Сохраняем текст эпиграфа отдельно
+      if (chapter.epigraph != null) {
+        _epigraph.add('${chapter.epigraph!.text}\n${chapter.epigraph!.author}');
       } else {
-        while (end > start && text[end] != ' ' && text[end] != '\n') {
-          end--;
-        }
+        _epigraph.add(''); // Пустая строка, если эпиграфа нет
       }
 
-      pages.add(text.substring(start, end).trim());
-      start = end;
+      // Разбиваем на страницы только основной текст главы
+      final chapterPages = _splitTextIntoPages(chapter.text);
+      _allPages.addAll(chapterPages);
     }
-
-    return pages;
-  }
-
-  // Расчет количества символов на странице
-  int _calculateCharsPerPage(
-    BuildContext context,
-    String text,
-    double fontSize,
-    String fontFamily,
-  ) {
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          fontSize: fontSize,
-          fontFamily: fontFamily,
-        ),
-      ),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    );
-
-    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
-    final charsPerLine = textPainter
-        .getPositionForOffset(Offset(
-          MediaQuery.of(context).size.width - 32,
-          fontSize,
-        ))
-        .offset;
-
-    final linesPerPage =
-        (MediaQuery.of(context).size.height - 200) ~/ (fontSize * 1.5);
-
-    return charsPerLine * linesPerPage;
-  }
-
-  // Загрузка текущей страницы из SharedPreferences
-  Future<int> _loadCurrentPage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('currentPage') ?? 0;
-  }
-
-  // Сохранение текущей страницы в SharedPreferences
-  Future<void> _saveCurrentPage(int page) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('currentPage', page);
-  }
-
-  // Сохранение прогресса чтения в Firestore
-  Future<void> _saveReadingProgress() async {
-    final firestore = FirebaseFirestore.instance;
-    final userId = 'user_1'; // Замените на реальный ID пользователя
-    if (userId == null) return;
-
-    final readingProgressRef = firestore
-        .collection('users')
-        .doc(userId)
-        .collection('reading_progress')
-        .doc('book_1');
-
-    final readingProgressData = {
-      'totalPages': pages.length,
-      'currentPage': currentPage,
-      'dateLastRead': DateTime.now(),
-      'totalReadingTimeInSeconds': totalReadingTimeInSeconds,
-    };
-
-    await readingProgressRef.set(readingProgressData, SetOptions(merge: true));
-  }
-
-  // Сохранение ежедневного прогресса чтения в коллекцию reading_goals
-  Future<void> _saveDailyReadingProgress() async {
-    final firestore = FirebaseFirestore.instance;
-    final userId = 'user_1'; // Замените на реальный ID пользователя
-
-    if (userId == null) return;
-
-    final today = DateTime.now();
-    final goalId = 'goal_${today.year}_${today.month}_${today.day}';
-
-    final readingGoalsRef = firestore
-        .collection('users')
-        .doc(userId)
-        .collection('reading_goals')
-        .doc(goalId);
-
-    // Обновляем данные
-    final dailyProgressData = {
-      'readPages':
-          currentPage, // Текущее количество прочитанных страниц за день
-      'date': DateTime.now(),
-      'goalPages': goalPages, // Цель по страницам за день
-      'readMinutes': totalReadingTimeInSeconds ~/
-          60, // Текущее количество прочитанных минут за день
-      'goalMinutes': goalMinutes, // Цель по минутам за день
-      'weekStart': DateTime(today.year, today.month,
-          today.day - today.weekday + 1), // Начало недели
-    };
-
-    // Сохраняем данные
-    await readingGoalsRef.set(dailyProgressData, SetOptions(merge: true));
-  }
-
-  // Обработка изменения страницы
-  void _onPageChanged(int index) {
-    setState(() {
-      currentPage = index;
-    });
-    _saveCurrentPage(index); // Сохраняем текущую страницу
-    _saveReadingProgress(); // Сохраняем общий прогресс
-    _saveDailyReadingProgress(); // Сохраняем ежедневный прогресс
-  }
-
-  @override
-  void dispose() {
-    _stopReadingTimer(); // Останавливаем таймер
-    _saveReadingProgress(); // Сохраняем прогресс перед закрытием
-    _saveDailyReadingProgress(); // Сохраняем ежедневный прогресс
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
     return Scaffold(
       backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
       appBar: AppBar(
@@ -279,40 +98,247 @@ class _TextBookState extends State<TextBook> {
             icon: Icon(Icons.settings, color: Colors.white),
             onPressed: () => _showTextEditor(scale, settings),
           ),
+          IconButton(
+            icon: Icon(Icons.notes),
+            onPressed: () => _showFootnotes(context),
+          ),
         ],
       ),
-      body: isLoading
+      body: _chapters.isEmpty
           ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                _buildBookHeader(_bookDatas, context),
                 Expanded(
                   child: PageView.builder(
-                    controller: PageController(initialPage: currentPage),
-                    itemCount: pages.length,
-                    onPageChanged: _onPageChanged,
-                    itemBuilder: (context, index) {
-                      return SingleChildScrollView(
-                        child: Container(
-                          padding: EdgeInsets.all(16.0),
-                          color: _getBackgroundColor(
-                              settings.selectedBackgroundStyle),
-                          child: Text(
-                            pages[index],
-                            style: TextStyle(
-                              fontSize: settings.fontSize,
-                              fontFamily:
-                                  _getFontFamily(settings.selectedFontFamily),
-                              color: _getTextColor(
-                                  settings.selectedBackgroundStyle),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                    itemCount: _allPages.length,
+                    onPageChanged: (index) =>
+                        setState(() => _currentPageIndex = index),
+                    itemBuilder: (context, index) => _buildPageContent(index),
                   ),
                 ),
+                _buildPageFooter(),
               ],
             ),
+    );
+  }
+
+  Widget _buildPageContent(int pageIndex) {
+    // Определяем, к какой главе относится текущая страница
+    int chapterIndex = 0;
+    for (int i = 0; i < _chapterPageStarts.length; i++) {
+      if (pageIndex >= _chapterPageStarts[i]) {
+        chapterIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    final isFirstPageOfChapter = pageIndex == _chapterPageStarts[chapterIndex];
+    final chapter = _chapters[chapterIndex];
+    final settings = Provider.of<SettingsProvider>(context);
+
+    if (isFirstPageOfChapter && chapter.epigraph != null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Заголовок главы
+            Text(
+              chapter.title,
+              style: TextStyle(
+                fontSize: settings.fontSize,
+                fontFamily: _getFontFamily(settings.selectedFontFamily),
+                color: _getTextColor(settings.selectedBackgroundStyle),
+              ),
+            ),
+            // Виджет эпиграфа
+            EpigraphWidgets(
+              text: chapter.epigraph!.text,
+              author: chapter.epigraph!.author,
+            ),
+            SizedBox(height: 16),
+            // Текст страницы
+            Text(
+              _allPages[pageIndex],
+              style: TextStyle(
+                fontSize: settings.fontSize,
+                fontFamily: _getFontFamily(settings.selectedFontFamily),
+                color: _getTextColor(settings.selectedBackgroundStyle),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isFirstPageOfChapter)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: Text(
+                chapter.title,
+                style: TextStyle(
+                  fontSize: settings.fontSize,
+                  fontFamily: _getFontFamily(settings.selectedFontFamily),
+                  color: _getTextColor(settings.selectedBackgroundStyle),
+                ),
+              ),
+            ),
+          Text(
+            _allPages[pageIndex],
+            style: TextStyle(
+              fontSize: settings.fontSize,
+              fontFamily: _getFontFamily(settings.selectedFontFamily),
+              color: _getTextColor(settings.selectedBackgroundStyle),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageFooter() {
+    // Определяем текущую главу
+    int currentChapter = 0;
+    for (int i = 0; i < _chapterPageStarts.length; i++) {
+      if (_currentPageIndex >= _chapterPageStarts[i]) {
+        currentChapter = i;
+      } else {
+        break;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        'Глава ${currentChapter + 1}/${_chapters.length} | '
+        'Страница ${_currentPageIndex - _chapterPageStarts[currentChapter] + 1}/'
+        '${_chapterPageStarts.length > currentChapter + 1 ? _chapterPageStarts[currentChapter + 1] - _chapterPageStarts[currentChapter] : _allPages.length - _chapterPageStarts[currentChapter]}',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
+  }
+
+  List<String> _splitTextIntoPages(String text) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final textStyle = TextStyle(
+      fontSize: settings.fontSize,
+      fontFamily: _getFontFamily(settings.selectedFontFamily),
+      color: _getTextColor(settings.selectedBackgroundStyle),
+    );
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: textStyle,
+      ),
+      textDirection: TextDirection.ltr,
+    );
+
+    // Рассчитываем высоту текста
+    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
+    final textHeight = textPainter.height;
+
+    // Определяем количество строк на странице
+    final linesPerPage =
+        (MediaQuery.of(context).size.height - 200) / textHeight;
+
+    // Разбиваем текст на страницы
+    final words = text.split(' ');
+    List<String> pages = [];
+    String currentPage = '';
+
+    for (final word in words) {
+      final testText = currentPage.isEmpty ? word : '$currentPage $word';
+      textPainter.text = TextSpan(
+        text: testText,
+        style: textStyle,
+      );
+      textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
+      final testLines = textPainter.height / textHeight;
+
+      if (testLines <= linesPerPage) {
+        currentPage = testText;
+      } else {
+        pages.add(currentPage);
+        currentPage = word;
+      }
+    }
+
+    if (currentPage.isNotEmpty) {
+      pages.add(currentPage);
+    }
+
+    return pages;
+  }
+
+  Widget _buildBookHeader(BookWithChapters bookData, BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            bookData.book.title,
+            style: TextStyle(
+              fontSize: settings.fontSize,
+              fontFamily: _getFontFamily(settings.selectedFontFamily),
+              color: _getTextColor(settings.selectedBackgroundStyle),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            bookData.book.author,
+            style: TextStyle(
+              fontSize: settings.fontSize,
+              fontFamily: _getFontFamily(settings.selectedFontFamily),
+              color: _getTextColor(settings.selectedBackgroundStyle),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFootnotes(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return FutureBuilder<BookWithChapters>(
+          future: _bookData,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return Container();
+
+            // Определяем текущую главу для сносок
+            int currentChapter = 0;
+            for (int i = 0; i < _chapterPageStarts.length; i++) {
+              if (_currentPageIndex >= _chapterPageStarts[i]) {
+                currentChapter = i;
+              } else {
+                break;
+              }
+            }
+
+            final chapter = snapshot.data!.chapters[currentChapter];
+            if (chapter.footnotes == null) return Text('Нет сносок');
+
+            return ListView(
+              children: chapter.footnotes!.entries
+                  .map((entry) => ListTile(
+                        title: Text(entry.value),
+                        leading: Text('${entry.key}'),
+                      ))
+                  .toList(),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -377,7 +403,8 @@ class _TextBookState extends State<TextBook> {
         int tempFontFamily = settings.selectedFontFamily;
         double tempFontSize = settings.fontSize;
         double tempBrightness = settings.brightness;
-        final brightnessProvider = Provider.of<BrightnessProvider>(context);
+        final brightnessProvider =
+            Provider.of<BrightnessProvider>(context, listen: false);
 
         return StatefulBuilder(
           builder: (context, setState) {
