@@ -267,6 +267,7 @@ class SectionTitle extends StatelessWidget {
 }
 
 class BookList extends StatelessWidget {
+  
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;

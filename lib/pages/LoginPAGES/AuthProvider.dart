@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProviders with ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   UserModel? _userModel;
   bool _isLoading = true;
 
@@ -26,6 +27,52 @@ class AuthProviders with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  AuthProviders() {
+    // Следим за изменениями статуса аутентификации
+    _auth.authStateChanges().listen(_updateUserFromFirebase);
+  }
+
+  Future<void> _updateUserFromFirebase(User? firebaseUser) async {
+    if (firebaseUser == null) {
+      _userModel = null;
+      notifyListeners();
+      return;
+    }
+
+    // Достаём дополнительные данные из Firestore
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (userDoc.exists) {
+      _userModel = UserModel(
+        uid: firebaseUser.uid,
+        name: userDoc.data()?['name'] ?? 'No name',
+        email: firebaseUser.email ?? userDoc.data()?['email'],
+        phone: userDoc.data()?['phone'],
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<void> login(UserModel user) async {
+    _userModel = user;
+    notifyListeners();
+  }
+
+  void setUser(UserModel? user) {
+    _userModel = user;
+    debugPrint("[AuthProviders] User updated: ${user?.name ?? 'null'}"); // 🔥
+    notifyListeners();
+  }
+
+  void clearUser() {
+    _userModel = null;
+    debugPrint("[AuthProviders] User cleared"); // 🔥
+    notifyListeners();
   }
 
   Future<void> loadUserData() async {
@@ -67,13 +114,6 @@ class AuthProviders with ChangeNotifier {
     _userModel = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userId');
-  }
-
-  Future<void> login(UserModel user) async {
-    _userModel = user;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userId', user.uid);
-    notifyListeners();
   }
 
   Future<void> logout() async {

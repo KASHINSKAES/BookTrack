@@ -1,12 +1,18 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:booktrack/icons2.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/pages/epigraphWidgers.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:booktrack/pages/bookReposityr.dart';
 import 'package:booktrack/models/chaptersModel.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class BookScreen extends StatefulWidget {
@@ -21,31 +27,79 @@ class BookScreen extends StatefulWidget {
 }
 
 class _BookScreenState extends State<BookScreen> {
+  late final PageController _pageController;
   late Future<BookWithChapters> _bookData;
   final BookRepository _repository = BookRepository();
   int _currentPageIndex = 0;
   late List<String> _allPages = [];
-  late List<String> _epigraph = [];
   late List<Chapter> _chapters = [];
+  late List<String> _epigraph = [];
+
   late BookWithChapters _bookDatas;
   late List<int> _chapterPageStarts = [];
+
+  // Система прогресса
+  int _pagesSinceLastXP = 0;
+  int _sessionPageCount = 0;
+  DateTime? _sessionStartTime;
+  Timer _debounceTimer = Timer(Duration.zero, () {});
+  String? _userId; 
 
   @override
   void initState() {
     super.initState();
-    _bookData =
-        _repository.getBookWithChapters(widget.bookId); // Initialize _bookData
-    _loadBookData();
+    _pageController = PageController();
+    _loadUserId().then((_) {
+      _startReadingSession();
+      _bookData = _repository.getBookWithChapters(widget.bookId);
+      _loadBookData().then(
+          (_) => _loadProgress()); // Загружаем прогресс после данных книги
+    });
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer.cancel();
+    _saveAllProgress();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadUserId() async {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
+
+    if (userModel == null || userModel.uid.isEmpty) {
+      throw Exception('User not authenticated');
+    }
+
+    setState(() {
+      _userId = userModel.uid;
+    });
+  }
+
+  void _startReadingSession() {
+    _sessionStartTime = DateTime.now();
+    _sessionPageCount = 0;
   }
 
   Future<void> _loadBookData() async {
     try {
+      if (_userId == null) return;
       final book = await _repository.getBookWithChapters(widget.bookId);
       if (mounted) {
         setState(() {
-          _bookDatas = book; // Сохраняем весь объект
+          _bookDatas = book;
           _chapters = book.chapters;
           _precalculateAllPages(book);
+        });
+        await _loadProgress();
+
+        // После загрузки данных и прогресса - переходим на нужную страницу
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients && _currentPageIndex > 0) {
+            _pageController.jumpToPage(_currentPageIndex);
+          }
         });
       }
     } catch (e) {
@@ -53,24 +107,266 @@ class _BookScreenState extends State<BookScreen> {
     }
   }
 
+  Future<void> _loadProgress() async {
+    try {
+      int loadedPage = 0;
+
+      // 1. Сначала пробуем загрузить из SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final prefsPage = prefs.getInt('currentPage_${widget.bookId}') ?? 0;
+      loadedPage = prefsPage;
+
+      // 2. Затем проверяем Firestore (если есть пользователь)
+      if (_userId != null) {
+        final progressDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_userId)
+            .collection('reading_progress')
+            .doc(widget.bookId)
+            .get();
+
+        if (progressDoc.exists) {
+          final progressData = progressDoc.data()!;
+          final savedPage = progressData['currentPage'] as int? ?? 0;
+
+          // Выбираем максимальный прогресс из всех источников
+          loadedPage = max(loadedPage, savedPage);
+
+          // Синхронизируем если количество страниц изменилось
+          final savedTotalPages = progressData['totalPages'] as int? ?? 0;
+          if (savedTotalPages != _allPages.length) {
+            await _saveReadingProgress();
+          }
+        }
+      }
+
+      // Устанавливаем загруженное значение с проверкой границ
+      if (mounted) {
+        setState(() {
+          _currentPageIndex = min(loadedPage, _allPages.length - 1);
+          _lastRecordedPage = _currentPageIndex;
+        });
+
+        // Прокручиваем к нужной странице после построения виджетов
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(_currentPageIndex);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading progress: $e');
+    }
+  }
+
   void _precalculateAllPages(BookWithChapters book) {
     _allPages = [];
-    _epigraph = [];
     _chapterPageStarts = [];
+    _epigraph = [];
 
     for (var chapter in book.chapters) {
       _chapterPageStarts.add(_allPages.length);
 
-      // Сохраняем текст эпиграфа отдельно
       if (chapter.epigraph != null) {
         _epigraph.add('${chapter.epigraph!.text}\n${chapter.epigraph!.author}');
       } else {
-        _epigraph.add(''); // Пустая строка, если эпиграфа нет
+        _epigraph.add('');
       }
 
-      // Разбиваем на страницы только основной текст главы
       final chapterPages = _splitTextIntoPages(chapter.text);
       _allPages.addAll(chapterPages);
+    }
+
+    // Добавляем последнюю страницу
+    if (_allPages.isEmpty || !_allPages.last.contains("Спасибо за прочтение")) {
+      _allPages.add("Спасибо за прочтение!");
+    }
+  }
+
+  int _lastRecordedPage = 0;
+
+  void _onPageChanged(int index) async {
+    final prevChapter = _getCurrentChapterIndex();
+
+    // Обновляем текущую страницу
+    setState(() => _currentPageIndex = index);
+
+    final currentChapter = _getCurrentChapterIndex();
+
+    // Если перешли в новую главу
+    if (currentChapter != prevChapter && index > _lastRecordedPage) {
+      await _addXP(2); // Бонус за начало новой главы
+    }
+    // Учитываем только переходы вперед
+    if (index > _lastRecordedPage) {
+      final pagesRead = index - _lastRecordedPage;
+      _pagesSinceLastXP += pagesRead;
+      _sessionPageCount += pagesRead;
+      _lastRecordedPage = index;
+
+      // Начисляем XP каждые 10 страниц
+      if (_pagesSinceLastXP >= 10) {
+        await _addXP(1);
+        _pagesSinceLastXP = 0;
+      }
+    }
+
+    setState(() => _currentPageIndex = index);
+
+    // Проверяем завершение книги
+    if (_isLastPage) {
+      await _completeBook();
+    }
+
+    _debounceSaveProgress();
+  }
+
+  bool get _isLastPage => _currentPageIndex == _allPages.length - 1;
+
+  void _debounceSaveProgress() {
+    _debounceTimer.cancel();
+    _debounceTimer = Timer(const Duration(seconds: 1), () async {
+      await _saveAllProgress();
+    });
+  }
+
+  Future<void> _saveAllProgress() async {
+    await Future.wait([
+      _saveCurrentPage(),
+      _saveReadingProgress(),
+      _updateSessionTime(),
+    ]);
+  }
+
+  Future<void> _saveCurrentPage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('currentPage_${widget.bookId}', _currentPageIndex);
+    } catch (e) {
+      debugPrint('Error saving current page: $e');
+    }
+  }
+
+  Future<void> _saveReadingProgress() async {
+    try {
+      if (_userId == null) return;
+      final currentChapter = _getCurrentChapterIndex();
+      final chapterProgress = _getChapterProgress(currentChapter);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('reading_progress')
+          .doc(widget.bookId)
+          .set({
+        'currentPage': _currentPageIndex,
+        'currentChapter': currentChapter,
+        'chapterProgress': chapterProgress,
+        'totalPages': _allPages.length,
+        'dateLastRead': DateTime.now(),
+        'bookId': widget.bookId,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving reading progress: $e');
+    }
+  }
+
+  int _getCurrentChapterIndex() {
+    for (int i = 0; i < _chapterPageStarts.length; i++) {
+      if (i == _chapterPageStarts.length - 1 ||
+          _currentPageIndex < _chapterPageStarts[i + 1]) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  double _getChapterProgress(int chapterIndex) {
+    final startPage = _chapterPageStarts[chapterIndex];
+    final endPage = chapterIndex < _chapterPageStarts.length - 1
+        ? _chapterPageStarts[chapterIndex + 1]
+        : _allPages.length;
+    final chapterLength = endPage - startPage;
+    final progressInChapter = _currentPageIndex - startPage;
+
+    return chapterLength > 0 ? progressInChapter / chapterLength : 0;
+  }
+
+  Future<void> _updateSessionTime() async {
+    if (_sessionStartTime == null) return;
+
+    final sessionDuration = DateTime.now().difference(_sessionStartTime!);
+    await _saveDailyReadingProgress(sessionDuration);
+    _startReadingSession();
+  }
+
+  Future<void> _saveDailyReadingProgress(Duration readingTime) async {
+    try {
+      if (_userId == null) return;
+      final today = DateTime.now();
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('reading_goals')
+          .doc('goal_${today.year}_${today.month}_${today.day}');
+
+      await docRef.set({
+        'date': today,
+        'readPages': FieldValue.increment(_sessionPageCount),
+        'readMinutes': FieldValue.increment(readingTime.inMinutes),
+        'weekStart':
+            DateTime(today.year, today.month, today.day - today.weekday + 1),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving daily progress: $e');
+    }
+  }
+
+  Future<void> _addXP(int amount) async {
+    try {
+      if (_userId == null) return;
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(_userId);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final doc = await transaction.get(userRef);
+
+        // Создаем stats если нет
+        if (!doc.exists || !doc.data()!.containsKey('stats')) {
+          transaction.set(
+              userRef,
+              {
+                'stats': {'current_level': 1, 'pages': 0, 'xp': 0}
+              },
+              SetOptions(merge: true));
+        }
+
+        transaction.update(userRef, {
+          'stats.xp': FieldValue.increment(amount),
+          'stats.pages': FieldValue.increment(10),
+        });
+      });
+    } catch (e) {
+      debugPrint('Error adding XP: $e');
+    }
+  }
+
+  Future<void> _completeBook() async {
+    try {
+      if (_userId == null) return;
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(_userId);
+
+      await userRef.update({
+        'end_books': FieldValue.arrayUnion([widget.bookId]),
+        'read_books': FieldValue.arrayRemove([widget.bookId]),
+      });
+
+      // Показываем уведомление о завершении
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Книга прочитана!')));
+    } catch (e) {
+      debugPrint('Error completing book: $e');
     }
   }
 
@@ -111,9 +407,9 @@ class _BookScreenState extends State<BookScreen> {
                 _buildBookHeader(_bookDatas, context),
                 Expanded(
                   child: PageView.builder(
-                    itemCount: _allPages.length,
-                    onPageChanged: (index) =>
-                        setState(() => _currentPageIndex = index),
+                    itemCount: _allPages.length, controller: _pageController,
+                    onPageChanged:
+                        _onPageChanged, // Теперь используется ваш метод
                     itemBuilder: (context, index) => _buildPageContent(index),
                   ),
                 ),

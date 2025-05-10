@@ -1,10 +1,12 @@
 import 'dart:math';
 
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:cloudpayments/cloudpayments.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class AddCardScreen extends StatefulWidget {
   @override
@@ -16,6 +18,26 @@ class _AddCardScreenState extends State<AddCardScreen> {
   String expiryDate = "";
   String cvv = "";
   String publicId = "";
+  String? userID;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserID();
+  }
+
+  Future<void> _loadUserID() async {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
+
+    if (userModel == null || userModel.uid.isEmpty) return;
+
+    if (mounted) {
+      setState(() {
+        userID = userModel.uid;
+      });
+    }
+  }
 
   void getToken() async {
     try {
@@ -143,8 +165,21 @@ class _AddCardScreenState extends State<AddCardScreen> {
             style: ButtonStyle(
               backgroundColor: MaterialStateProperty.all(AppColors.background),
             ),
-            onPressed: () =>
-                saveCardToken('user_1', 'token_example', cardNumber),
+            onPressed: () {
+              if (userID == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Пользователь не авторизован')),
+                );
+                return;
+              }
+              if (cardNumber.isEmpty || expiryDate.isEmpty || cvv.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Заполните все поля карты')),
+                );
+                return;
+              }
+              saveCardToken(userID!, 'token_example', cardNumber);
+            },
             child: Text(
               "Применить",
               style: TextStyle(fontSize: 32, color: Colors.white),
@@ -159,36 +194,35 @@ class _AddCardScreenState extends State<AddCardScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Функция для генерации уникального идентификатора
-  Future<String> generateUniqueCardId() async {
+  Future<String> generateUniqueCardId(String userId) async {
+    // ← Добавьте параметр
     String cardId = '';
     bool isUnique = false;
 
     while (!isUnique) {
-      // Генерация случайного числа
-      int randomNumber = Random().nextInt(100); // Можно настроить диапазон
+      int randomNumber = Random().nextInt(10000);
       cardId = 'card_$randomNumber';
-
-      // Проверка уникальности в Firestore
-      isUnique = await _isCardIdUnique(cardId);
+      isUnique = await _isCardIdUnique(userId, cardId); // ← Передаём userId
     }
 
     return cardId;
   }
 
   // Функция для проверки уникальности идентификатора в Firestore
-  Future<bool> _isCardIdUnique(String cardId) async {
+  Future<bool> _isCardIdUnique(String userId, String cardId) async {
     try {
-      // Поиск документа с таким идентификатором
-      final querySnapshot = await _firestore
-          .collection('cards') // Замените на вашу коллекцию
-          .where('cardId', isEqualTo: cardId)
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('payments')
+          .doc(cardId)
           .get();
 
-      // Если документ не найден, идентификатор уникален
-      return querySnapshot.docs.isEmpty;
+      // Если документ не существует, значит cardId уникален
+      return !doc.exists;
     } catch (e) {
-      print('Ошибка при проверке уникальности: $e');
-      return false;
+      print('Ошибка при проверке уникальности cardId: $e');
+      return false; // В случае ошибки считаем, что cardId не уникален
     }
   }
 
@@ -196,64 +230,91 @@ class _AddCardScreenState extends State<AddCardScreen> {
   Future<bool> _isCardDataUnique(
       Map<String, dynamic> cardData, String userId) async {
     try {
-      // Поиск документа с такими же данными
-      final querySnapshot = await _firestore
+      // Получаем все карты пользователя
+      final snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('payments')
-          .where('token', isEqualTo: cardData['token'])
-          .where('maskedNumber', isEqualTo: cardData['maskedNumber'])
-          .where('brand', isEqualTo: cardData['brand'])
           .get();
 
-      // Если документ найден, данные не уникальны
-      return querySnapshot.docs.isEmpty;
+      // Проверяем на дубликаты
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['cardNumber'] == cardData['cardNumber']) {
+          return false;
+        }
+      }
+      return true;
     } catch (e) {
-      print('Ошибка при проверке уникальности данных: $e');
-      return false;
+      print('Ошибка проверки уникальности: $e');
+      return false; // В случае ошибки считаем карту неуникальной
     }
   }
 
   // Функция для добавления карты в Firestore
   Future<void> saveCardToken(
-    String userId,
-    String token,
-    String cardNumber,
-  ) async {
-    try {
-      // Определяем тип карты и последние 4 цифры
-      CardType cardType = getCardType(cardNumber);
-      String last4 = cardNumber.substring(cardNumber.length - 4);
-      String cardId = await generateUniqueCardId();
+      String userId, String token, String cardNumber) async {
+    if (!mounted) return;
+    String cardIds = await generateUniqueCardId(userId); // Передаём userId
 
-      // Подготавливаем данные карты
-      Map<String, dynamic> cardData = {
-        "token": token,
-        "maskedNumber": "**** **** **** $last4",
-        "brand": cardType.toString().split('.').last,
-        "addedAt": DateTime.now().toIso8601String(),
+    try {
+      // Валидация параметров
+      if (userId.isEmpty || token.isEmpty || cardNumber.isEmpty) {
+        throw 'Все поля обязательны для заполнения';
+      }
+
+      // Нормализация номера карты
+      final cleanCardNumber = cardNumber.replaceAll(RegExp(r'[^0-9]'), '');
+      if (cleanCardNumber.length < 4) {
+        throw 'Номер карты слишком короткий';
+      }
+
+      // Подготовка данных карты
+      final cardType = getCardType(cleanCardNumber);
+      final last4 =
+          cleanCardNumber.substring(max(0, cleanCardNumber.length - 4));
+
+      final cardData = {
+        'token': token,
+        'cardNumber': '**** **** **** $last4',
+        'brand': cardType.toString().split('.').last,
+        'addedAt': FieldValue.serverTimestamp(),
       };
 
-      // Проверяем, уникальна ли карта
-      bool isCardUnique = await _isCardDataUnique(cardData, userId);
-      if (!isCardUnique) {
-        print('Такая карта уже существует!');
+      // Проверка уникальности
+      if (!await _isCardDataUnique(cardData, userId)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Эта карта уже привязана к вашему аккаунту')),
+          );
+        }
         return;
       }
 
-      // Добавляем карту в Firestore
+      // Сохранение карты
+      final cardId = cardIds;
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('payments')
           .doc(cardId)
-          .set({
-        "cards": FieldValue.arrayUnion([cardData])
-      }, SetOptions(merge: true));
+          .set(cardData);
 
-      print('Карта успешно добавлена!');
+      // Успешное завершение
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Карта успешно добавлена')),
+        );
+        Navigator.of(context).pop();
+      }
     } catch (e) {
-      print('Ошибка при добавлении карты: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${e.toString()}')),
+        );
+      }
+      print('Ошибка сохранения карты: $e');
     }
   }
 }
