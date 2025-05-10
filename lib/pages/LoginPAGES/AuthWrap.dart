@@ -4,6 +4,7 @@ import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/DetailPainterBlobAuth.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -65,25 +66,29 @@ class _AuthScreenState extends State<AuthScreen>
     });
 
     try {
-      // 1. Аутентификация в Firebase
       final userCredential =
           await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      if (userCredential.user == null || !mounted) return;
+      if (userCredential.user == null) return;
 
-      // 2. Создаем модель пользователя
-      final userModel = UserModel(
-        uid: userCredential.user!.uid,
-        email: userCredential.user!.email ?? _emailController.text.trim(),
-        // другие обязательные поля
-      );
+      // Загружаем данные из Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
 
-      // 3. Сохраняем в провайдер
+      if (!userDoc.exists) throw Exception('User data not found');
+
       final auth = Provider.of<AuthProviders>(context, listen: false);
-      await auth.login(userModel);
+      await auth.login(UserModel(
+        uid: userCredential.user!.uid,
+        name: userDoc.data()?['name'] ?? 'No name',
+        email: userCredential.user!.email ?? _emailController.text.trim(),
+        phone: userDoc.data()?['phone'],
+      ));
 
       // 4. Перенаправляем
       if (mounted) _redirectToHome();

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/models/userModels.dart';
 import 'package:booktrack/pages/Chat/roomsPages.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
@@ -19,11 +20,41 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({
+    super.key,
+  });
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String? userId;
+  String? userName;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateUserData();
+  }
+
+  void _updateUserData() {
+    final authProvider = Provider.of<AuthProviders>(context, listen: true);
+    final userModel = authProvider.userModel;
+
+    if (userModel?.uid != userId) {
+      // Проверяем, изменился ли пользователь
+      setState(() {
+        userId = userModel?.uid;
+        userName = userModel?.name;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProviders>(context, listen: false);
-    final userModel = authProvider.userModel;
+    debugPrint(userName);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Material(
@@ -97,28 +128,35 @@ class ProfilePage extends StatelessWidget {
 
   // Верхний блок с аватаром
   Widget _buildProfileHeader(double scale) {
-    return Container(
-      padding: EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 50,
-            child: SvgPicture.asset(
-              'images/logoProfile.svg',
-              fit: BoxFit.cover,
+    final authProvider = context.watch<AuthProviders>();
+    final user = authProvider.userModel;
+
+    debugPrint("[ProfilePage] Current user: ${user?.name ?? 'null'}");
+    return Consumer<AuthProviders>(builder: (context, authProvider, _) {
+      final user = authProvider.userModel;
+      return Container(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 50,
+              child: SvgPicture.asset(
+                'images/logoProfile.svg',
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          Text(
-            "Павел",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 36 * scale,
-              fontWeight: FontWeight.bold,
+            Text(
+              user?.name ?? "No user",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 36 * scale,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
   // Белый блок с закругленными углами
@@ -229,9 +267,12 @@ class ProfilePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ActivityPage(onBack: () {
-                            Navigator.pop(context);
-                          })),
+                      builder: (context) => ActivityPage(
+                            onBack: () {
+                              Navigator.pop(context);
+                            },
+                            userId: userId.toString(),
+                          )),
                 );
               },
               scale: scale,
@@ -339,9 +380,12 @@ class ProfilePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => PaymentMethodsPage(onBack: () {
-                            Navigator.pop(context);
-                          })),
+                      builder: (context) => PaymentMethodsPage(
+                            onBack: () {
+                              Navigator.pop(context);
+                            },
+                            scale: scale,
+                          )),
                 );
               },
               scale: scale,

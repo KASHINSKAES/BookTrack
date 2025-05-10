@@ -9,6 +9,7 @@ class UserModel {
   String? email;
   String? phone;
   String? password;
+  String? selectedPaymentMethod;
   DateTime? birthDate;
   int totalBonuses;
   int pagesReadTotal;
@@ -25,6 +26,7 @@ class UserModel {
     this.email,
     this.phone,
     this.password,
+    this.selectedPaymentMethod,
     this.birthDate,
     this.totalBonuses = 0,
     this.pagesReadTotal = 0,
@@ -50,6 +52,7 @@ class UserModel {
       email: data['email'],
       phone: data['phone'],
       password: data['password'],
+      selectedPaymentMethod: data['selectedPaymentMethod'],
       birthDate:
           data['birthDate'] != null ? DateTime.parse(data['birthDate']) : null,
       totalBonuses: data['totalBonuses'] ?? 0,
@@ -67,6 +70,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'password': password,
+      'selectedPaymentMethod': selectedPaymentMethod,
       'birthDate': birthDate?.toIso8601String(),
       'totalBonuses': totalBonuses,
       'pagesReadTotal': pagesReadTotal,

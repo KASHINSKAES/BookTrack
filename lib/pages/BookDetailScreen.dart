@@ -1,8 +1,15 @@
+import 'dart:math';
+
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
+import 'package:booktrack/pages/PurchaseSuccessScreen.dart';
+import 'package:booktrack/pages/purchaseButton.dart';
 import 'package:booktrack/pages/selectedPage.dart';
 import 'package:booktrack/pages/textBook.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -39,6 +46,52 @@ class BookDetailScreen extends StatefulWidget {
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
   double _scrollPosition = 0.0;
+  bool _isBookInCollection = false;
+  bool _isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    _checkIfBookInCollection();
+  }
+
+  Future<void> _checkIfBookInCollection() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _isLoading = false;
+        _isBookInCollection = false;
+      });
+      return;
+    }
+
+    try {
+      const bookId = 'book_3'; // Замените на реальный ID книги
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final savedBooks =
+            List<String>.from(userDoc.data()?['saved_books'] ?? []);
+        setState(() {
+          _isBookInCollection = savedBooks.contains(bookId);
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isBookInCollection = false;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isBookInCollection = false;
+        _isLoading = false;
+      });
+      debugPrint('Ошибка при проверке коллекции: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -532,81 +585,321 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Widget _buildBottomButtons(double scale) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    return Material(
+      borderRadius: BorderRadius.circular(12),
+      elevation: 4,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16 * scale,
+          vertical: 12 * scale,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: _isBookInCollection
+            ? _buildReadButton(scale)
+            : _buildPurchaseButtons(scale),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.background,
-            ),
+    );
+  }
+
+  Widget _buildReadButton(double scale) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.orange,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        minimumSize: Size(double.infinity, 50 * scale),
+      ),
+      onPressed: () {
+        // Навигация на страницу чтения книги
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookScreen(
+                bookId: 'book_3',
+                onBack: () {
+                  Navigator.pop(context);
+                }),
+          ),
+        );
+      },
+      child: Text(
+        'Читать книгу',
+        style: TextStyle(
+          fontSize: 16 * scale,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchaseButtons(double scale) {
+    return Row(
+      children: [
+        Expanded(
+          child: PurchaseButton(
+            icon: MyFlutterApp.school,
+            title: 'Полностью',
+            subtitle: 'за 299 ₽',
+            onPressed: _handlePurchase,
+            scale: scale,
+          ),
+        ),
+        SizedBox(width: 16 * scale),
+        Expanded(
+          child: PurchaseButton(
+            icon: MyFlutterApp.notes,
+            title: 'Отрывок',
+            subtitle: 'бесплатно',
+            onPressed: () {},
+            scale: scale,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handlePurchase() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showAuthErrorDialog(context);
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      const bookId = 'book_3';
+      const bookPrice = 299;
+
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userDoc = await userRef.get();
+
+      // Если документ пользователя не существует - создаем его с базовыми полями
+      if (!userDoc.exists) {
+        await userRef.set({
+          'saved_books': [],
+          'totalBonuses': 0,
+          'payments': {},
+          'selectedPaymentMethod': 'card_1',
+          'lastPurchaseDate': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Получаем данные пользователя с дефолтными значениями
+      final userData = userDoc.data() ??
+          {
+            'saved_books': [],
+            'totalBonuses': 0,
+            'payments': {},
+            'selectedPaymentMethod': 'card_1',
+          };
+
+      final savedBooks = List<String>.from(userData['saved_books'] ?? []);
+      final currentBonuses = getSafeInt(userData['totalBonuses']);
+      final paymentMethods =
+          userData['payments'] as Map<String, dynamic>? ?? {};
+      final selectedMethod =
+          userData['selectedPaymentMethod'] as String? ?? 'card_1';
+
+      if (savedBooks.contains(bookId)) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Эта книга уже у вас в коллекции')),
+        );
+        return;
+      }
+
+      // Расчет стоимости и бонусов
+      final maxBonusUse = (bookPrice * 0.3).round();
+      final bonusesToUse = min(currentBonuses, maxBonusUse);
+      final finalPrice = bookPrice - bonusesToUse;
+      final bonusesToAdd = bonusesToUse > 0 ? 0 : (finalPrice * 0.15).round();
+
+      // Получаем данные о карте (с проверкой на существование)
+      final cardData =
+          paymentMethods[selectedMethod] as Map<String, dynamic>? ??
+              {
+                'cardNumber': '**** **** **** ****',
+                'brand': 'Unknown',
+              };
+      final cardNumber =
+          cardData['cardNumber'] as String? ?? '**** **** **** ****';
+      final cardLast4 = cardNumber.length > 4
+          ? cardNumber.substring(cardNumber.length - 4)
+          : '****';
+
+      // Создаем запись о покупке
+      final purchaseData = {
+        'amount': finalPrice,
+        'date': FieldValue.serverTimestamp(),
+        'paymentMethod': selectedMethod,
+        'paymentDetails': {
+          'cardLast4': cardLast4,
+          'cardBrand': cardData['brand'] as String? ?? 'Unknown',
+        },
+        'reason': 'Покупка книги',
+        'bookId': bookId,
+        'bonusesUsed': bonusesToUse,
+        'bonusesAdded': bonusesToAdd,
+        'status': 'completed',
+        'originalPrice': bookPrice,
+      };
+
+      // Обновляем данные пользователя
+      final updateData = {
+        'saved_books': FieldValue.arrayUnion([bookId]),
+        'totalBonuses': FieldValue.increment(bonusesToAdd - bonusesToUse),
+        'lastPurchaseDate': FieldValue.serverTimestamp(),
+      };
+
+      // Если нет поля payments - добавляем его
+      if (!userData.containsKey('payments')) {
+        updateData['payments'] = FieldValue.arrayUnion([]);
+      }
+
+      await userRef.update(updateData);
+
+      // Добавляем запись в историю покупок (коллекция будет создана автоматически)
+      await userRef.collection('purchase_history').add(purchaseData);
+
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PurchaseSuccessScreen(
+            bookId: bookId,
+            price: finalPrice.toDouble(),
+            bonusesUsed: bonusesToUse,
+            bonusesAdded: bonusesToAdd,
+            bookTitle: widget.bookTitle,
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Ошибка при покупке: $e');
+      debugPrint('Stack trace: $stackTrace');
+
+      Navigator.pop(context);
+      _showRetryDialog(context, e.toString(), user?.uid ?? '');
+    }
+  }
+
+  void _showAuthErrorDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Ошибка авторизации'),
+        content: Text('Для совершения покупки необходимо войти в систему.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Отмена'),
+          ),
+          TextButton(
             onPressed: () {
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BookScreen(bookId: 'book_3', onBack: () {
-                            Navigator.pop(context);
-                          },),
+                  builder: (_) => RegistrationScreen(isEmail: false),
                 ),
               );
             },
-            child: Row(
-              children: [
-                Icon(MyFlutterApp.school, color: Colors.white),
-                SizedBox(width: 7),
-                Column(
-                  children: [
-                    Text(
-                      'Полностью ',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    Text(
-                      'за 299 ₽',
-                      style: TextStyle(color: Colors.white.withOpacity(.6)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.background,
-            ),
-            onPressed: () {},
-            child: Row(
-              children: [
-                Icon(MyFlutterApp.notes, color: Colors.white),
-                SizedBox(width: 7),
-                Column(
-                  children: [
-                    Text(
-                      'Отрывок ',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    Text(
-                      'бесплатно',
-                      style: TextStyle(color: Colors.white.withOpacity(.6)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            child: Text('Войти'),
           ),
         ],
       ),
     );
+  }
+
+  void _showRetryDialog(
+      BuildContext context, String error, String userId) async {
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    final paymentMethods =
+        (userDoc.data()?['payments'] as Map<String, dynamic>?) ?? {};
+    final selectedMethod = userDoc.data()?['selectedPaymentMethod'] ?? 'card_1';
+    final cardData = paymentMethods[selectedMethod] ?? {};
+    final cardLast4 =
+        (cardData['cardNumber'] as String?)?.substring(15) ?? '****';
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Ошибка оплаты'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Не удалось завершить покупку:'),
+            SizedBox(height: 8),
+            Text(error, style: TextStyle(color: Colors.red)),
+            SizedBox(height: 16),
+            if (cardData.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Используемая карта:'),
+                  SizedBox(height: 4),
+                  Text(
+                    '${cardData['brand'] ?? 'Карта'} **** $cardLast4',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            SizedBox(height: 16),
+            Text(
+                'Пожалуйста, попробуйте снова или выберите другой способ оплаты.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handlePurchase();
+            },
+            child: Text('Попробовать снова'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _logPurchaseStart(
+      String userId, String bookId, int price) async {
+    await FirebaseFirestore.instance.collection('purchase_logs').doc().set({
+      'userId': userId,
+      'bookId': bookId,
+      'price': price,
+      'status': 'started',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  int getSafeInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 }
 
