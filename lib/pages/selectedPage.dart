@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/timerAndPages.dart';
 import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -18,222 +19,165 @@ class selectedPage extends StatefulWidget {
 }
 
 class _selectedPage extends State<selectedPage> {
-  bool isTimerRunning = false; // Флаг для управления паузой
-  int _totalTimeInSeconds = 0; // Обновляется динамически
-
-// 30 минут в секундах
-  Timer? _countdownTimer; // Таймер обратного отсчёта
-  Timer? _readingTimer; // Таймер для отслеживания минут чтения
-
-  // Форматированное время для обратного отсчёта
-
   @override
   void initState() {
     super.initState();
-    final appState = Provider.of<AppState>(context, listen: false);
-    _totalTimeInSeconds = appState.readingMinutesPurpose;
-  }
-
-  String get formattedTime {
-    final hours = (_totalTimeInSeconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes =
-        ((_totalTimeInSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final seconds = (_totalTimeInSeconds % 60).toString().padLeft(2, '0');
-    return "$hours:$minutes:$seconds";
-  }
-
-  // Запуск обоих таймеров
-  void _startTimers() {
-    setState(() {
-      isTimerRunning = true;
-    });
-
-    // Таймер обратного отсчёта
-    _countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (_totalTimeInSeconds > 0) {
-        setState(() {
-          _totalTimeInSeconds--;
-        });
-      } else {
-        timer.cancel(); // Остановка таймера при достижении 0
-      }
-    });
-
-    // Таймер отслеживания минут чтения
-    _readingTimer = Timer.periodic(Duration(minutes: 1), (timer) {
-      setState(() {
-        readingMinutes++;
-      });
-    });
+    _loadUserData();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final appState = Provider.of<AppState>(context);
-    setState(() {
-      _totalTimeInSeconds = appState.readingMinutesPurpose;
-    });
+    // Повторная загрузка при изменении зависимостей
+    _loadUserData();
   }
 
-  // Пауза обоих таймеров
-  void _pauseTimers() {
-    setState(() {
-      isTimerRunning = false;
-    });
-    _countdownTimer?.cancel();
-    _readingTimer?.cancel();
-  }
+  Future<void> _loadUserData() async {
+    final auth = Provider.of<AuthProviders>(context, listen: false);
+    final appState = Provider.of<AppState>(context, listen: false);
 
-  // Переключение паузы и возобновления
-  void _toggleTimers() {
-    if (isTimerRunning) {
-      _pauseTimers();
-    } else {
-      _startTimers();
+    if (auth.userModel != null) {
+      await appState.loadUserData(auth.userModel!.uid);
     }
   }
 
-  @override
-  void dispose() {
-    // Очищаем ресурсы при закрытии
-    _countdownTimer?.cancel();
-    _readingTimer?.cancel();
-    super.dispose();
-  }
+ @override
+Widget build(BuildContext context) {
+  final appState = Provider.of<AppState>(context);
+  final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final readingMinutesPurpose = appState.readingMinutesPurpose / 60;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
-    return Scaffold(
-        backgroundColor: const Color(0xff5775CD),
-        body: ListView(
-          padding: EdgeInsets.only(top: 23.0 * scale),
-          children: [
-            Padding(
-                padding: EdgeInsets.symmetric(
-                    horizontal: 20 * scale, vertical: 10 * scale),
-                child: Text(
-                  "Мои книги",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: AppDimensions.baseTextSizeh1 * scale),
-                )),
-            Container(
-              width: screenWidth,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-                  topRight: Radius.circular(AppDimensions.baseCircual * scale),
+  return Scaffold(
+    backgroundColor: const Color(0xff5775CD),
+    body: ListView(
+      padding: EdgeInsets.only(top: 23.0 * scale),
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+              horizontal: 20 * scale, vertical: 10 * scale),
+          child: Text(
+            "Мои книги",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: AppDimensions.baseTextSizeh1 * scale,
+            ),
+          ),
+        ),
+        Container(
+          width: MediaQuery.of(context).size.width,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+              topRight: Radius.circular(AppDimensions.baseCircual * scale),
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(),
+                padding: EdgeInsets.all(22.0 * scale),
+                child: Stack(
+                  children: [
+                    SvgPicture.asset(
+                      'images/fonTaimer.svg',
+                      height: 77.0 * scale,
+                      width: 350.0 * scale,
+                      fit: BoxFit.fill,
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              size: 55 * scale,
+                              appState.dailyGoalAchieved
+                                  ? Icons.celebration
+                                  : Icons.auto_awesome,
+                              color: Colors.white,
+                            ),
+                            onPressed: null,
+                          ),
+                          Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  appState.formattedRemainingTime,
+                                  style: TextStyle(
+                                    fontSize: 32 * scale,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  '${appState.pagesReadToday}/${appState.readingPagesPurpose} страниц',
+                                  style: TextStyle(
+                                    fontSize: 16 * scale,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          RotatedBox(
+                            quarterTurns: 2,
+                            child: IconButton(
+                              icon: Icon(
+                                MyFlutterApp.back,
+                                size: 29 * scale,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TimerPage(
+                                      onBack: () {
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(),
-                    padding: EdgeInsets.all(22.0 * scale),
-                    child: Stack(
-                      children: [
-                        SvgPicture.asset(
-                          'images/fonTaimer.svg',
-                          height: 77.0 * scale,
-                          width: 350.0 * scale,
-                          fit: BoxFit.fill,
-                        ),
-                        Align(
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  size: 55 * scale,
-                                  isTimerRunning
-                                      ? MyFlutterApp.clock
-                                      : Icons.pause,
-                                  color: Colors.white,
-                                ),
-                                onPressed: _toggleTimers,
-                              ),
-                              Center(
-                                  child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                    // Отображение таймера обратного отсчёта
-                                    Text(
-                                      formattedTime,
-                                      style: TextStyle(
-                                          fontSize: 32 * scale,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white),
-                                    ),
-
-                                    // Отображение минут чтения
-                                    Text(
-                                      '$readingMinutes/${readingMinutesPurpose.round()} минут',
-                                      style: TextStyle(
-                                        fontSize: 16 * scale,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ])),
-                              RotatedBox(
-                                quarterTurns: 2,
-                                child: IconButton(
-                                  icon: Icon(MyFlutterApp.back,
-                                      size: 29 * scale, color: Colors.white),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) => TimerPage(
-                                                onBack: () {
-                                                  Navigator.pop(context);
-                                                },
-                                              )),
-                                    );
-                                  },
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SectionTitle(
-                    title: "Отложено",
-                    onSeeAll: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AllBooksPage()),
-                      );
-                    },
-                  ),
-                  BookList(),
-                  SectionTitle(
-                    title: "Прочитано",
-                    onSeeAll: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AllBooksPage()),
-                      );
-                    },
-                  ),
-                  BookList(),
-                ],
+              SectionTitle(
+                title: "Отложено",
+                onSeeAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AllBooksPage()),
+                  );
+                },
               ),
-            ),
-          ],
-        ));
-  }
+              BookList(),
+              SectionTitle(
+                title: "Прочитано",
+                onSeeAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AllBooksPage()),
+                  );
+                },
+              ),
+              BookList(),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 }
 
 class SectionTitle extends StatelessWidget {
@@ -267,7 +211,6 @@ class SectionTitle extends StatelessWidget {
 }
 
 class BookList extends StatelessWidget {
-  
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;

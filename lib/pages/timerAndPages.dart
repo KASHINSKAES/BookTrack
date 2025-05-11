@@ -1,5 +1,6 @@
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/pages/AppState.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,12 +21,23 @@ class _TimerPage extends State<TimerPage> {
   int selectedMinutes = 0;
   int selectedSeconds = 0;
   int selectedPages = 0;
-
-  final myController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final auth = Provider.of<AuthProviders>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
+    void _savePagesGoal(int pages) {
+      if (auth.userModel != null) {
+        appState.updateReadingPagesPurpose(pages, auth.userModel!.uid);
+      }
+    }
+
+    void _saveTimeGoal(int seconds) {
+      if (auth.userModel != null) {
+        appState.updateReadingMinutesPurpose(seconds, auth.userModel!.uid);
+      }
+    }
 
     return Scaffold(
         backgroundColor: AppColors.background,
@@ -98,15 +110,13 @@ class _TimerPage extends State<TimerPage> {
                         ),
                         onPressed: () {
                           if (selectedPages > 0) {
-                            // Обновляем значение в AppState
-                            Provider.of<AppState>(context, listen: false)
-                                .updateReadingPagesPurpose(selectedPages);
-                            // Возвращаемся на предыдущую страницу
+                            _savePagesGoal(selectedPages);
+                            Navigator.pop(context);
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content:
-                                      Text("Please enter a valid number!")),
+                                  content: Text(
+                                      "Пожалуйста, введитель цель страниц")),
                             );
                           }
                         },
@@ -187,24 +197,16 @@ class _TimerPage extends State<TimerPage> {
                               MaterialStateProperty.all(AppColors.background),
                         ),
                         onPressed: () {
-                          int totalSeconds = (selectedHours * 3600) +
-                              (selectedMinutes * 60) +
-                              selectedSeconds;
+                          int totalSeconds =
+                              (selectedHours * 3600) + (selectedMinutes * 60);
                           if (totalSeconds > 0) {
-                            // Обновляем значение в AppState
-
-                            // Передаем данные в провайдер
-                            Provider.of<AppState>(context, listen: false)
-                                .updateReadingMinutesPurpose(totalSeconds);
-
-                            // Возвращаемся на предыдущую страницу
-                            Navigator.pop(
-                                context); // Возвращаемся на предыдущую страницу
+                            _saveTimeGoal(totalSeconds);
+                            Navigator.pop(context);
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                  content:
-                                      Text("Please enter a valid number!")),
+                                  content: Text(
+                                      "Пожалуйста, введитель цель времени")),
                             );
                           }
                         },
@@ -213,7 +215,7 @@ class _TimerPage extends State<TimerPage> {
                           style: TextStyle(fontSize: 32, color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
-                      )
+                      ),
                     ]))));
   }
 }
