@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:booktrack/icons2.dart';
+import 'package:booktrack/pages/AppState.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
@@ -34,6 +35,9 @@ class _BookScreenState extends State<BookScreen> {
   late List<String> _allPages = [];
   late List<Chapter> _chapters = [];
   late List<String> _epigraph = [];
+  DateTime? _sessionStart;
+  int _sessionPages = 0;
+  Timer? _sessionTimer;
 
   late BookWithChapters _bookDatas;
   late List<int> _chapterPageStarts = [];
@@ -43,11 +47,12 @@ class _BookScreenState extends State<BookScreen> {
   int _sessionPageCount = 0;
   DateTime? _sessionStartTime;
   Timer _debounceTimer = Timer(Duration.zero, () {});
-  String? _userId; 
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
+    _startNewSession();
     _pageController = PageController();
     _loadUserId().then((_) {
       _startReadingSession();
@@ -62,7 +67,78 @@ class _BookScreenState extends State<BookScreen> {
     _debounceTimer.cancel();
     _saveAllProgress();
     _pageController.dispose();
+    _saveSessionProgress();
+    _sessionTimer?.cancel();
     super.dispose();
+  }
+
+  void _startNewSession() {
+    _sessionStart = DateTime.now();
+    _sessionPages = 0;
+    _sessionTimer?.cancel();
+    _sessionTimer = Timer.periodic(Duration(minutes: 1), (_) {
+      _saveSessionProgress();
+    });
+  }
+  Future<void> _saveSessionProgress() async {
+  if (_sessionStart == null || _sessionPages == 0) return;
+
+  final minutes = DateTime.now().difference(_sessionStart!).inMinutes;
+  if (minutes > 0) {
+    final auth = Provider.of<AuthProviders>(context, listen: false);
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    await appState.updateReadingProgress(
+      minutes: minutes,
+      pages: _sessionPages,
+      userId: auth.userModel!.uid,
+    );
+
+    // Обновляем состояние после сохранения прогресса
+    appState.updatePagesReadToday(_sessionPages);
+  }
+  _startNewSession();
+}
+
+
+
+
+  void _onPageChanged(int index) async {
+    final prevChapter = _getCurrentChapterIndex();
+
+    // Обновляем текущую страницу
+    setState(() => _currentPageIndex = index);
+
+    final currentChapter = _getCurrentChapterIndex();
+
+    // Если перешли в новую главу
+    if (currentChapter != prevChapter && index > _lastRecordedPage) {
+      await _addXP(2); // Бонус за начало новой главы
+    }
+    // Учитываем только переходы вперед
+    if (index > _lastRecordedPage) {
+      _sessionPages += index - _lastRecordedPage;
+      final pagesRead = index - _lastRecordedPage;
+      _pagesSinceLastXP += pagesRead;
+      _sessionPageCount += pagesRead;
+      _lastRecordedPage = index;
+
+      // Начисляем XP каждые 10 страниц
+      if (_pagesSinceLastXP >= 10) {
+        await _addXP(1);
+        _pagesSinceLastXP = 0;
+      }
+    }
+    _lastRecordedPage = index;
+
+    setState(() => _currentPageIndex = index);
+
+    // Проверяем завершение книги
+    if (_isLastPage) {
+      await _completeBook();
+    }
+
+    _debounceSaveProgress();
   }
 
   Future<void> _loadUserId() async {
@@ -108,56 +184,61 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<void> _loadProgress() async {
-    try {
-      int loadedPage = 0;
+  try {
+    int loadedPage = 0;
 
-      // 1. Сначала пробуем загрузить из SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final prefsPage = prefs.getInt('currentPage_${widget.bookId}') ?? 0;
-      loadedPage = prefsPage;
+    // 1. Сначала пробуем загрузить из SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final prefsPage = prefs.getInt('currentPage_${widget.bookId}') ?? 0;
+    loadedPage = prefsPage;
 
-      // 2. Затем проверяем Firestore (если есть пользователь)
-      if (_userId != null) {
-        final progressDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(_userId)
-            .collection('reading_progress')
-            .doc(widget.bookId)
-            .get();
+    // 2. Затем проверяем Firestore (если есть пользователь)
+    if (_userId != null) {
+      final progressDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('reading_progress')
+          .doc(widget.bookId)
+          .get();
 
-        if (progressDoc.exists) {
-          final progressData = progressDoc.data()!;
-          final savedPage = progressData['currentPage'] as int? ?? 0;
+      if (progressDoc.exists) {
+        final progressData = progressDoc.data()!;
+        final savedPage = progressData['currentPage'] as int? ?? 0;
 
-          // Выбираем максимальный прогресс из всех источников
-          loadedPage = max(loadedPage, savedPage);
+        // Выбираем максимальный прогресс из всех источников
+        loadedPage = max(loadedPage, savedPage);
 
-          // Синхронизируем если количество страниц изменилось
-          final savedTotalPages = progressData['totalPages'] as int? ?? 0;
-          if (savedTotalPages != _allPages.length) {
-            await _saveReadingProgress();
-          }
+        // Синхронизируем если количество страниц изменилось
+        final savedTotalPages = progressData['totalPages'] as int? ?? 0;
+        if (savedTotalPages != _allPages.length) {
+          await _saveReadingProgress();
         }
-      }
 
-      // Устанавливаем загруженное значение с проверкой границ
-      if (mounted) {
-        setState(() {
-          _currentPageIndex = min(loadedPage, _allPages.length - 1);
-          _lastRecordedPage = _currentPageIndex;
-        });
-
-        // Прокручиваем к нужной странице после построения виджетов
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_pageController.hasClients) {
-            _pageController.jumpToPage(_currentPageIndex);
-          }
-        });
+        // Обновляем состояние после загрузки прогресса
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updatePagesReadToday(savedPage);
       }
-    } catch (e) {
-      debugPrint('Error loading progress: $e');
     }
+
+    // Устанавливаем загруженное значение с проверкой границ
+    if (mounted) {
+      setState(() {
+        _currentPageIndex = min(loadedPage, _allPages.length - 1);
+        _lastRecordedPage = _currentPageIndex;
+      });
+
+      // Прокручиваем к нужной странице после построения виджетов
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(_currentPageIndex);
+        }
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading progress: $e');
   }
+}
+
 
   void _precalculateAllPages(BookWithChapters book) {
     _allPages = [];
@@ -184,42 +265,6 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   int _lastRecordedPage = 0;
-
-  void _onPageChanged(int index) async {
-    final prevChapter = _getCurrentChapterIndex();
-
-    // Обновляем текущую страницу
-    setState(() => _currentPageIndex = index);
-
-    final currentChapter = _getCurrentChapterIndex();
-
-    // Если перешли в новую главу
-    if (currentChapter != prevChapter && index > _lastRecordedPage) {
-      await _addXP(2); // Бонус за начало новой главы
-    }
-    // Учитываем только переходы вперед
-    if (index > _lastRecordedPage) {
-      final pagesRead = index - _lastRecordedPage;
-      _pagesSinceLastXP += pagesRead;
-      _sessionPageCount += pagesRead;
-      _lastRecordedPage = index;
-
-      // Начисляем XP каждые 10 страниц
-      if (_pagesSinceLastXP >= 10) {
-        await _addXP(1);
-        _pagesSinceLastXP = 0;
-      }
-    }
-
-    setState(() => _currentPageIndex = index);
-
-    // Проверяем завершение книги
-    if (_isLastPage) {
-      await _completeBook();
-    }
-
-    _debounceSaveProgress();
-  }
 
   bool get _isLastPage => _currentPageIndex == _allPages.length - 1;
 
@@ -382,20 +427,24 @@ class _BookScreenState extends State<BookScreen> {
         shadowColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back,
+              color: _getTextColor(settings.selectedBackgroundStyle)),
           onPressed: widget.onBack,
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Colors.white),
+            icon: Icon(Icons.search,
+                color: _getTextColor(settings.selectedBackgroundStyle)),
             onPressed: widget.onBack,
           ),
           IconButton(
-            icon: Icon(Icons.settings, color: Colors.white),
+            icon: Icon(Icons.settings,
+                color: _getTextColor(settings.selectedBackgroundStyle)),
             onPressed: () => _showTextEditor(scale, settings),
           ),
           IconButton(
-            icon: Icon(Icons.notes),
+            icon: Icon(Icons.notes,
+                color: _getTextColor(settings.selectedBackgroundStyle)),
             onPressed: () => _showFootnotes(context),
           ),
         ],

@@ -75,7 +75,7 @@ class _ActivityPageState extends State<ActivityPage> {
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: const Color.fromARGB(255, 255, 255, 255),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(AppDimensions.baseCircual * scale),
               topRight: Radius.circular(AppDimensions.baseCircual * scale),
@@ -128,17 +128,6 @@ class _ActivityPageState extends State<ActivityPage> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildPieChartPol(
-                    todayGoal.readPages.toDouble(),
-                    appState.readingPagesPurpose.toDouble(),
-                    "страниц",
-                  ),
-                ],
-              ),
               SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -147,6 +136,11 @@ class _ActivityPageState extends State<ActivityPage> {
                     todayGoal.readMinutes.toDouble(),
                     appState.readingMinutesPurpose.toDouble(),
                     "минут",
+                  ),
+                  _buildPieChart(
+                    todayGoal.readPages.toDouble(),
+                    appState.readingPagesPurpose.toDouble(),
+                    "страниц",
                   ),
                 ],
               ),
@@ -159,7 +153,6 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildPieChart(double value, double total, String unit) {
     if (total <= 0) total = 1; // Чтобы избежать деления на ноль
-    final percentage = value / total;
 
     return Column(
       children: [
@@ -209,34 +202,32 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget _buildPieChartPol(double value, double total, String unit) {
     final double percentage = total > 0 ? (value / total) : 0.0;
-    final textStyle = TextStyle(
-      fontSize: 30,
-      fontWeight: FontWeight.bold,
-      color: AppColors.textPrimary,
-    );
-    final subtitleStyle = TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: AppColors.textPrimary,
-    );
 
     return Column(
       children: [
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Stack(
           alignment: Alignment.center,
           children: [
             SemiCircleChart(progress: percentage),
             Text(
               value.toStringAsFixed(0),
-              style: textStyle,
+              style: TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Text(
           "из ${total.toStringAsFixed(0)} $unit",
-          style: subtitleStyle,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
       ],
     );
@@ -268,8 +259,8 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
               SizedBox(height: 10),
               TableCalendar(
-                firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                lastDay: DateTime.now().add(const Duration(days: 365)),
+                firstDay: DateTime.utc(2023, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,
                 selectedDayPredicate: (day) =>
                     highlightedDates.any((d) => isSameDay(d, day)),
@@ -285,10 +276,6 @@ class _ActivityPageState extends State<ActivityPage> {
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
-                    color: AppColors.orange,
-                    shape: BoxShape.circle,
-                  ),
-                  markerDecoration: BoxDecoration(
                     color: AppColors.orange,
                     shape: BoxShape.circle,
                   ),

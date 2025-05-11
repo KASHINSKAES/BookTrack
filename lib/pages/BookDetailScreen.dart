@@ -704,14 +704,17 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           {
             'saved_books': [],
             'totalBonuses': 0,
-            'payments': {},
+            'payments': {}, // <- Убедитесь, что это объект
             'selectedPaymentMethod': 'card_1',
           };
 
+// Получаем методы оплаты с проверкой типа
+
       final savedBooks = List<String>.from(userData['saved_books'] ?? []);
       final currentBonuses = getSafeInt(userData['totalBonuses']);
-      final paymentMethods =
-          userData['payments'] as Map<String, dynamic>? ?? {};
+      final paymentMethods = userData['payments'] is Map
+          ? userData['payments'] as Map<String, dynamic>? ?? {}
+          : {};
       final selectedMethod =
           userData['selectedPaymentMethod'] as String? ?? 'card_1';
 
@@ -765,11 +768,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         'totalBonuses': FieldValue.increment(bonusesToAdd - bonusesToUse),
         'lastPurchaseDate': FieldValue.serverTimestamp(),
       };
-
-      // Если нет поля payments - добавляем его
-      if (!userData.containsKey('payments')) {
-        updateData['payments'] = FieldValue.arrayUnion([]);
-      }
+      await userRef.update(updateData);
 
       await userRef.update(updateData);
 
