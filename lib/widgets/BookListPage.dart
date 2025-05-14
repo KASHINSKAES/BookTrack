@@ -1,4 +1,8 @@
+import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/filter/filterProvider.dart';
+import 'package:booktrack/servises/bookServises.dart';
+import 'package:booktrack/widgets/BookCard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'constants.dart';
@@ -69,6 +73,7 @@ class _BookListPageState extends State<BookListPage> {
   }
 
   Widget _buildBody(double scale) {
+    debugPrint('HI');
     return Padding(
       padding: EdgeInsets.only(top: 20.0 * scale),
       child: Container(
@@ -82,7 +87,7 @@ class _BookListPageState extends State<BookListPage> {
         child: Column(
           children: [
             _buildFilterBar(scale),
-            _buildBookGrid(scale),
+            AdaptiveBookGrid(),
           ],
         ),
       ),
@@ -113,46 +118,68 @@ class _BookListPageState extends State<BookListPage> {
     );
   }
 
-  Widget _buildBookGrid(double scale) {
-    return Expanded(
-      child: Padding(
-        padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
-        child: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: AppDimensions.baseCrossAxisSpacingBlock * scale,
-            mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
-            childAspectRatio: AppDimensions.baseImageWidth /
-                (AppDimensions.baseImageHeight + 40 * scale),
-          ),
-          itemCount: Book.books.length,
-          itemBuilder: (context, index) {
-            final book = Book.books[index];
-            return BookCard(
-              scale: scale,
-              title: book.title,
-              author: book.author,
-              image: book.image,
-              bookRating: book.bookRating,
-              reviewCount: book.reviewCount,
-              imageWidth: AppDimensions.baseImageWidth * scale,
-              imageHeight: AppDimensions.baseImageHeight * scale,
-              textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
-              textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
-              textSpacing: 6.0 * scale,
-            );
-          },
-        ),
-      ),
-    );
-  }
+  // Widget _buildBookGrid(double scale) {
+  //   final BookService _bookService = BookService();
+  //   return StreamBuilder<QuerySnapshot>(
+  //       stream: _bookService.getBooksStream(),
+  //       builder: (context, snapshot) {
+  //         if (snapshot.hasError) {
+  //           return Center(child: Text('Ошибка загрузки: ${snapshot.error}'));
+  //         }
+
+  //         if (snapshot.connectionState == ConnectionState.waiting) {
+  //           return Center(child: CircularProgressIndicator());
+  //         }
+
+  //         final books = snapshot.data!.docs
+  //             .map((doc) => Book.fromFirestore(doc))
+  //             .toList();
+  //         return Container(
+  //           padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.only(
+  //               topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+  //               topRight: Radius.circular(AppDimensions.baseCircual * scale),
+  //             ),
+  //           ),
+  //           child: Padding(
+  //             padding:
+  //                 EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
+  //             child: GridView.builder(
+  //               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+  //                 crossAxisCount: 3,
+  //                 crossAxisSpacing:
+  //                     AppDimensions.baseCrossAxisSpacingBlock * scale,
+  //                 mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
+  //                 childAspectRatio: AppDimensions.baseImageWidth /
+  //                     (AppDimensions.baseImageHeight + 40 * scale),
+  //               ),
+  //               itemCount: books.length,
+  //               itemBuilder: (context, index) {
+  //                 final book = books[index];
+  //                 return BookCards(
+  //                   book: book, // Передаем весь объект Book
+  //                   scale: scale,
+  //                   imageWidth: AppDimensions.baseImageWidth * scale,
+  //                   imageHeight: AppDimensions.baseImageHeight * scale,
+  //                   textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
+  //                   textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
+  //                   textSpacing: 6.0 * scale,
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         );
+  //       });
+  // }
 
   void _showSortOptions(double scale) {
     showModalBottomSheet(
       context: context,
       builder: (context) {
         return SizedBox(
-          height: AppDimensions.baseImageWidth * scale,
+          height: (AppDimensions.baseImageHeight - 40) * scale,
           child: Column(
             children: [
               ListTile(

@@ -291,15 +291,21 @@ class _AddCardScreenState extends State<AddCardScreen> {
         }
         return;
       }
+      // Проверяем количество карт пользователя
+      final hasExistingCards = await _userHasCards(userId);
+      final cardId = await generateUniqueCardId(userId);
 
       // Сохранение карты
-      final cardId = cardIds;
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('payments')
           .doc(cardId)
           .set(cardData);
+      // Если это первая карта - делаем ее основной
+      if (!hasExistingCards) {
+        await setPrimaryCard(userId, cardId);
+      }
 
       // Успешное завершение
       if (mounted) {
@@ -316,6 +322,46 @@ class _AddCardScreenState extends State<AddCardScreen> {
       }
       print('Ошибка сохранения карты: $e');
     }
+  }
+
+  Future<bool> _userHasCards(String userId) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('payments')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  Future<void> setPrimaryCard(String userId, String cardId) async {
+    try {
+      // Проверяем, что карта существует
+      final cardDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('payments')
+          .doc(cardId)
+          .get();
+
+      if (!cardDoc.exists) {
+        throw 'Карта не найдена';
+      }
+
+      // Обновляем основную карту
+      await _firestore.collection('users').doc(userId).update({
+        'selectedPaymentMethod': cardId,
+        'lastPaymentUpdate': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Ошибка установки основной карты: $e');
+      rethrow;
+    }
+  }
+
+  Future<String?> getPrimaryCardId(String userId) async {
+    final doc = await _firestore.collection('users').doc(userId).get();
+    return doc.data()?['selectedPaymentMethod'] as String?;
   }
 }
 

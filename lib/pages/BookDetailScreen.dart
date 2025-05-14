@@ -7,6 +7,7 @@ import 'package:booktrack/pages/purchaseButton.dart';
 import 'package:booktrack/pages/selectedPage.dart';
 import 'package:booktrack/pages/textBook.dart';
 import 'package:booktrack/widgets/blobPath.dart';
+import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,15 +23,22 @@ final List<String> reviews = [
 ];
 
 class BookDetailScreen extends StatefulWidget {
+  final String bookId;
   final String bookTitle;
   final String authorName;
   final double bookRating;
   final String bookImageUrl;
   final int reviewCount;
   final int pages;
-  final int age;
+  final String age;
+  final String description;
+  final String publisher;
+  final int yearPublisher;
+  final String language;
+  final int price;
 
   const BookDetailScreen({
+    required this.bookId,
     required this.bookTitle,
     required this.authorName,
     required this.bookRating,
@@ -38,6 +46,11 @@ class BookDetailScreen extends StatefulWidget {
     required this.reviewCount,
     required this.pages,
     required this.age,
+    required this.description,
+    required this.publisher,
+    required this.yearPublisher,
+    required this.language,
+    required this.price,
   });
 
   @override
@@ -48,10 +61,33 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   double _scrollPosition = 0.0;
   bool _isBookInCollection = false;
   bool _isLoading = true;
+  bool _useBonuses = false; // Добавляем состояние для использования бонусов
+  int _availableBonuses = 0; // Доступные бонусы
   @override
   void initState() {
     super.initState();
     _checkIfBookInCollection();
+    _loadUserBonuses();
+  }
+
+  Future<void> _loadUserBonuses() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _availableBonuses = getSafeInt(userDoc.data()?['totalBonuses']);
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при загрузке бонусов: $e');
+    }
   }
 
   Future<void> _checkIfBookInCollection() async {
@@ -65,7 +101,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     }
 
     try {
-      const bookId = 'book_3'; // Замените на реальный ID книги
+      const bookId = 'book_2'; // Замените на реальный ID книги
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -262,7 +298,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           ),
         ),
         Text(
-          '${widget.pages} стр | ${widget.age}+ ',
+          '${widget.pages} стр | ${widget.age} ',
           style: TextStyle(
             fontSize: 12 * scale,
             color: AppColors.grey,
@@ -286,7 +322,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           ),
         ),
         Text(
-          'Третья книга из цикла про Аню Ширли. Аня проработала 2 года учительницей в местной школе, но теперь она нацелена поступить в Редмондский университет Кингспорта. Её друзья детства практически все устроили свою жизнь, кто-то уехал, многие вступили в семейную жизнь.',
+          widget.description,
           style: TextStyle(
             fontSize: 14 * scale,
             color: AppColors.textPrimary,
@@ -335,14 +371,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 ),
               ),
               Text(
-                'Издательство: Эксмо',
+                'Издательство: ${widget.publisher}',
                 style: TextStyle(
                   fontSize: 14 * scale,
                   color: AppColors.textPrimary,
                 ),
               ),
               Text(
-                'Серия: Яркие страницы. Коллекционные издания',
+                'Язык: ${widget.language}',
                 style: TextStyle(
                   fontSize: 14 * scale,
                   color: AppColors.textPrimary,
@@ -350,7 +386,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 softWrap: true,
               ),
               Text(
-                'Год издания: 2024',
+                'Год издания:${widget.yearPublisher}',
                 style: TextStyle(
                   fontSize: 14 * scale,
                   color: AppColors.textPrimary,
@@ -403,7 +439,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               ),
             ),
             Text(
-              '8.6',
+              widget.bookRating.toString(),
               style: TextStyle(
                 fontSize: 18 * scale,
                 fontWeight: FontWeight.bold,
@@ -623,7 +659,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => BookScreen(
-                bookId: 'book_3',
+                bookId: widget.bookId,
                 onBack: () {
                   Navigator.pop(context);
                 }),
@@ -642,32 +678,127 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   Widget _buildPurchaseButtons(double scale) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: PurchaseButton(
-            icon: MyFlutterApp.school,
-            title: 'Полностью',
-            subtitle: 'за 299 ₽',
-            onPressed: _handlePurchase,
-            scale: scale,
-          ),
-        ),
-        SizedBox(width: 16 * scale),
-        Expanded(
-          child: PurchaseButton(
-            icon: MyFlutterApp.notes,
-            title: 'Отрывок',
-            subtitle: 'бесплатно',
-            onPressed: () {},
-            scale: scale,
-          ),
+        // Панель выбора использования бонусов
+        if (_availableBonuses > 0) _buildBonusToggle(scale),
+        SizedBox(height: 8 * scale),
+        Row(
+          children: [
+            Expanded(
+              child: PurchaseButton(
+                icon: MyFlutterApp.school,
+                title: 'Полностью',
+                subtitle: _buildPriceWithBonuses(scale),
+                onPressed: _handlePurchase,
+                scale: scale,
+              ),
+            ),
+            SizedBox(width: 16 * scale),
+            Expanded(
+              child: PurchaseButton(
+                icon: MyFlutterApp.notes,
+                title: 'Отрывок',
+                subtitle: 'бесплатно',
+                onPressed: () {},
+                scale: scale,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Future<void> _handlePurchase() async {
+  Widget _buildBonusToggle(double scale) {
+    var bookPrice = widget.price;
+    final maxBonusUse = (bookPrice * 0.3).round();
+    final canUseFullBonus = _availableBonuses >= maxBonusUse;
+
+    return Container(
+      padding: EdgeInsets.all(12 * scale),
+      decoration: BoxDecoration(
+        color: AppColors.blueColorLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // Переключатель
+          Switch(
+            value: _useBonuses,
+            onChanged: (value) {
+              setState(() => _useBonuses = value && _availableBonuses > 0);
+            },
+            activeColor: AppColors.orange,
+          ),
+
+          // Информация о бонусах
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Использовать бонусы',
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  canUseFullBonus
+                      ? 'Спишется ${min(_availableBonuses, maxBonusUse)}  (макс. 30%)'
+                      : 'Доступно ${_availableBonuses}',
+                  style: TextStyle(
+                    fontSize: 12 * scale,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Иконка информации
+          IconButton(
+            icon: Icon(Icons.info_outline, size: 20 * scale),
+            onPressed: _showBonusInfoDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _buildPriceWithBonuses(double scale) {
+    var bookPrice = widget.price;
+    if (!_useBonuses || _availableBonuses <= 0) return 'за $bookPrice ₽';
+
+    final maxBonusUse = (bookPrice * 0.3).round();
+    final bonusesToUse = min(_availableBonuses, maxBonusUse);
+    final finalPrice = bookPrice - bonusesToUse;
+
+    return '${bookPrice} ₽ → ${finalPrice} ₽';
+  }
+
+  void _showBonusInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Как использовать бонусы?'),
+        content: Text(
+          'Вы можете списать до 30% от стоимости книги. '
+          'При использовании бонусов новые бонусы за покупку не начисляются.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Понятно'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handlePurchase({bool useBonuses = false}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showAuthErrorDialog(context);
@@ -681,14 +812,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
 
     try {
-      const bookId = 'book_3';
-      const bookPrice = 299;
+      var bookId = widget.bookId;
+      var bookPrice = widget.price;
 
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       final userDoc = await userRef.get();
 
-      // Если документ пользователя не существует - создаем его с базовыми полями
       if (!userDoc.exists) {
         await userRef.set({
           'saved_books': [],
@@ -699,16 +829,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         });
       }
 
-      // Получаем данные пользователя с дефолтными значениями
       final userData = userDoc.data() ??
           {
             'saved_books': [],
             'totalBonuses': 0,
-            'payments': {}, // <- Убедитесь, что это объект
+            'payments': {},
             'selectedPaymentMethod': 'card_1',
           };
-
-// Получаем методы оплаты с проверкой типа
 
       final savedBooks = List<String>.from(userData['saved_books'] ?? []);
       final currentBonuses = getSafeInt(userData['totalBonuses']);
@@ -726,13 +853,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         return;
       }
 
-      // Расчет стоимости и бонусов
+      // Расчет бонусов
       final maxBonusUse = (bookPrice * 0.3).round();
-      final bonusesToUse = min(currentBonuses, maxBonusUse);
-      final finalPrice = bookPrice - bonusesToUse;
-      final bonusesToAdd = bonusesToUse > 0 ? 0 : (finalPrice * 0.15).round();
+      final bonusesAvailable = min(currentBonuses, maxBonusUse);
+      final willUseBonuses = useBonuses && bonusesAvailable > 0;
 
-      // Получаем данные о карте (с проверкой на существование)
+      final bonusesToUse = willUseBonuses ? bonusesAvailable : 0;
+      final bonusesToAdd = (bookPrice * 0.15).round();
+      final finalPrice = bookPrice - bonusesToUse;
+
+      // Проверка на отрицательные бонусы
+      if (currentBonuses - bonusesToUse < 0) {
+        throw Exception('Недостаточно бонусов для списания');
+      }
+
+      // Получаем данные о карте
       final cardData =
           paymentMethods[selectedMethod] as Map<String, dynamic>? ??
               {
@@ -770,10 +905,32 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       };
       await userRef.update(updateData);
 
-      await userRef.update(updateData);
+      // Добавляем запись в историю покупок
+      final purchaseDocRef =
+          await userRef.collection('purchase_history').add(purchaseData);
 
-      // Добавляем запись в историю покупок (коллекция будет создана автоматически)
-      await userRef.collection('purchase_history').add(purchaseData);
+      // Добавляем записи в историю бонусов
+      if (bonusesToUse > 0) {
+        await userRef.collection('bonus_history').add({
+          'amount': bonusesToUse.toString(),
+          'date': FieldValue.serverTimestamp(),
+          'isPositive': false,
+          'title': 'Списание бонусов',
+          'bookId': bookId,
+          'relatedPurchaseId': purchaseDocRef.id,
+        });
+      }
+
+      if (bonusesToAdd > 0) {
+        await userRef.collection('bonus_history').add({
+          'amount': bonusesToAdd.toString(),
+          'date': FieldValue.serverTimestamp(),
+          'isPositive': true,
+          'title': 'Покупка книги',
+          'bookId': bookId,
+          'relatedPurchaseId': purchaseDocRef.id,
+        });
+      }
 
       Navigator.pop(context);
       Navigator.push(
