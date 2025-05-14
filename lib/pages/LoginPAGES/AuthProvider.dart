@@ -53,6 +53,32 @@ class AuthProviders with ChangeNotifier {
         name: userDoc.data()?['name'] ?? 'No name',
         email: firebaseUser.email ?? userDoc.data()?['email'],
         phone: userDoc.data()?['phone'],
+        selectedPaymentMethod: userDoc.data()?['selectedPaymentMethod'],
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateSelectedPaymentMethod(User? firebaseUser) async {
+    if (firebaseUser == null) {
+      _userModel = null;
+      notifyListeners();
+      return;
+    }
+
+    // Достаём дополнительные данные из Firestore
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (userDoc.exists) {
+      _userModel = UserModel(
+        uid: firebaseUser.uid,
+        name: userDoc.data()?['name'] ?? 'No name',
+        email: firebaseUser.email ?? userDoc.data()?['email'],
+        phone: userDoc.data()?['phone'],
+        selectedPaymentMethod: userDoc.data()?['selectedPaymentMethod'],
       );
       notifyListeners();
     }

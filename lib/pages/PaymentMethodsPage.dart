@@ -1,5 +1,6 @@
 import 'package:booktrack/MyFlutterIcons.dart';
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/CardMenegment.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/cardForm.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -24,6 +25,7 @@ class PaymentMethodsPage extends StatefulWidget {
 
 class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
   String? selectedPaymentMethod;
+  String? userId;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
     if (mounted) {
       setState(() {
         selectedPaymentMethod = userModel.selectedPaymentMethod;
+        userId = userModel.uid;
       });
     }
   }
@@ -47,6 +50,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+    debugPrint(selectedPaymentMethod);
 
     return Scaffold(
       appBar: _buildAppBar(scale),
@@ -74,6 +78,24 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
         ),
         onPressed: widget.onBack,
       ),
+      actions: [
+        IconButton(
+          icon: Icon(
+            size: 35 * scale,
+            MyFlutterApp.back,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    CardsManagementScreen(userId: userId.toString()),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 

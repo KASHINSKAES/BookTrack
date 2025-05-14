@@ -88,6 +88,7 @@ class _AuthScreenState extends State<AuthScreen>
         name: userDoc.data()?['name'] ?? 'No name',
         email: userCredential.user!.email ?? _emailController.text.trim(),
         phone: userDoc.data()?['phone'],
+        selectedPaymentMethod: userDoc.data()?['selectedPaymentMethod'],
       ));
 
       // 4. Перенаправляем

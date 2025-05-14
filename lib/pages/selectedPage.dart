@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/timerAndPages.dart';
-import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
+import 'package:booktrack/servises/bookServises.dart';
+import 'package:booktrack/widgets/BookCard.dart';
+import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -41,143 +45,142 @@ class _selectedPage extends State<selectedPage> {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  final appState = Provider.of<AppState>(context);
-  final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
-  return Scaffold(
-    backgroundColor: const Color(0xff5775CD),
-    body: ListView(
-      padding: EdgeInsets.only(top: 23.0 * scale),
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: 20 * scale, vertical: 10 * scale),
-          child: Text(
-            "Мои книги",
-            style: TextStyle(
+    return Scaffold(
+      backgroundColor: const Color(0xff5775CD),
+      body: ListView(
+        padding: EdgeInsets.only(top: 23.0 * scale),
+        children: [
+          Padding(
+            padding: EdgeInsets.only(
+                right: 20 * scale, left: 20 * scale, top: 10 * scale),
+            child: Text(
+              "Мои книги",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: AppDimensions.baseTextSizeh1 * scale,
+              ),
+            ),
+          ),
+          Container(
+            width: MediaQuery.of(context).size.height,
+            decoration: BoxDecoration(
               color: Colors.white,
-              fontSize: AppDimensions.baseTextSizeh1 * scale,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+                topRight: Radius.circular(AppDimensions.baseCircual * scale),
+              ),
             ),
-          ),
-        ),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(AppDimensions.baseCircual * scale),
-              topRight: Radius.circular(AppDimensions.baseCircual * scale),
-            ),
-          ),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(),
-                padding: EdgeInsets.all(22.0 * scale),
-                child: Stack(
-                  children: [
-                    SvgPicture.asset(
-                      'images/fonTaimer.svg',
-                      height: 77.0 * scale,
-                      width: 350.0 * scale,
-                      fit: BoxFit.fill,
-                    ),
-                    Align(
-                      alignment: Alignment.center,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              size: 55 * scale,
-                              appState.dailyGoalAchieved
-                                  ? Icons.celebration
-                                  : Icons.auto_awesome,
-                              color: Colors.white,
-                            ),
-                            onPressed: null,
-                          ),
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  appState.formattedRemainingTime,
-                                  style: TextStyle(
-                                    fontSize: 32 * scale,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Text(
-                                  '${appState.pagesReadToday}/${appState.readingPagesPurpose} страниц',
-                                  style: TextStyle(
-                                    fontSize: 16 * scale,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          RotatedBox(
-                            quarterTurns: 2,
-                            child: IconButton(
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(),
+                  padding: EdgeInsets.all(22.0 * scale),
+                  child: Stack(
+                    children: [
+                      SvgPicture.asset(
+                        'images/fonTaimer.svg',
+                        height: 77.0 * scale,
+                        width: 350.0 * scale,
+                        fit: BoxFit.fill,
+                      ),
+                      Align(
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            IconButton(
                               icon: Icon(
-                                MyFlutterApp.back,
-                                size: 29 * scale,
+                                size: 55 * scale,
+                                appState.dailyGoalAchieved
+                                    ? Icons.celebration
+                                    : Icons.auto_awesome,
                                 color: Colors.white,
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => TimerPage(
-                                      onBack: () {
-                                        Navigator.pop(context);
-                                      },
+                              onPressed: null,
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    appState.formattedRemainingTime,
+                                    style: TextStyle(
+                                      fontSize: 32 * scale,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                );
-                              },
+                                  Text(
+                                    '${appState.pagesReadToday}/${appState.readingPagesPurpose} страниц',
+                                    style: TextStyle(
+                                      fontSize: 16 * scale,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          )
-                        ],
+                            RotatedBox(
+                              quarterTurns: 2,
+                              child: IconButton(
+                                icon: Icon(
+                                  MyFlutterApp.back,
+                                  size: 29 * scale,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TimerPage(
+                                        onBack: () {
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            )
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              SectionTitle(
-                title: "Отложено",
-                onSeeAll: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AllBooksPage()),
-                  );
-                },
-              ),
-              BookList(),
-              SectionTitle(
-                title: "Прочитано",
-                onSeeAll: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AllBooksPage()),
-                  );
-                },
-              ),
-              BookList(),
-            ],
+                SectionTitle(
+                  title: "Отложено",
+                  onSeeAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AllBooksPage()),
+                    );
+                  },
+                ),
+                BookList(),
+                SectionTitle(
+                  title: "Прочитано",
+                  onSeeAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AllBooksPage()),
+                    );
+                  },
+                ),
+                BookList(),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 }
 
 class SectionTitle extends StatelessWidget {
@@ -205,56 +208,6 @@ class SectionTitle extends StatelessWidget {
             child: Text("Все"),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class BookList extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(
-          Book.books.length,
-          (index) => Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                BookCard(
-                  title: Book.books[index].title,
-                  author: Book.books[index].author,
-                  image: Book.books[index].image,
-                  bookRating: Book.books[index].bookRating,
-                  reviewCount: Book.books[index].reviewCount,
-                  scale: scale,
-                  imageWidth: AppDimensions.baseImageWidth * scale,
-                  imageHeight: AppDimensions.baseImageHeight * scale,
-                  textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
-                  textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
-                  textSpacing: 6.0 * scale,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class AllBooksPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Все книги"),
-      ),
-      body: Center(
-        child: Text("Здесь отображаются все книги."),
       ),
     );
   }

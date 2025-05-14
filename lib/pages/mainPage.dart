@@ -1,5 +1,6 @@
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,7 +21,7 @@ class MainPage extends StatelessWidget {
     return DefaultTabController(
       length: 4, // Define the number of tabs
       child: Scaffold(
-        backgroundColor: const Color(0xff5775CD),
+        backgroundColor: AppColors.background,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverToBoxAdapter(
@@ -72,7 +73,7 @@ class MainPage extends StatelessWidget {
                     height: blockHeight,
                     margin: EdgeInsets.symmetric(horizontal: overlapOffset / 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xffFD521B),
+                      color: AppColors.orange,
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                   );
@@ -136,7 +137,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: const Color(0xff5775CD), // Background color for TabBar
+      color: AppColors.background, // Background color for TabBar
       child: tabBar,
     );
   }
