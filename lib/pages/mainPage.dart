@@ -1,5 +1,5 @@
 import 'package:booktrack/icons.dart';
-import 'package:booktrack/widgets/AdaptiveBookGrid.dart';
+import 'package:booktrack/widgets/AllBookGrid.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 
@@ -110,10 +110,10 @@ class MainPage extends StatelessWidget {
           ],
           body: TabBarView(
             children: [
-              AdaptiveBookGrid(),
-              AdaptiveBookGrid(),
-              AdaptiveBookGrid(),
-              AdaptiveBookGrid(),
+              AllBookGrid(),
+              AllBookGrid(),
+              AllBookGrid(),
+              AllBookGrid(),
             ],
           ),
         ),

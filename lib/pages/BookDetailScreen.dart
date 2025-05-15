@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:booktrack/icons.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/pages/PurchaseSuccessScreen.dart';
 import 'package:booktrack/pages/purchaseButton.dart';
@@ -13,6 +14,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 final List<String> reviews = [
   "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
@@ -35,6 +37,7 @@ class BookDetailScreen extends StatefulWidget {
   final String publisher;
   final int yearPublisher;
   final String language;
+  final String format;
   final int price;
 
   const BookDetailScreen({
@@ -50,6 +53,7 @@ class BookDetailScreen extends StatefulWidget {
     required this.publisher,
     required this.yearPublisher,
     required this.language,
+    required this.format,
     required this.price,
   });
 
@@ -234,7 +238,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildBookInfo(scale),
                 _buildBookDescription(scale),
                 _buildBookTags(scale),
-                _buildSBooksSection(scale),
+                _buildSBooksSection(
+                  scale,
+                ),
                 _buildReviewsSection(scale),
               ],
             ),
@@ -403,7 +409,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return Column(
       children: [
         SectionTitle(
-          title: "Другие книги автора ",
+          title: "Другие книги автора",
           onSeeAll: () {
             Navigator.push(
               context,
@@ -411,7 +417,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             );
           },
         ),
-        BookList(),
+        BookList(
+          currentBookId: widget.bookId,
+          author: widget.authorName,
+          maxItemsToShow: 5,
+        ),
         SectionTitle(
           title: "Похожие книги",
           onSeeAll: () {
@@ -421,7 +431,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             );
           },
         ),
-        BookList(),
+        BookList(
+          currentBookId: widget.bookId,
+          format: widget.format,
+          language: widget.language,
+          maxItemsToShow: 5,
+        ),
       ],
     );
   }

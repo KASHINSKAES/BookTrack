@@ -1,14 +1,10 @@
 import 'dart:async';
 
 import 'package:booktrack/icons.dart';
-import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/timerAndPages.dart';
-import 'package:booktrack/servises/bookServises.dart';
-import 'package:booktrack/widgets/BookCard.dart';
 import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -23,6 +19,7 @@ class selectedPage extends StatefulWidget {
 }
 
 class _selectedPage extends State<selectedPage> {
+  String? userId;
   @override
   void initState() {
     super.initState();
@@ -32,13 +29,13 @@ class _selectedPage extends State<selectedPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Повторная загрузка при изменении зависимостей
     _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     final auth = Provider.of<AuthProviders>(context, listen: false);
     final appState = Provider.of<AppState>(context, listen: false);
+    userId = auth.userModel?.uid ?? '';
 
     if (auth.userModel != null) {
       await appState.loadUserData(auth.userModel!.uid);
@@ -155,7 +152,7 @@ class _selectedPage extends State<selectedPage> {
                   ),
                 ),
                 SectionTitle(
-                  title: "Отложено",
+                  title: "Избранные",
                   onSeeAll: () {
                     Navigator.push(
                       context,
@@ -163,7 +160,12 @@ class _selectedPage extends State<selectedPage> {
                     );
                   },
                 ),
-                BookList(),
+                BookList(
+                  listType: 'saved_books',
+                  userId: userId,
+                ),
+
+// Прочитанные книги
                 SectionTitle(
                   title: "Прочитано",
                   onSeeAll: () {
@@ -173,7 +175,25 @@ class _selectedPage extends State<selectedPage> {
                     );
                   },
                 ),
-                BookList(),
+                BookList(
+                  listType: 'read_books',
+                  userId: userId,
+                ),
+
+// Читаемые книги
+                SectionTitle(
+                  title: "Читаемые",
+                  onSeeAll: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AllBooksPage()),
+                    );
+                  },
+                ),
+                BookList(
+                  listType: 'end_books',
+                  userId: userId,
+                ),
               ],
             ),
           ),
