@@ -566,6 +566,12 @@
       "languageVersion": "3.4"
     },
     {
+      "name": "rxdart",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/rxdart-0.28.0",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "screen_brightness",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/screen_brightness-2.1.2",
       "packageUri": "lib/",
@@ -848,7 +854,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-05-14T14:02:30.678580Z",
+  "generated": "2025-05-15T14:50:12.406646Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

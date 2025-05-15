@@ -1,6 +1,7 @@
 import 'package:booktrack/models/book.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:rxdart/rxdart.dart';
 
 class BookService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -70,5 +71,97 @@ class BookService {
   Future<Book> getBookDetails(String bookId) async {
     final doc = await _firestore.collection('books').doc(bookId).get();
     return Book.fromFirestore(doc);
+  }
+
+  Stream<List<Book>> getUserBooksStream({
+    required String userId,
+    required String listType, // 'saved_books', 'read_books', 'end_books'
+    int limit = 20,
+  }) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .asyncMap((userDoc) async {
+      final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final bookIds = List<String>.from(userData[listType] ?? []);
+
+      if (bookIds.isEmpty) return [];
+
+      // Чтобы избежать ошибки при пустом списке
+      final limitedBookIds = bookIds.take(limit).toList();
+
+      final books = await _firestore
+          .collection('books')
+          .where(FieldPath.documentId, whereIn: limitedBookIds)
+          .get();
+
+      return books.docs.map((doc) => Book.fromFirestore(doc)).toList();
+    });
+  }
+
+  Stream<List<Book>> getSimilarBooksStream({
+    required String currentBookId,
+    required String format,
+    required String language,
+    int limit = 5,
+  }) {
+    // Запрос 1: Книги с подходящим форматом (но не текущая книга)
+    final formatStream = _firestore
+        .collection('books')
+        .where('format', isEqualTo: format)
+        .where(FieldPath.documentId, isNotEqualTo: currentBookId)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList());
+
+    // Запрос 2: Книги с подходящим языком (но не текущая книга)
+    final languageStream = _firestore
+        .collection('books')
+        .where('language', isEqualTo: language)
+        .where(FieldPath.documentId, isNotEqualTo: currentBookId)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList());
+
+    // Объединяем два Stream с логикой OR (используем rxdart)
+    return Rx.combineLatestList([formatStream, languageStream])
+        .map((listOfLists) {
+      // Объединяем результаты и убираем дубликаты
+      final allBooks = listOfLists.expand((books) => books).toList();
+      final uniqueBooks = allBooks
+          .fold(<String, Book>{}, (map, book) {
+            map.putIfAbsent(book.id, () => book);
+            return map;
+          })
+          .values
+          .toList();
+
+      return uniqueBooks.take(limit).toList(); // Ограничиваем лимитом
+    });
+  }
+
+  // Для книг того же автора
+  Stream<List<Book>> getAuthorBooksStream({
+    required String currentBookId,
+    required String author,
+    int limit = 5,
+  }) {
+    return _firestore
+        .collection('books')
+        .where('author', isEqualTo: author)
+        .where(FieldPath.documentId, isNotEqualTo: currentBookId)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList());
+  }
+
+  Stream<List<Book>> getAllBooks() {
+    return _firestore.collection('books').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList();
+    });
   }
 }

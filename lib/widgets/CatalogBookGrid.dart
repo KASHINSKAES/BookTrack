@@ -1,19 +1,33 @@
 import 'package:booktrack/models/book.dart';
+import 'package:booktrack/pages/filter/filterProvider.dart';
 import 'package:booktrack/servises/bookServises.dart';
 import 'package:booktrack/widgets/BookCard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'constants.dart';
 
-class AdaptiveBookGrid extends StatelessWidget {
-  final BookService _bookService = BookService();
+class CatalogBookGrid extends StatefulWidget {
+  @override
+  _CatalogBookGridState createState() => _CatalogBookGridState();
+}
+
+class _CatalogBookGridState extends State<CatalogBookGrid> {
+  late Stream<List<Book>> _booksStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _booksStream = BookService().getAllBooks();
+  }
 
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+    final filterProvider = Provider.of<FilterProvider>(context);
 
-    return StreamBuilder<QuerySnapshot>(
-        stream: _bookService.getBooksStream(),
+    return StreamBuilder<List<Book>>(
+        stream: _booksStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Ошибка загрузки: ${snapshot.error}'));
@@ -23,34 +37,9 @@ class AdaptiveBookGrid extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
 
-          final books = snapshot.data!.docs.map((doc) {
-            debugPrint('Processing doc ${doc.id}');
-            try {
-              return Book.fromFirestore(doc);
-            } catch (e, stack) {
-              debugPrint('Error with doc ${doc.id}: $e\n$stack');
-              return Book(
-                id: doc.id,
-                title: '',
-                author: '',
-                ageRestriction: 'N/A',
-                description: '',
-                pages: 0,
-                price: 0,
-                publisher: '',
-                rating: 0,
-                isExclusive: false,
-                isSubscription: false,
-                format: 'text',
-                language: 'Русский',
-                subcollection: [],
-                imageUrl: '',
-                yearPublisher: 0,
-              );
-            }
-          }).toList();
+          final books =
+              _applyFilters(snapshot.data!, filterProvider.activeFilters);
 
-          debugPrint('Всего книг после обработки: ${books.length}');
           return Container(
             padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
             decoration: BoxDecoration(
@@ -91,5 +80,36 @@ class AdaptiveBookGrid extends StatelessWidget {
             ),
           );
         });
+  }
+
+  List<Book> _applyFilters(List<Book> books, Map<String, dynamic> filters) {
+    return books.where((book) {
+      // Фильтр по подписке
+      if (filters['isSubscription'] == true && !book.isSubscription) {
+        return false;
+      }
+
+      // Фильтр по эксклюзивности
+      if (filters['isExclusive'] == true && !book.isExclusive) {
+        return false;
+      }
+
+      // Фильтр по рейтингу
+      if (filters['isHighRated'] == true && book.rating < 4) {
+        return false;
+      }
+
+      // Фильтр по формату
+      if (filters['format'] != null && book.format != filters['format']) {
+        return false;
+      }
+
+      // Фильтр по языку
+      if (filters['language'] != null && book.language != filters['language']) {
+        return false;
+      }
+
+      return true;
+    }).toList();
   }
 }

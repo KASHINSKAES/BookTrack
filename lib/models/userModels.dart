@@ -14,6 +14,7 @@ class UserModel {
   int totalBonuses;
   int pagesReadTotal;
   List<String> savedBooks;
+  List<String> endBooks;
   List<String> readBooks;
   List<String> subcollections;
 
@@ -32,6 +33,7 @@ class UserModel {
     this.pagesReadTotal = 0,
     this.savedBooks = const [],
     this.readBooks = const [],
+    this.endBooks = const [],
     this.subcollections = const [
       'reading_progress',
       'reading_goals',
@@ -59,6 +61,7 @@ class UserModel {
       pagesReadTotal: data['pagesReadTotal'] ?? 0,
       savedBooks: List<String>.from(data['saved_books'] ?? []),
       readBooks: List<String>.from(data['read_books'] ?? []),
+      endBooks: List<String>.from(data['read_books'] ?? []),
       subcollections: List<String>.from(data['subcollections'] ?? []),
     );
   }
@@ -75,6 +78,7 @@ class UserModel {
       'totalBonuses': totalBonuses,
       'pagesReadTotal': pagesReadTotal,
       'saved_books': savedBooks,
+      'end_books': endBooks,
       'read_books': readBooks,
       'subcollections': subcollections,
     };
@@ -105,5 +109,3 @@ extension UserModelExtensions on UserModel {
     );
   }
 }
-
-

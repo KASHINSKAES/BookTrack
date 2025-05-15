@@ -7,10 +7,22 @@ import 'package:flutter/material.dart';
 class BookList extends StatefulWidget {
   final int maxItemsToShow;
   final bool showSeeAllButton;
+  final String? listType; // Для пользовательских списков
+  final String? userId; // Для пользовательских списков
+  final String? currentBookId; // Для похожих/авторских книг
+  final String? author; // Для книг автора
+  final String? format; // Для похожих книг
+  final String? language; // Для похожих книг
 
   const BookList({
     this.maxItemsToShow = 5,
     this.showSeeAllButton = true,
+    this.listType,
+    this.userId,
+    this.currentBookId,
+    this.author,
+    this.format,
+    this.language,
     Key? key,
   }) : super(key: key);
 
@@ -26,7 +38,36 @@ class _BookListState extends State<BookList> {
   void initState() {
     super.initState();
     _bookService = BookService();
-    _booksStream = _bookService.getBooksStreams();
+    _booksStream = _getCorrectStream();
+  }
+
+  Stream<List<Book>> _getCorrectStream() {
+    if (widget.listType != null && widget.userId != null) {
+      return _bookService.getUserBooksStream(
+        userId: widget.userId!,
+        listType: widget.listType!,
+        limit: widget.maxItemsToShow,
+      );
+    } else if (widget.author != null && widget.currentBookId != null) {
+      return _bookService.getAuthorBooksStream(
+        currentBookId: widget.currentBookId!,
+        author: widget.author!,
+        limit: widget.maxItemsToShow,
+      );
+    } else if (widget.format != null &&
+        widget.language != null &&
+        widget.currentBookId != null) {
+      return _bookService.getSimilarBooksStream(
+        currentBookId: widget.currentBookId!,
+        format: widget.format!,
+        language: widget.language!,
+        limit: widget.maxItemsToShow,
+      );
+    }
+    return _bookService.getBooksStream().map((snapshot) => snapshot.docs
+        .take(widget.maxItemsToShow)
+        .map((doc) => Book.fromFirestore(doc))
+        .toList());
   }
 
   @override
@@ -132,18 +173,51 @@ class _BookListState extends State<BookList> {
 }
 
 class AllBooksPage extends StatelessWidget {
-  const AllBooksPage({Key? key}) : super(key: key);
+  final String? title;
+  final String? listType;
+  final String? userId;
+  final String? author;
+  final String? format;
+  final String? language;
+
+  const AllBooksPage({
+    this.title,
+    this.listType,
+    this.userId,
+    this.author,
+    this.format,
+    this.language,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Все книги"),
+        title: Text(_getTitle(listType.toString())),
       ),
-      body: const BookList(
-        maxItemsToShow: 0, // Показать все
+      body: BookList(
+        listType: listType,
+        userId: userId,
+        author: author,
+        format: format,
+        language: language,
+        maxItemsToShow: 100,
         showSeeAllButton: false,
       ),
     );
+  }
+
+  String _getTitle(String type) {
+    switch (type) {
+      case 'saved_books':
+        return 'Избранные книги';
+      case 'read_books':
+        return 'Прочитанные книги';
+      case 'end_books':
+        return 'Читаемые книги';
+      default:
+        return 'Все книги';
+    }
   }
 }

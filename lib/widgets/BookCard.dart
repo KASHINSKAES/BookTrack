@@ -81,6 +81,7 @@ class _BookCardState extends State<BookCards> {
           yearPublisher: widget.book.yearPublisher,
           language: widget.book.language,
           price: widget.book.price,
+          format: widget.book.format,
         ),
       ),
     );
