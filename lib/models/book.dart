@@ -15,7 +15,9 @@ class Book {
   final String format;
   final String language;
   final List<String> subcollection;
+  final List<String> tags;
   final String title;
+  final String genre;
   final String imageUrl;
   final int yearPublisher;
 
@@ -33,6 +35,8 @@ class Book {
     required this.format,
     required this.language,
     required this.subcollection,
+    required this.tags,
+    required this.genre,
     required this.title,
     required this.imageUrl,
     required this.yearPublisher,
@@ -51,6 +55,12 @@ class Book {
       safeSubcollection = List<String>.from(
           data['subcollection'].where((item) => item is String));
     }
+    List<String> safeTags = [];
+    if (data['tags'] is List) {
+      safeTags =
+          List<String>.from(data['tags'].where((item) => item is String));
+    }
+    debugPrint('${data['raiting']} BookRaiting');
 
     return Book(
       id: doc.id,
@@ -65,7 +75,9 @@ class Book {
       isSubscription: data['isSubscription'] ?? false,
       format: data['format'] ?? 'text',
       language: data['language'] ?? 'Русский',
+      tags: safeTags,
       subcollection: safeSubcollection,
+      genre: data['genre'] ?? 'text',
       title: data['title'] ?? '',
       imageUrl: data['url'] ?? '',
       yearPublisher: data['yearPublisher'] ?? 0,

@@ -4,9 +4,10 @@ import 'package:booktrack/icons.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/pages/PurchaseSuccessScreen.dart';
+import 'package:booktrack/pages/helpsWidgets/bookDetailAppBar.dart';
 import 'package:booktrack/pages/purchaseButton.dart';
-import 'package:booktrack/pages/selectedPage.dart';
 import 'package:booktrack/pages/textBook.dart';
+import 'package:booktrack/widgets/BookReviewsWidget.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -15,14 +16,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-
-final List<String> reviews = [
-  "Недавно прочитала книгу «Аня с острова Принца Эдуарда» и осталась в восторге! "
-      "Это история о сильной и независимой девушке, которая преодолевает множество трудностей "
-      "и находит своё счастье.",
-  "Очень захватывающая книга! Интересный сюжет, великолепная проработка персонажей.",
-  "Эта книга вдохновила меня на новые свершения. Определённо рекомендую к прочтению!"
-];
 
 class BookDetailScreen extends StatefulWidget {
   final String bookId;
@@ -39,6 +32,7 @@ class BookDetailScreen extends StatefulWidget {
   final String language;
   final String format;
   final int price;
+  final List<String> tags;
 
   const BookDetailScreen({
     required this.bookId,
@@ -55,6 +49,7 @@ class BookDetailScreen extends StatefulWidget {
     required this.language,
     required this.format,
     required this.price,
+    required this.tags,
   });
 
   @override
@@ -67,6 +62,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   bool _isLoading = true;
   bool _useBonuses = false; // Добавляем состояние для использования бонусов
   int _availableBonuses = 0; // Доступные бонусы
+
   @override
   void initState() {
     super.initState();
@@ -105,7 +101,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     }
 
     try {
-      const bookId = 'book_2'; // Замените на реальный ID книги
+      var bookId = widget.bookId;
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -130,11 +126,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         _isLoading = false;
       });
       debugPrint('Ошибка при проверке коллекции: $e');
+      debugPrint(' $_isBookInCollection');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProviders>(context, listen: false);
+    final userModel = authProvider.userModel;
     return NotificationListener<ScrollNotification>(
       onNotification: (scrollNotification) {
         if (scrollNotification is ScrollUpdateNotification) {
@@ -146,18 +145,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       },
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          elevation: 0,
-          surfaceTintColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          backgroundColor:
-              _scrollPosition > 300 ? AppColors.background : Colors.transparent,
-          title: _scrollPosition > 300
-              ? Text(
-                  widget.bookTitle,
-                  style: const TextStyle(color: Colors.white),
-                )
-              : null,
+        appBar: BookDetailsAppBar(
+          bookId: widget.bookId,
+          bookTitle: widget.bookTitle,
+          userId: userModel?.uid ?? '', //
+          scrollPosition: _scrollPosition,
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -230,7 +222,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           ),
           child: Padding(
             padding: const EdgeInsets.only(
-                top: 16.0, left: 16.0, right: 16.0, bottom: 150.0),
+                top: 16.0, left: 16.0, right: 16.0, bottom: 250.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -241,7 +233,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildSBooksSection(
                   scale,
                 ),
-                _buildReviewsSection(scale),
+                BookReviewsWidget(bookId: widget.bookId),
               ],
             ),
           ),
@@ -342,63 +334,75 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Chip(
-              label: Text('Зарубежная классика'),
-              backgroundColor: AppColors.background,
-              labelStyle: TextStyle(
-                color: Colors.white,
-                fontSize: 11 * scale,
-              ),
+        Expanded(
+            flex: 1,
+            child: widget.tags.isEmpty
+                ? (Text('Нет тегов'))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Wrap(
+                          runSpacing: 4.0 * scale,
+                          children: widget.tags
+                              .take(5)
+                              .map((tag) => Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.background,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11 * scale,
+                                      ),
+                                      softWrap: true,
+                                    ),
+                                  ))
+                              .toList(),
+                        )
+                      ])),
+        SizedBox(width: 8 * scale),
+        Expanded(
+          flex: 1,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: 180 * scale),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Характеристики',
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Издательство: ${widget.publisher}',
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Язык: ${widget.language}',
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Год издания: ${widget.yearPublisher}',
+                  style: TextStyle(
+                    fontSize: 14 * scale,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
-            Chip(
-              label: Text('Яркая классика'),
-              backgroundColor: AppColors.background,
-              labelStyle: TextStyle(
-                color: Colors.white,
-                fontSize: 11 * scale,
-              ),
-            ),
-          ],
-        ),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 180),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Характеристики',
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Издательство: ${widget.publisher}',
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                'Язык: ${widget.language}',
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  color: AppColors.textPrimary,
-                ),
-                softWrap: true,
-              ),
-              Text(
-                'Год издания:${widget.yearPublisher}',
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -441,164 +445,164 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
-  Widget _buildReviewsSection(double scale) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Row(
-              children: List.generate(
-                5,
-                (index) => Icon(MyFlutterApp.star,
-                    size: 24 * scale, color: AppColors.orange),
-              ),
-            ),
-            Text(
-              widget.bookRating.toString(),
-              style: TextStyle(
-                fontSize: 18 * scale,
-                fontWeight: FontWeight.bold,
-                color: AppColors.orange,
-              ),
-            )
-          ],
-        ),
-        SizedBox(
-          height: 250 * scale,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: reviews.length,
-            itemBuilder: (context, index) {
-              return _buildReviewCard(reviews[index], scale);
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildReviewsSection(double scale) {
+  //   return Column(
+  //     children: [
+  //       Row(
+  //         children: [
+  //           Row(
+  //             children: List.generate(
+  //               5,
+  //               (index) => Icon(MyFlutterApp.star,
+  //                   size: 24 * scale, color: AppColors.orange),
+  //             ),
+  //           ),
+  //           Text(
+  //             widget.bookRating.toString(),
+  //             style: TextStyle(
+  //               fontSize: 18 * scale,
+  //               fontWeight: FontWeight.bold,
+  //               color: AppColors.orange,
+  //             ),
+  //           )
+  //         ],
+  //       ),
+  //       SizedBox(
+  //         height: 250 * scale,
+  //         child: ListView.builder(
+  //           scrollDirection: Axis.horizontal,
+  //           itemCount: reviews.length,
+  //           itemBuilder: (context, index) {
+  //             return _buildReviewCard(reviews[index], scale);
+  //           },
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
-  Widget _buildReviewCard(String text, double scale) {
-    const maxChars = 150;
-    final isLongText = text.length > maxChars;
-    final displayText = isLongText ? text.substring(0, maxChars) : text;
+  // Widget _buildReviewCard(String text, double scale) {
+  //   const maxChars = 150;
+  //   final isLongText = text.length > maxChars;
+  //   final displayText = isLongText ? text.substring(0, maxChars) : text;
 
-    return Container(
-      width: 350 * scale,
-      margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
-      padding: EdgeInsets.all(16 * scale),
-      decoration: BoxDecoration(
-        color: AppColors.blueColorLight,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Верхняя часть с аватаркой и рейтингом (оставляем без изменений)
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20 * scale,
-                backgroundImage: NetworkImage(
-                    'https://randomuser.me/api/portraits/women/44.jpg'),
-              ),
-              SizedBox(width: 10 * scale),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Алиса",
-                      style: TextStyle(
-                        fontSize: 16 * scale,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    Text(
-                      "13 марта 2022",
-                      style: TextStyle(
-                          fontSize: 13 * scale, color: Color(0xff575656)),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: List.generate(
-                  5,
-                  (index) => Icon(MyFlutterApp.star,
-                      size: 18 * scale, color: AppColors.orange),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8 * scale),
+  //   return Container(
+  //     width: 350 * scale,
+  //     margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
+  //     padding: EdgeInsets.all(16 * scale),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.blueColorLight,
+  //       borderRadius: BorderRadius.circular(16),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.1),
+  //           blurRadius: 8,
+  //           offset: Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         // Верхняя часть с аватаркой и рейтингом (оставляем без изменений)
+  //         Row(
+  //           children: [
+  //             CircleAvatar(
+  //               radius: 20 * scale,
+  //               backgroundImage: NetworkImage(
+  //                   'https://randomuser.me/api/portraits/women/44.jpg'),
+  //             ),
+  //             SizedBox(width: 10 * scale),
+  //             Expanded(
+  //               child: Column(
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     "Алиса",
+  //                     style: TextStyle(
+  //                       fontSize: 16 * scale,
+  //                       fontWeight: FontWeight.bold,
+  //                       color: AppColors.textPrimary,
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     "13 марта 2022",
+  //                     style: TextStyle(
+  //                         fontSize: 13 * scale, color: Color(0xff575656)),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //             Row(
+  //               children: List.generate(
+  //                 5,
+  //                 (index) => Icon(MyFlutterApp.star,
+  //                     size: 18 * scale, color: AppColors.orange),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         SizedBox(height: 8 * scale),
 
-          // Текст отзыва с возможностью раскрытия
-          StatefulBuilder(
-            builder: (context, setState) {
-              bool isExpanded = false;
+  //         // Текст отзыва с возможностью раскрытия
+  //         StatefulBuilder(
+  //           builder: (context, setState) {
+  //             bool isExpanded = false;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Stack(
-                    children: [
-                      Text(
-                        isExpanded ? text : displayText,
-                        style: TextStyle(
-                            fontSize: 14 * scale, color: AppColors.textPrimary),
-                      ),
-                      if (isLongText && !isExpanded) ...[
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 40 * scale,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withOpacity(0.1),
-                                  AppColors.blueColorLight.withOpacity(0.9),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (isLongText)
-                    TextButton(
-                      onPressed: () {
-                        setState(() => isExpanded = !isExpanded);
-                      },
-                      child: Text(
-                        isExpanded ? "Свернуть" : "Далее",
-                        style: TextStyle(
-                          fontSize: 14 * scale,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  //             return Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Stack(
+  //                   children: [
+  //                     Text(
+  //                       isExpanded ? text : displayText,
+  //                       style: TextStyle(
+  //                           fontSize: 14 * scale, color: AppColors.textPrimary),
+  //                     ),
+  //                     if (isLongText && !isExpanded) ...[
+  //                       Positioned(
+  //                         bottom: 0,
+  //                         left: 0,
+  //                         right: 0,
+  //                         child: Container(
+  //                           height: 40 * scale,
+  //                           decoration: BoxDecoration(
+  //                             gradient: LinearGradient(
+  //                               begin: Alignment.topCenter,
+  //                               end: Alignment.bottomCenter,
+  //                               colors: [
+  //                                 Colors.white.withOpacity(0.1),
+  //                                 AppColors.blueColorLight.withOpacity(0.9),
+  //                               ],
+  //                             ),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ],
+  //                 ),
+  //                 if (isLongText)
+  //                   TextButton(
+  //                     onPressed: () {
+  //                       setState(() => isExpanded = !isExpanded);
+  //                     },
+  //                     child: Text(
+  //                       isExpanded ? "Свернуть" : "Далее",
+  //                       style: TextStyle(
+  //                         fontSize: 14 * scale,
+  //                         color: AppColors.textPrimary,
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+  //                   ),
+  //               ],
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildBookImage(double scale) {
     return Container(
@@ -639,6 +643,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
     }
+    debugPrint(' $_isBookInCollection');
 
     return Material(
       borderRadius: BorderRadius.circular(12),

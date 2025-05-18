@@ -164,4 +164,46 @@ class BookService {
       return snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList();
     });
   }
+  Future<void> toggleSavedBook(String userId, String bookId) async {
+    try {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      await userRef.update({
+        'saved_books': FieldValue.arrayUnion([bookId]),
+      });
+    } catch (e) {
+      debugPrint('Error adding to saved books: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeSavedBook(String userId, String bookId) async {
+    try {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      await userRef.update({
+        'saved_books': FieldValue.arrayRemove([bookId]),
+      });
+    } catch (e) {
+      debugPrint('Error removing from saved books: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> toggleSavedStatus(String userId, String bookId, bool isCurrentlySaved) async {
+    if (isCurrentlySaved) {
+      await removeSavedBook(userId, bookId);
+    } else {
+      await toggleSavedBook(userId, bookId);
+    }
+  }
+
+  Stream<bool> isBookSaved(String userId, String bookId) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((snapshot) {
+          final savedBooks = List<String>.from(snapshot.data()?['saved_books'] ?? []);
+          return savedBooks.contains(bookId);
+        });
+  }
 }

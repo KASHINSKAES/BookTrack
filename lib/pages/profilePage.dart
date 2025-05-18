@@ -10,6 +10,7 @@ import 'package:booktrack/pages/PaymentMethodsPage.dart';
 import 'package:booktrack/pages/activityPages.dart';
 import 'package:booktrack/pages/bonusPages.dart';
 import 'package:booktrack/pages/languagePages.dart';
+import 'package:booktrack/pages/level.dart';
 import 'package:booktrack/pages/levelPage.dart';
 import 'package:booktrack/pages/loveQuote.dart';
 import 'package:booktrack/pages/statistikPages.dart';
@@ -202,7 +203,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text(
                 'Выйти',
                 style: TextStyle(fontSize: 24 * scale, color: Colors.red),
-              ))
+              )),
         ],
       ),
     );

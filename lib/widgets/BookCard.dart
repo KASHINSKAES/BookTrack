@@ -64,6 +64,8 @@ class _BookCardState extends State<BookCards> {
   }
 
   void _navigateToDetail(BuildContext context) {
+    debugPrint('${widget.book.rating} raiting');
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -82,6 +84,7 @@ class _BookCardState extends State<BookCards> {
           language: widget.book.language,
           price: widget.book.price,
           format: widget.book.format,
+          tags: widget.book.tags,
         ),
       ),
     );
@@ -145,7 +148,6 @@ class _BookCardState extends State<BookCards> {
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      
     );
   }
 
