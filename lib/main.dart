@@ -1,10 +1,12 @@
 import 'package:booktrack/firebase_options.dart';
+import 'package:booktrack/keys.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/pages/filter/filterProvider.dart';
+import 'package:booktrack/pages/levelProvider.dart';
 import 'package:booktrack/pages/loadingScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +30,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => AppState()),
+        ChangeNotifierProvider(create: (context) => LevelProvider.empty()),
         ChangeNotifierProvider(create: (_) => BrightnessProvider()),
         ChangeNotifierProvider(create: (context) => ReadingStatsProvider()),
         ChangeNotifierProvider(create: (context) => AuthProviders()),
@@ -45,6 +48,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'MPLUSRounded1c'),
       home: const AuthWrapper(),
@@ -58,12 +62,18 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProviders>(context);
+    final levelProvider = Provider.of<LevelProvider>(context);
+
+    // Обновляем LevelProvider при изменении userModel
+    if (authProvider.userModel != null && levelProvider.userId.isEmpty) {
+      levelProvider.updateUserId(authProvider.userModel!.uid);
+    }
 
     if (authProvider.isLoading) {
       return const LoadingScreen();
     }
 
-    return authProvider.userModel != null 
+    return authProvider.userModel != null
         ? const BottomNavigationBarEX()
         : const AuthScreen();
   }
