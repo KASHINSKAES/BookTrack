@@ -53,8 +53,8 @@ class BookService {
 
   Stream<List<Book>> getBooksStreams() {
     return _firestore
-        .collection('books')
-        .limit(6)
+            .collection('books')
+            .limit(6)
         .snapshots()
         .handleError((error) {
       debugPrint("Ошибка получения книг: $error");
@@ -72,6 +72,35 @@ class BookService {
     final doc = await _firestore.collection('books').doc(bookId).get();
     return Book.fromFirestore(doc);
   }
+  Future<List<Book>> getBooks(String category) async {
+  try {
+    Query query = _firestore.collection('books');
+    
+    switch (category) {
+      case 'recommendations':
+        query = query.where('isRecommended', isEqualTo: true).limit(10);
+        break;
+      case 'popular':
+        query = query.orderBy('views', descending: true).limit(10);
+        break;
+      case 'genres':
+        query = query.orderBy('genre').limit(10);
+        break;
+      case 'coming_soon':
+        final now = DateTime.now();
+        query = query.where('releaseDate', isGreaterThan: now).orderBy('releaseDate').limit(10);
+        break;
+      default:
+        query = query.limit(10);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs.map((doc) => Book.fromFirestore(doc)).toList();
+  } catch (e) {
+    debugPrint('Error getting books: $e');
+    return [];
+  }
+}
 
   Stream<List<Book>> getUserBooksStream({
     required String userId,

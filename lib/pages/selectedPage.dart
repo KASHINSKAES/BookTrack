@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:booktrack/icons.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/timerAndPages.dart';
+import 'package:booktrack/servises/levelServises.dart';
 import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -19,7 +21,10 @@ class selectedPage extends StatefulWidget {
 }
 
 class _selectedPage extends State<selectedPage> {
+  late LevelService _levelService;
+
   String? userId;
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +47,61 @@ class _selectedPage extends State<selectedPage> {
     }
   }
 
+  Future<void> _addXP(int amount) async {
+    if (userId == null) {
+      debugPrint('User ID is null');
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final userRef =
+            FirebaseFirestore.instance.collection('users').doc(userId);
+        final doc = await transaction.get(userRef);
+
+        if (!doc.exists) {
+          transaction.set(userRef, {
+            'stats': {
+              'current_level': 1,
+              'pages': 10,
+              'xp': amount,
+            },
+          });
+          return;
+        }
+
+        final stats = doc.data()?['stats'] as Map<String, dynamic>? ?? {};
+        int currentXP = stats['xp'] ?? 0;
+        int currentLevel = stats['current_level'] ?? 1;
+        int currentPages = stats['pages'] ?? 0;
+
+        final int newXP = currentXP + amount;
+        final int newPages = currentPages + 10;
+
+        transaction.update(userRef, {
+          'stats.xp': newXP,
+          'stats.pages': newPages,
+        });
+
+        if (mounted) {
+          await _levelService.checkLevelUp(context);
+        }
+      });
+    } catch (e) {
+      debugPrint('Error in _addXP: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+    if (appState.pagesReadToday == appState.readingPagesPurpose ||
+        appState.formattedRemainingTime == '00:00:00') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _addXP(15);
+      });
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xff5775CD),
