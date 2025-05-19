@@ -296,6 +296,12 @@
       "languageVersion": "3.5"
     },
     {
+      "name": "flutter_markdown",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/flutter_markdown-0.7.7+1",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
       "name": "flutter_parsed_text",
       "rootUri": "file:///C:/firebase/hosted/pub.dev/flutter_parsed_text-2.2.1",
       "packageUri": "lib/",
@@ -432,6 +438,12 @@
       "rootUri": "file:///C:/firebase/hosted/pub.dev/logging-1.3.0",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "markdown",
+      "rootUri": "file:///C:/firebase/hosted/pub.dev/markdown-7.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.2"
     },
     {
       "name": "matcher",
@@ -854,7 +866,7 @@
       "languageVersion": "2.19"
     }
   ],
-  "generated": "2025-05-15T14:50:12.406646Z",
+  "generated": "2025-05-19T11:32:21.611115Z",
   "generator": "pub",
   "generatorVersion": "3.7.0",
   "flutterRoot": "file:///C:/flutter",

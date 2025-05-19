@@ -22,20 +22,20 @@ class loveQuotes extends StatelessWidget {
     final authProvider = Provider.of<AuthProviders>(context, listen: false);
     final userModel = authProvider.userModel;
 
-    // 1. Получаем все отзывы пользователя (например, из подколлекции `users/{uid}/reviews`)
+    
     final QuerySnapshot quoteSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(userModel?.uid) // Замените на реальный ID пользователя
         .collection('quotes')
         .get();
 
-    // 2. Для каждого отзыва получаем product_id и ищем продукт
+    
     for (final quoteDoc in quoteSnapshot.docs) {
       final String bookId =
-          quoteDoc['bookId']; // Предполагаем, что в отзыве есть product_id
-      final String quoteText = quoteDoc['quoteText']; // Текст отзыва
+          quoteDoc['bookId']; 
+      final String quoteText = quoteDoc['quoteText']; 
 
-      // 3. Получаем продукт по его ID
+      
       final DocumentSnapshot bookSnapshot = await FirebaseFirestore.instance
           .collection('books')
           .doc(bookId)

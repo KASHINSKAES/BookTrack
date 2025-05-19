@@ -1,0 +1,27 @@
+2025/05/18-19:06:24.398 2990 Creating DB C:\Users\9875~1\AppData\Local\Temp\flutter_tools.997c399f\flutter_tools_chrome_device.829a0d4e\Default\IndexedDB\http_localhost_50217.indexeddb.leveldb since it was missing.
+2025/05/18-19:06:24.409 2990 Reusing MANIFEST C:\Users\9875~1\AppData\Local\Temp\flutter_tools.997c399f\flutter_tools_chrome_device.829a0d4e\Default\IndexedDB\http_localhost_50217.indexeddb.leveldb/MANIFEST-000001
+2025/05/18-19:06:34.812 2990 Level-0 table #5: started
+2025/05/18-19:06:34.820 2990 Level-0 table #5: 1522 bytes OK
+2025/05/18-19:06:34.822 2990 Delete type=0 #3
+2025/05/18-19:06:34.823 2990 Manual compaction at level-0 from '\x00\x02\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x03\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/18-19:10:10.201 2990 Level-0 table #7: started
+2025/05/18-19:10:10.214 2990 Level-0 table #7: 6945 bytes OK
+2025/05/18-19:10:10.216 2990 Delete type=0 #4
+2025/05/18-19:10:10.217 123c Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/18-19:10:15.328 2144 Level-0 table #9: started
+2025/05/18-19:10:15.331 2144 Level-0 table #9: 3158 bytes OK
+2025/05/18-19:10:15.333 2144 Delete type=0 #6
+2025/05/18-19:10:15.333 123c Manual compaction at level-0 from '\x00\x05\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at '\x00\x05\x00\x00\x05' @ 227 : 1
+2025/05/18-19:10:15.333 123c Compacting 1@0 + 1@1 files
+2025/05/18-19:10:15.336 123c Generated table #10@0: 76 keys, 3287 bytes
+2025/05/18-19:10:15.336 123c Compacted 1@0 + 1@1 files => 3287 bytes
+2025/05/18-19:10:15.337 123c compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/05/18-19:10:15.338 123c Delete type=2 #9
+2025/05/18-19:10:15.338 123c Manual compaction at level-0 from '\x00\x05\x00\x00\x05' @ 227 : 1 .. '\x00\x06\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/18-19:11:00.935 2144 Compacting 1@1 + 1@2 files
+2025/05/18-19:11:00.939 2144 Generated table #11@1: 41 keys, 2924 bytes
+2025/05/18-19:11:00.940 2144 Compacted 1@1 + 1@2 files => 2924 bytes
+2025/05/18-19:11:00.942 2144 compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/05/18-19:11:00.943 2144 Delete type=2 #5
+2025/05/18-19:11:00.943 2144 Delete type=2 #7
+2025/05/18-19:11:00.943 2144 Delete type=2 #10

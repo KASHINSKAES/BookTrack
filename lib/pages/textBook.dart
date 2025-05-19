@@ -8,11 +8,14 @@ import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/SettingsProvider.dart';
 import 'package:booktrack/pages/epigraphWidgers.dart';
 import 'package:booktrack/servises/levelServises.dart';
+import 'package:booktrack/widgets/QuoteSelectionToolbar.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:booktrack/pages/bookReposityr.dart';
 import 'package:booktrack/models/chaptersModel.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
@@ -30,40 +33,40 @@ class BookScreen extends StatefulWidget {
 
 class _BookScreenState extends State<BookScreen> {
   late final PageController _pageController;
-  late Future<BookWithChapters> _bookData;
   final BookRepository _repository = BookRepository();
   int _currentPageIndex = 0;
   late List<String> _allPages = [];
   late List<Chapter> _chapters = [];
-  late List<String> _epigraph = [];
   DateTime? _sessionStart;
   int _sessionPages = 0;
   Timer? _sessionTimer;
-
-  late BookWithChapters _bookDatas;
+  late BookWithChapters _bookData;
   late List<int> _chapterPageStarts = [];
-
-  // Система прогресса
   int _pagesSinceLastXP = 0;
   int _sessionPageCount = 0;
   DateTime? _sessionStartTime;
   Timer _debounceTimer = Timer(Duration.zero, () {});
   String? _userId;
-
-  late LevelService levelService;
+  int _lastRecordedPage = 0;
+  late LevelService _levelService;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _startNewSession();
     _pageController = PageController();
-    _loadUserId().then((_) {
-      _startReadingSession();
-      _bookData = _repository.getBookWithChapters(widget.bookId);
-      _loadBookData().then(
-          (_) => _loadProgress()); // Загружаем прогресс после данных книги
-    });
-    levelService = LevelService(_userId.toString());
+    _initializeReadingSession();
+  }
+
+  Future<void> _initializeReadingSession() async {
+    await _loadUserId();
+    _startNewSession();
+    _startReadingSession();
+    await _loadBookData();
+    await _loadProgress();
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -80,7 +83,7 @@ class _BookScreenState extends State<BookScreen> {
     _sessionStart = DateTime.now();
     _sessionPages = 0;
     _sessionTimer?.cancel();
-    _sessionTimer = Timer.periodic(Duration(minutes: 1), (_) {
+    _sessionTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       _saveSessionProgress();
     });
   }
@@ -99,48 +102,9 @@ class _BookScreenState extends State<BookScreen> {
         userId: auth.userModel!.uid,
       );
 
-      // Обновляем состояние после сохранения прогресса
       appState.updatePagesReadToday(_sessionPages);
     }
     _startNewSession();
-  }
-
-  void _onPageChanged(int index) async {
-    final prevChapter = _getCurrentChapterIndex();
-
-    // Обновляем текущую страницу
-    setState(() => _currentPageIndex = index);
-
-    final currentChapter = _getCurrentChapterIndex();
-
-    // Если перешли в новую главу
-    if (currentChapter != prevChapter && index > _lastRecordedPage) {
-      await _addXP(10); // Бонус за начало новой главы
-    }
-    // Учитываем только переходы вперед
-    if (index > _lastRecordedPage) {
-      _sessionPages += index - _lastRecordedPage;
-      final pagesRead = index - _lastRecordedPage;
-      _pagesSinceLastXP += pagesRead;
-      _sessionPageCount += pagesRead;
-      _lastRecordedPage = index;
-
-      // Начисляем XP каждые 10 страниц
-      if (_pagesSinceLastXP >= 10) {
-        await _addXP(5);
-        _pagesSinceLastXP = 0;
-      }
-    }
-    _lastRecordedPage = index;
-
-    setState(() => _currentPageIndex = index);
-
-    // Проверяем завершение книги
-    if (_isLastPage) {
-      await _completeBook();
-    }
-
-    _debounceSaveProgress();
   }
 
   Future<void> _loadUserId() async {
@@ -153,6 +117,7 @@ class _BookScreenState extends State<BookScreen> {
 
     setState(() {
       _userId = userModel.uid;
+      _levelService = LevelService(_userId!);
     });
   }
 
@@ -163,23 +128,9 @@ class _BookScreenState extends State<BookScreen> {
 
   Future<void> _loadBookData() async {
     try {
-      if (_userId == null) return;
-      final book = await _repository.getBookWithChapters(widget.bookId);
-      if (mounted) {
-        setState(() {
-          _bookDatas = book;
-          _chapters = book.chapters;
-          _precalculateAllPages(book);
-        });
-        await _loadProgress();
-
-        // После загрузки данных и прогресса - переходим на нужную страницу
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_pageController.hasClients && _currentPageIndex > 0) {
-            _pageController.jumpToPage(_currentPageIndex);
-          }
-        });
-      }
+      _bookData = await _repository.getBookWithChapters(widget.bookId);
+      _chapters = _bookData.chapters;
+      await _precalculateAllPages(_bookData, context);
     } catch (e) {
       debugPrint('Error loading book: $e');
     }
@@ -188,13 +139,9 @@ class _BookScreenState extends State<BookScreen> {
   Future<void> _loadProgress() async {
     try {
       int loadedPage = 0;
-
-      // 1. Сначала пробуем загрузить из SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final prefsPage = prefs.getInt('currentPage_${widget.bookId}') ?? 0;
-      loadedPage = prefsPage;
+      loadedPage = prefs.getInt('currentPage_${widget.bookId}') ?? 0;
 
-      // 2. Затем проверяем Firestore (если есть пользователь)
       if (_userId != null) {
         final progressDoc = await FirebaseFirestore.instance
             .collection('users')
@@ -206,34 +153,14 @@ class _BookScreenState extends State<BookScreen> {
         if (progressDoc.exists) {
           final progressData = progressDoc.data()!;
           final savedPage = progressData['currentPage'] as int? ?? 0;
-
-          // Выбираем максимальный прогресс из всех источников
           loadedPage = max(loadedPage, savedPage);
-
-          // Синхронизируем если количество страниц изменилось
-          final savedTotalPages = progressData['totalPages'] as int? ?? 0;
-          if (savedTotalPages != _allPages.length) {
-            await _saveReadingProgress();
-          }
-
-          // Обновляем состояние после загрузки прогресса
-          final appState = Provider.of<AppState>(context, listen: false);
-          appState.updatePagesReadToday(savedPage);
         }
       }
 
-      // Устанавливаем загруженное значение с проверкой границ
       if (mounted) {
         setState(() {
           _currentPageIndex = min(loadedPage, _allPages.length - 1);
           _lastRecordedPage = _currentPageIndex;
-        });
-
-        // Прокручиваем к нужной странице после построения виджетов
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_pageController.hasClients) {
-            _pageController.jumpToPage(_currentPageIndex);
-          }
         });
       }
     } catch (e) {
@@ -241,31 +168,36 @@ class _BookScreenState extends State<BookScreen> {
     }
   }
 
-  void _precalculateAllPages(BookWithChapters book) {
-    _allPages = [];
-    _chapterPageStarts = [];
-    _epigraph = [];
+  void _onPageChanged(int index) async {
+    if (!mounted) return;
 
-    for (var chapter in book.chapters) {
-      _chapterPageStarts.add(_allPages.length);
+    final prevChapter = _getCurrentChapterIndex();
+    setState(() => _currentPageIndex = index);
+    final currentChapter = _getCurrentChapterIndex();
 
-      if (chapter.epigraph != null) {
-        _epigraph.add('${chapter.epigraph!.text}\n${chapter.epigraph!.author}');
-      } else {
-        _epigraph.add('');
+    if (currentChapter != prevChapter && index > _lastRecordedPage) {
+      await _addXP(10);
+    }
+
+    if (index > _lastRecordedPage) {
+      _sessionPages += index - _lastRecordedPage;
+      final pagesRead = index - _lastRecordedPage;
+      _pagesSinceLastXP += pagesRead;
+      _sessionPageCount += pagesRead;
+      _lastRecordedPage = index;
+
+      if (_pagesSinceLastXP >= 10) {
+        await _addXP(5);
+        _pagesSinceLastXP = 0;
       }
-
-      final chapterPages = _splitTextIntoPages(chapter.text);
-      _allPages.addAll(chapterPages);
     }
 
-    // Добавляем последнюю страницу
-    if (_allPages.isEmpty || !_allPages.last.contains("Спасибо за прочтение")) {
-      _allPages.add("Спасибо за прочтение!");
+    if (_isLastPage) {
+      await _completeBook();
     }
+
+    _debounceSaveProgress();
   }
-
-  int _lastRecordedPage = 0;
 
   bool get _isLastPage => _currentPageIndex == _allPages.length - 1;
 
@@ -309,7 +241,7 @@ class _BookScreenState extends State<BookScreen> {
         'currentChapter': currentChapter,
         'chapterProgress': chapterProgress,
         'totalPages': _allPages.length,
-        'dateLastRead': DateTime.now(),
+        'dateLastRead': FieldValue.serverTimestamp(),
         'bookId': widget.bookId,
       }, SetOptions(merge: true));
     } catch (e) {
@@ -369,17 +301,15 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<void> _addXP(int amount) async {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    if (_userId == null) {
+      debugPrint('User ID is null');
+      return;
+    }
+
     try {
-      if (_userId == null) {
-        debugPrint('User ID is null');
-        return;
-      }
-
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(_userId);
-
       await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final userRef =
+            FirebaseFirestore.instance.collection('users').doc(_userId);
         final doc = await transaction.get(userRef);
 
         if (!doc.exists) {
@@ -393,84 +323,70 @@ class _BookScreenState extends State<BookScreen> {
           return;
         }
 
-        if (!doc.data()!.containsKey('stats')) {
-          transaction.update(userRef, {
-            'stats': {
-              'current_level': 1,
-              'pages': 10,
-              'xp': amount,
-            },
-          });
-          return;
-        }
-
-        final stats = doc.data()!['stats'] as Map<String, dynamic>;
+        final stats = doc.data()?['stats'] as Map<String, dynamic>? ?? {};
         int currentXP = stats['xp'] ?? 0;
-        int currentLevel = stats['current_level'] ?? 1;
-        final int currentPages = stats['pages'] ?? 0;
+        int currentPages = stats['pages'] ?? 0;
 
-        // Обновляем XP и pages
         final int newXP = currentXP + amount;
         final int newPages = currentPages + 10;
 
-        // Обновляем данные в Firestore
         transaction.update(userRef, {
           'stats.xp': newXP,
           'stats.pages': newPages,
         });
 
-        final nextLevelDoc = await _firestore
-            .collection('game_levels')
-            .doc((currentLevel + 1).toString())
-            .get();
-
-        if (!nextLevelDoc.exists) {
-          debugPrint('Next level document does not exist (max level reached?)');
-          return;
-        }
-
-        final nextLevelData = nextLevelDoc.data()!;
-        final requiredXp = nextLevelData['xp_required'] as int? ?? 0;
-        final requiredPages = nextLevelData['pages_required'] as int? ?? 0;
-
-        debugPrint(
-            'Required for next level: XP: $requiredXp, Pages: $requiredPages');
-        if (newXP >= requiredXp && newPages >= requiredPages && mounted) {
-          debugPrint('Уровень повышен! Новый уровень');
-          await levelService.checkLevelUp(context);
-        } else {
-          debugPrint('XP добавлено, но уровень не изменился.');
+        if (mounted) {
+          await _levelService.checkLevelUp(context);
         }
       });
     } catch (e) {
-      debugPrint('Ошибка в _addXP: $e');
+      debugPrint('Error in _addXP: $e');
     }
   }
 
   Future<void> _completeBook() async {
     try {
       if (_userId == null) return;
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(_userId);
 
-      await userRef.update({
+      await FirebaseFirestore.instance.collection('users').doc(_userId).update({
         'end_books': FieldValue.arrayUnion([widget.bookId]),
         'read_books': FieldValue.arrayRemove([widget.bookId]),
       });
 
-      // Показываем уведомление о завершении
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Книга прочитана!')));
-      _addXP(30);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Книга прочитана!')),
+        );
+        await _addXP(30);
+      }
     } catch (e) {
       debugPrint('Error completing book: $e');
     }
   }
 
+  Future<void> _precalculateAllPages(
+      BookWithChapters book, BuildContext context) async {
+    _allPages = [];
+    _chapterPageStarts = [];
+
+    for (var chapter in book.chapters) {
+      _chapterPageStarts.add(_allPages.length);
+      final chapterPages =
+          await splitTextIntoPages(chapter.text, context); // Ждём результат
+      _allPages.addAll(
+          chapterPages); // Теперь chapterPages - это List<String>, а не Future
+    }
+
+    if (_allPages.isEmpty || !_allPages.last.contains("Спасибо за прочтение")) {
+      _allPages.add("Спасибо за прочтение!");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final settings = Provider.of<SettingsProvider>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
       backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
       appBar: AppBar(
@@ -501,16 +417,22 @@ class _BookScreenState extends State<BookScreen> {
           ),
         ],
       ),
-      body: _chapters.isEmpty
-          ? Center(child: CircularProgressIndicator())
+      body: _isLoading
+          ? Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+            )
           : Column(
               children: [
-                _buildBookHeader(_bookDatas, context),
+                _buildBookHeader(_bookData, context),
                 Expanded(
                   child: PageView.builder(
-                    itemCount: _allPages.length, controller: _pageController,
-                    onPageChanged:
-                        _onPageChanged, // Теперь используется ваш метод
+                    itemCount: _allPages.length,
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) => _buildPageContent(index),
                   ),
                 ),
@@ -521,257 +443,263 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Widget _buildPageContent(int pageIndex) {
-    // Определяем, к какой главе относится текущая страница
-    int chapterIndex = 0;
-    for (int i = 0; i < _chapterPageStarts.length; i++) {
-      if (pageIndex >= _chapterPageStarts[i]) {
-        chapterIndex = i;
-      } else {
-        break;
-      }
-    }
-
-    final isFirstPageOfChapter = pageIndex == _chapterPageStarts[chapterIndex];
-    final chapter = _chapters[chapterIndex];
     final settings = Provider.of<SettingsProvider>(context);
+    final chapterIndex = _getCurrentChapterIndexForPage(pageIndex);
+    final chapter = _chapters[chapterIndex];
 
-    if (isFirstPageOfChapter && chapter.epigraph != null) {
-      return SingleChildScrollView(
+    return FutureBuilder(
+      future: Future.microtask(
+          () => _buildPageText(pageIndex, chapterIndex, chapter, settings)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+          );
+        }
+        return snapshot.data ?? SizedBox();
+      },
+    );
+  }
+
+  Future<Widget> _buildPageText(int pageIndex, int chapterIndex,
+      Chapter chapter, SettingsProvider settings) async {
+    final isFirstPageOfChapter = pageIndex == _chapterPageStarts[chapterIndex];
+    final textStyle = TextStyle(
+      fontSize: settings.fontSize,
+      fontFamily: _getFontFamily(settings.selectedFontFamily),
+      color: _getTextColor(settings.selectedBackgroundStyle),
+      height: 1.5,
+    );
+
+    return Listener(
+      onPointerMove: (PointerMoveEvent event) {
+        if (event.delta.dx > 5) {
+          // Добавил порог в 5 пикселей для избежания случайных срабатываний
+          // Свайп вправо, перелистываем на предыдущую страницу
+          if (_pageController.page!.round() > 0) {
+            // Используем текущую страницу из pageController
+            _pageController.previousPage(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.ease,
+            );
+          }
+        } else if (event.delta.dx < -5) {
+          // Аналогичный порог
+          // Свайп влево, перелистываем на следующую страницу
+          if (_pageController.page!.round() < _allPages.length - 1) {
+            _pageController.nextPage(
+              duration: Duration(milliseconds: 300),
+              curve: Curves.ease,
+            );
+          }
+        }
+      },
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Заголовок главы
-            Text(
-              chapter.title,
-              style: TextStyle(
-                fontSize: settings.fontSize,
-                fontFamily: _getFontFamily(settings.selectedFontFamily),
-                color: _getTextColor(settings.selectedBackgroundStyle),
+            if (isFirstPageOfChapter) ...[
+              Text(
+                chapter.title,
+                style: textStyle.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
               ),
-            ),
-            // Виджет эпиграфа
-            EpigraphWidgets(
-              text: chapter.epigraph!.text,
-              author: chapter.epigraph!.author,
-            ),
-            SizedBox(height: 16),
-            // Текст страницы
-            Text(
-              _allPages[pageIndex],
-              style: TextStyle(
-                fontSize: settings.fontSize,
-                fontFamily: _getFontFamily(settings.selectedFontFamily),
-                color: _getTextColor(settings.selectedBackgroundStyle),
+              if (chapter.epigraph != null)
+                EpigraphWidgets(
+                  text: chapter.epigraph!.text,
+                  author: chapter.epigraph!.author,
+                ),
+              const SizedBox(height: 16),
+            ],
+            SelectableText.rich(
+              TextSpan(text: _allPages[pageIndex], style: textStyle),
+              style: textStyle.copyWith(
+                height: 1.5, // Регулировка высоты строки для лучшей читаемости
+              ),
+              textAlign: TextAlign.justify, // Выравнивание текста по ширине
+              selectionControls: _buildQuoteSelectionControls(
+                pageIndex: pageIndex,
+                chapterId: chapter.id,
               ),
             ),
           ],
         ),
-      );
-    }
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isFirstPageOfChapter)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Text(
-                chapter.title,
-                style: TextStyle(
-                  fontSize: settings.fontSize,
-                  fontFamily: _getFontFamily(settings.selectedFontFamily),
-                  color: _getTextColor(settings.selectedBackgroundStyle),
-                ),
-              ),
-            ),
-          Text(
-            _allPages[pageIndex],
-            style: TextStyle(
-              fontSize: settings.fontSize,
-              fontFamily: _getFontFamily(settings.selectedFontFamily),
-              color: _getTextColor(settings.selectedBackgroundStyle),
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildPageFooter() {
-    // Определяем текущую главу
-    int currentChapter = 0;
+  int _getCurrentChapterIndexForPage(int pageIndex) {
     for (int i = 0; i < _chapterPageStarts.length; i++) {
-      if (_currentPageIndex >= _chapterPageStarts[i]) {
-        currentChapter = i;
-      } else {
-        break;
+      if (i == _chapterPageStarts.length - 1 ||
+          pageIndex < _chapterPageStarts[i + 1]) {
+        return i;
       }
     }
+    return 0;
+  }
+
+  TextSelectionControls _buildQuoteSelectionControls({
+    required int pageIndex,
+    required String chapterId,
+  }) {
+    return QuoteTextSelectionControls(
+      pageIndex: pageIndex,
+      chapterId: chapterId,
+      onSaveQuote: (selectedText) => _handleQuoteSave(
+        selectedText: selectedText,
+        pageIndex: pageIndex,
+        chapterId: chapterId,
+      ),
+    );
+  }
+
+  Future<void> _handleQuoteSave({
+    required String selectedText,
+    required int pageIndex,
+    required String chapterId,
+  }) async {
+    try {
+      if (_userId == null || _userId!.isEmpty) {
+        await _loadUserId();
+        if (_userId == null || _userId!.isEmpty) {
+          throw Exception('User not authenticated');
+        }
+      }
+
+      if (widget.bookId.isEmpty || chapterId.isEmpty || selectedText.isEmpty) {
+        throw Exception('Required fields are missing');
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('quotes')
+          .add({
+        'bookId': widget.bookId,
+        'chapterId': chapterId,
+        'quoteText': selectedText,
+        'createdAt': FieldValue.serverTimestamp(),
+        'pageIndex': pageIndex,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Цитата успешно сохранена')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${e.toString()}')),
+        );
+      }
+      debugPrint('Error saving quote: $e');
+    }
+  }
+
+  Widget _buildPageFooter() {
+    final currentChapter = _getCurrentChapterIndex();
+    final chapterStart = _chapterPageStarts[currentChapter];
+    final chapterEnd = currentChapter < _chapterPageStarts.length - 1
+        ? _chapterPageStarts[currentChapter + 1]
+        : _allPages.length;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Text(
         'Глава ${currentChapter + 1}/${_chapters.length} | '
-        'Страница ${_currentPageIndex - _chapterPageStarts[currentChapter] + 1}/'
-        '${_chapterPageStarts.length > currentChapter + 1 ? _chapterPageStarts[currentChapter + 1] - _chapterPageStarts[currentChapter] : _allPages.length - _chapterPageStarts[currentChapter]}',
-        style: Theme.of(context).textTheme.bodySmall,
+        'Страница ${_currentPageIndex - chapterStart + 1}/${chapterEnd - chapterStart}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: _getTextColor(
+                Provider.of<SettingsProvider>(context).selectedBackgroundStyle,
+              ),
+            ),
       ),
     );
   }
 
-  List<String> _splitTextIntoPages(String text) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
+  Widget _buildBookHeader(BookWithChapters bookData, BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     final textStyle = TextStyle(
       fontSize: settings.fontSize,
       fontFamily: _getFontFamily(settings.selectedFontFamily),
       color: _getTextColor(settings.selectedBackgroundStyle),
     );
 
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: textStyle,
-      ),
-      textDirection: TextDirection.ltr,
-    );
-
-    // Рассчитываем высоту текста
-    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
-    final textHeight = textPainter.height;
-
-    // Определяем количество строк на странице
-    final linesPerPage =
-        (MediaQuery.of(context).size.height - 200) / textHeight;
-
-    // Разбиваем текст на страницы
-    final words = text.split(' ');
-    List<String> pages = [];
-    String currentPage = '';
-
-    for (final word in words) {
-      final testText = currentPage.isEmpty ? word : '$currentPage $word';
-      textPainter.text = TextSpan(
-        text: testText,
-        style: textStyle,
-      );
-      textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
-      final testLines = textPainter.height / textHeight;
-
-      if (testLines <= linesPerPage) {
-        currentPage = testText;
-      } else {
-        pages.add(currentPage);
-        currentPage = word;
-      }
-    }
-
-    if (currentPage.isNotEmpty) {
-      pages.add(currentPage);
-    }
-
-    return pages;
-  }
-
-  Widget _buildBookHeader(BookWithChapters bookData, BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            bookData.book.title,
-            style: TextStyle(
-              fontSize: settings.fontSize,
-              fontFamily: _getFontFamily(settings.selectedFontFamily),
-              color: _getTextColor(settings.selectedBackgroundStyle),
-            ),
-          ),
+          Text(bookData.book.title, style: textStyle),
           const SizedBox(height: 8),
-          Text(
-            bookData.book.author,
-            style: TextStyle(
-              fontSize: settings.fontSize,
-              fontFamily: _getFontFamily(settings.selectedFontFamily),
-              color: _getTextColor(settings.selectedBackgroundStyle),
-            ),
-          ),
+          Text(bookData.book.author, style: textStyle),
         ],
       ),
     );
   }
 
   void _showFootnotes(BuildContext context) {
+    final currentChapter = _getCurrentChapterIndex();
+    final chapter = _chapters[currentChapter];
+
+    if (chapter.footnotes == null || chapter.footnotes!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нет сносок для этой главы')),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) {
-        return FutureBuilder<BookWithChapters>(
-          future: _bookData,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return Container();
-
-            // Определяем текущую главу для сносок
-            int currentChapter = 0;
-            for (int i = 0; i < _chapterPageStarts.length; i++) {
-              if (_currentPageIndex >= _chapterPageStarts[i]) {
-                currentChapter = i;
-              } else {
-                break;
-              }
-            }
-
-            final chapter = snapshot.data!.chapters[currentChapter];
-            if (chapter.footnotes == null) return Text('Нет сносок');
-
-            return ListView(
-              children: chapter.footnotes!.entries
-                  .map((entry) => ListTile(
-                        title: Text(entry.value),
-                        leading: Text('${entry.key}'),
-                      ))
-                  .toList(),
-            );
-          },
+        return ListView(
+          children: chapter.footnotes!.entries
+              .map((entry) => ListTile(
+                    title: Text(entry.value),
+                    leading: Text('${entry.key}'),
+                  ))
+              .toList(),
         );
       },
     );
   }
 
-  // Получение цвета фона на основе выбранного стиля
   Color _getBackgroundColor(int selectedBackgroundStyle) {
     switch (selectedBackgroundStyle) {
       case 0:
-        return Colors.white; // Белый фон
+        return Colors.white;
       case 1:
-        return Color(0xffFFF7E0); // Светло-желтый фон
+        return const Color(0xffFFF7E0);
       case 2:
-        return Color(0xff858585); // Серый фон
+        return const Color(0xff858585);
       case 3:
-        return AppColors.textPrimary; // Черный фон
+        return AppColors.textPrimary;
       default:
         return Colors.white;
     }
   }
 
-  // Получение цвета текста на основе выбранного стиля
   Color _getTextColor(int selectedBackgroundStyle) {
     switch (selectedBackgroundStyle) {
       case 0:
-        return AppColors.textPrimary; // Черный текст
+        return AppColors.textPrimary;
       case 1:
-        return AppColors.textPrimary; // Черный текст
+        return AppColors.textPrimary;
       case 2:
-        return Colors.white; // Белый текст
+        return Colors.white;
       case 3:
-        return Colors.white; // Белый текст
+        return Colors.white;
       default:
         return AppColors.textPrimary;
     }
   }
 
-  // Получение шрифта на основе выбранного стиля
   String _getFontFamily(int selectedFontFamily) {
     switch (selectedFontFamily) {
       case 0:
@@ -794,17 +722,14 @@ class _BookScreenState extends State<BookScreen> {
       isScrollControlled: true,
       builder: (context) {
         final height = MediaQuery.of(context).size.height * 0.8;
-
-        // Локальные переменные для временных настроек
-        int tempBackgroundStyle = settings.selectedBackgroundStyle;
-        int tempFontFamily = settings.selectedFontFamily;
-        double tempFontSize = settings.fontSize;
-        double tempBrightness = settings.brightness;
-        final brightnessProvider =
-            Provider.of<BrightnessProvider>(context, listen: false);
+        final brightnessProvider = Provider.of<BrightnessProvider>(context);
 
         return StatefulBuilder(
           builder: (context, setState) {
+            int tempBackgroundStyle = settings.selectedBackgroundStyle;
+            int tempFontFamily = settings.selectedFontFamily;
+            double tempFontSize = settings.fontSize;
+
             return SizedBox(
               height: height,
               child: SingleChildScrollView(
@@ -812,7 +737,6 @@ class _BookScreenState extends State<BookScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Настройки',
@@ -820,9 +744,8 @@ class _BookScreenState extends State<BookScreen> {
                         fontSize: 32 * scale,
                         color: AppColors.textPrimary,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: 11 * scale),
+                    const SizedBox(height: 11),
                     Text(
                       "Яркость",
                       style: TextStyle(
@@ -831,7 +754,7 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    SizedBox(height: 11 * scale),
+                    const SizedBox(height: 11),
                     Column(
                       children: [
                         Slider(
@@ -883,7 +806,7 @@ class _BookScreenState extends State<BookScreen> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 20 * scale),
+                    const SizedBox(height: 20),
                     Text(
                       'Цветовая тема',
                       style: TextStyle(
@@ -892,130 +815,13 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    SizedBox(height: 16 * scale),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempBackgroundStyle = 0;
-                            });
-                          },
-                          child: Container(
-                            width: 80 * scale,
-                            height: 35 * scale,
-                            padding: EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: tempBackgroundStyle == 0
-                                    ? AppColors.orange
-                                    : Colors.white,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Аа',
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 16 * scale,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempBackgroundStyle = 1;
-                            });
-                          },
-                          child: Container(
-                            width: 80 * scale,
-                            height: 35 * scale,
-                            padding: EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: tempBackgroundStyle == 1
-                                    ? AppColors.orange
-                                    : Colors.white,
-                              ),
-                              color: Color(0xffFFF7E0), // Цвет фона для стиля 1
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Аа',
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 16 * scale,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempBackgroundStyle = 2;
-                            });
-                          },
-                          child: Container(
-                            width: 80 * scale,
-                            height: 35 * scale,
-                            padding: EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: tempBackgroundStyle == 2
-                                    ? AppColors.orange
-                                    : Colors.white,
-                              ),
-                              color: Color(0xff858585), // Цвет фона для стиля 2
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Аа',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16 * scale,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempBackgroundStyle = 3;
-                            });
-                          },
-                          child: Container(
-                            width: 80 * scale,
-                            height: 35 * scale,
-                            padding: EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: tempBackgroundStyle == 3
-                                    ? AppColors.orange
-                                    : Colors.white,
-                              ),
-                              color: AppColors
-                                  .textPrimary, // Цвет фона для стиля 3
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'Аа',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16 * scale,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
+                      children: _buildThemeOptions(
+                          scale, tempBackgroundStyle, setState),
                     ),
-                    SizedBox(height: 16 * scale),
+                    const SizedBox(height: 16),
                     Text(
                       'Шрифт',
                       style: TextStyle(
@@ -1024,173 +830,13 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    SizedBox(height: 16 * scale),
+                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: <Widget>[
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempFontFamily = 0;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80 * scale,
-                                height: 35 * scale,
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: tempFontFamily == 0
-                                        ? AppColors.orange
-                                        : AppColors.blueColor,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'Аа',
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 16 * scale,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Text(
-                                'Rounded',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 14 * scale,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempFontFamily = 1;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80 * scale,
-                                height: 35 * scale,
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: tempFontFamily == 1
-                                        ? AppColors.orange
-                                        : AppColors.blueColor,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'Аа',
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontFamily: "Rubik",
-                                    fontSize: 16 * scale,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Text(
-                                'Rubik',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 14 * scale,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempFontFamily = 2;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80 * scale,
-                                height: 35 * scale,
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: tempFontFamily == 2
-                                        ? AppColors.orange
-                                        : AppColors.blueColor,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'Аа',
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontFamily: "Inter",
-                                    fontSize: 16 * scale,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Text(
-                                'Inter',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 14 * scale,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              tempFontFamily = 3;
-                            });
-                          },
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 80 * scale,
-                                height: 35 * scale,
-                                padding: EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: tempFontFamily == 3
-                                        ? AppColors.orange
-                                        : AppColors.blueColor,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'Аа',
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontFamily: "AdventPro",
-                                    fontSize: 16 * scale,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                              Text(
-                                'Advent',
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 14 * scale,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      children:
+                          _buildFontOptions(scale, tempFontFamily, setState),
                     ),
-                    SizedBox(height: 16 * scale),
+                    const SizedBox(height: 16),
                     Text(
                       'Размер текста',
                       style: TextStyle(
@@ -1199,7 +845,7 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    SizedBox(height: 16 * scale),
+                    const SizedBox(height: 16),
                     Column(
                       children: [
                         Row(
@@ -1230,26 +876,19 @@ class _BookScreenState extends State<BookScreen> {
                           showTicks: true,
                           minorTickShape: const SfTickShape(),
                           onChanged: (value) {
-                            setState(() {
-                              tempFontSize = value;
-                            });
+                            setState(() => tempFontSize = value);
                           },
                         ),
-                        SizedBox(height: 16 * scale),
+                        const SizedBox(height: 16),
                         ElevatedButton(
                           style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all(
-                              AppColors.background,
-                            ),
+                            backgroundColor:
+                                MaterialStateProperty.all(AppColors.background),
                           ),
                           onPressed: () {
-                            // Применяем настройки через провайдер
                             settings.setBackgroundStyle(tempBackgroundStyle);
                             settings.setFontFamily(tempFontFamily);
                             settings.setFontSize(tempFontSize);
-                            settings.setBrightness(tempBrightness);
-
-                            // Закрываем модальное окно
                             Navigator.pop(context);
                           },
                           child: Text(
@@ -1258,7 +897,6 @@ class _BookScreenState extends State<BookScreen> {
                               fontSize: 32,
                               color: Colors.white,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
@@ -1269,6 +907,270 @@ class _BookScreenState extends State<BookScreen> {
             );
           },
         );
+      },
+    );
+  }
+
+  List<Widget> _buildThemeOptions(
+      double scale, int tempBackgroundStyle, Function setState) {
+    return [
+      _buildThemeOption(
+        scale,
+        0,
+        tempBackgroundStyle,
+        Colors.white,
+        AppColors.textPrimary,
+        setState,
+      ),
+      _buildThemeOption(
+        scale,
+        1,
+        tempBackgroundStyle,
+        const Color(0xffFFF7E0),
+        AppColors.textPrimary,
+        setState,
+      ),
+      _buildThemeOption(
+        scale,
+        2,
+        tempBackgroundStyle,
+        const Color(0xff858585),
+        Colors.white,
+        setState,
+      ),
+      _buildThemeOption(
+        scale,
+        3,
+        tempBackgroundStyle,
+        AppColors.textPrimary,
+        Colors.white,
+        setState,
+      ),
+    ];
+  }
+
+  Widget _buildThemeOption(
+    double scale,
+    int value,
+    int tempBackgroundStyle,
+    Color bgColor,
+    Color textColor,
+    Function setState,
+  ) {
+    return GestureDetector(
+      onTap: () => setState(() => tempBackgroundStyle = value),
+      child: Container(
+        width: 80 * scale,
+        height: 35 * scale,
+        padding: EdgeInsets.all(5 * scale),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color:
+                tempBackgroundStyle == value ? AppColors.orange : Colors.white,
+          ),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          'Аа',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 16 * scale,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFontOptions(
+      double scale, int tempFontFamily, Function setState) {
+    return [
+      _buildFontOption(
+        scale,
+        0,
+        tempFontFamily,
+        'Rounded',
+        'MPLUSRounded1c',
+        setState,
+      ),
+      _buildFontOption(
+        scale,
+        1,
+        tempFontFamily,
+        'Rubik',
+        'Rubik',
+        setState,
+      ),
+      _buildFontOption(
+        scale,
+        2,
+        tempFontFamily,
+        'Inter',
+        'Inter',
+        setState,
+      ),
+      _buildFontOption(
+        scale,
+        3,
+        tempFontFamily,
+        'Advent',
+        'AdventPro',
+        setState,
+      ),
+    ];
+  }
+
+  Widget _buildFontOption(
+    double scale,
+    int value,
+    int tempFontFamily,
+    String fontName,
+    String fontFamily,
+    Function setState,
+  ) {
+    return GestureDetector(
+      onTap: () => setState(() => tempFontFamily = value),
+      child: Column(
+        children: [
+          Container(
+            width: 80 * scale,
+            height: 35 * scale,
+            padding: EdgeInsets.all(5 * scale),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: tempFontFamily == value
+                    ? AppColors.orange
+                    : AppColors.blueColor,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Аа',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16 * scale,
+                fontFamily: fontFamily,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Text(
+            fontName,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14 * scale,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<List<String>> splitTextIntoPages(
+      String text, BuildContext context) async {
+    final settings = Provider.of<SettingsProvider>(context, listen: false);
+    final textStyle = TextStyle(
+      fontSize: settings.fontSize,
+      fontFamily: _getFontFamily(settings.selectedFontFamily),
+    );
+
+    final textPainter = TextPainter(
+      text: TextSpan(text: 'Sample', style: textStyle),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    );
+    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
+    final lineHeight = textPainter.height;
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final linesPerPage = ((screenHeight - 200) / lineHeight).floor();
+
+    return await compute(
+      splitTextIntoPagesIsolate,
+      {
+        'text': text,
+        'lineHeight': lineHeight,
+        'linesPerPage': linesPerPage.toDouble(),
+        'maxWidth': MediaQuery.of(context).size.width - 32,
+        'fontSize': settings.fontSize,
+        'fontFamily': _getFontFamily(settings.selectedFontFamily),
+      },
+    );
+  }
+
+  List<String> splitTextIntoPagesIsolate(Map<String, dynamic> params) {
+    final text = params['text'] as String;
+    final double lineHeight = params['lineHeight'];
+    final double linesPerPage = params['linesPerPage'];
+    final double maxWidth = params['maxWidth'];
+    final String fontFamily = params['fontFamily'];
+    final double fontSize = params['fontSize'];
+
+    final textStyle = TextStyle(fontSize: fontSize, fontFamily: fontFamily);
+
+    final words = text.split(' ');
+    List<String> pages = [];
+    String currentPage = '';
+    double currentLines = 0;
+
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      maxLines: null,
+    );
+
+    for (final word in words) {
+      final testText = currentPage.isEmpty ? word : '$currentPage $word';
+      textPainter.text = TextSpan(text: testText, style: textStyle);
+      textPainter.layout(maxWidth: maxWidth);
+      final testLines = (textPainter.height / lineHeight).ceil();
+
+      if (testLines <= linesPerPage) {
+        currentPage = testText;
+        currentLines = testLines.toDouble();
+      } else {
+        pages.add(currentPage);
+        currentPage = word;
+        currentLines = 1;
+      }
+    }
+
+    if (currentPage.isNotEmpty) {
+      pages.add(currentPage);
+    }
+
+    return pages;
+  }
+}
+
+class QuoteTextSelectionControls extends MaterialTextSelectionControls {
+  final int pageIndex;
+  final String chapterId;
+  final Function(String)? onSaveQuote;
+
+  QuoteTextSelectionControls({
+    required this.pageIndex,
+    required this.chapterId,
+    this.onSaveQuote,
+  });
+
+  @override
+  Widget buildToolbar(
+    BuildContext context,
+    Rect globalEditableRegion,
+    double toolbarHeight,
+    Offset position,
+    List<TextSelectionPoint> endpoints,
+    TextSelectionDelegate delegate,
+    ValueListenable<ClipboardStatus>? clipboardStatus,
+    Offset? lastSecondaryTapDownPosition,
+  ) {
+    return QuoteSelectionToolbar(
+      delegate: delegate,
+      onSaveQuote: (selectedText) {
+        if (onSaveQuote != null) {
+          onSaveQuote!(selectedText);
+        }
       },
     );
   }
