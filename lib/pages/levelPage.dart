@@ -1,5 +1,4 @@
-import 'package:booktrack/MyFlutterIcons.dart';
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -74,7 +73,7 @@ class _LevelScreenState extends State<LevelScreen> {
         leading: IconButton(
           icon: Icon(
             size: 35 * scale,
-            MyFlutterApp.back,
+            BookTrackIcon.onBack,
             color: Colors.white,
           ),
           onPressed: widget.onBack,
@@ -165,8 +164,8 @@ class _LevelScreenState extends State<LevelScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(Icons.emoji_events, xp, "XP"),
-          _buildStatItem(Icons.book, pages, "стр"),
+          _buildStatItem(BookTrackIcon.medailProfile, xp, "XP"),
+          _buildStatItem(BookTrackIcon.bookSelectet, pages, "стр"),
         ],
       ),
     );
@@ -197,8 +196,8 @@ class _LevelScreenState extends State<LevelScreen> {
       itemCount: levels.length,
       itemBuilder: (context, index) {
         final level = levels[index];
-        final levelNumber = level['level'] as int;
-        final points = level['reward_points'] as int;
+        final levelNumber = level['level'];
+        final points = level['reward_points'];
         final isUnlocked = levelNumber <= currentLevel;
 
         return Card(
@@ -251,7 +250,7 @@ class _LevelScreenState extends State<LevelScreen> {
                     ),
                     SizedBox(width: 4),
                     Icon(
-                      MyFlutter.bonus,
+                      BookTrackIcon.bonusProfilesvg,
                       color: isUnlocked ? AppColors.orange : Colors.grey,
                       size: 21,
                     ),

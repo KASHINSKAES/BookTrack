@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/pages/PurchaseSuccessScreen.dart';
@@ -259,7 +259,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(MyFlutterApp.star, size: 16 * scale, color: AppColors.orange),
+            Icon(BookTrackIcon.starOtzv, size: 16 * scale, color: AppColors.orange),
             Text(
               '${widget.bookRating}',
               style: TextStyle(
@@ -268,7 +268,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   color: AppColors.orange),
             ),
             SizedBox(width: 6 * scale),
-            Icon(MyFlutterApp.chat, size: 16 * scale, color: AppColors.grey),
+            Icon(BookTrackIcon.comOtzv, size: 16 * scale, color: AppColors.grey),
             SizedBox(width: 4 * scale),
             Text(
               '${widget.reviewCount}',
@@ -445,165 +445,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
-  // Widget _buildReviewsSection(double scale) {
-  //   return Column(
-  //     children: [
-  //       Row(
-  //         children: [
-  //           Row(
-  //             children: List.generate(
-  //               5,
-  //               (index) => Icon(MyFlutterApp.star,
-  //                   size: 24 * scale, color: AppColors.orange),
-  //             ),
-  //           ),
-  //           Text(
-  //             widget.bookRating.toString(),
-  //             style: TextStyle(
-  //               fontSize: 18 * scale,
-  //               fontWeight: FontWeight.bold,
-  //               color: AppColors.orange,
-  //             ),
-  //           )
-  //         ],
-  //       ),
-  //       SizedBox(
-  //         height: 250 * scale,
-  //         child: ListView.builder(
-  //           scrollDirection: Axis.horizontal,
-  //           itemCount: reviews.length,
-  //           itemBuilder: (context, index) {
-  //             return _buildReviewCard(reviews[index], scale);
-  //           },
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildReviewCard(String text, double scale) {
-  //   const maxChars = 150;
-  //   final isLongText = text.length > maxChars;
-  //   final displayText = isLongText ? text.substring(0, maxChars) : text;
-
-  //   return Container(
-  //     width: 350 * scale,
-  //     margin: EdgeInsets.only(left: 16 * scale, right: 8 * scale),
-  //     padding: EdgeInsets.all(16 * scale),
-  //     decoration: BoxDecoration(
-  //       color: AppColors.blueColorLight,
-  //       borderRadius: BorderRadius.circular(16),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black.withOpacity(0.1),
-  //           blurRadius: 8,
-  //           offset: Offset(0, 4),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         // Верхняя часть с аватаркой и рейтингом (оставляем без изменений)
-  //         Row(
-  //           children: [
-  //             CircleAvatar(
-  //               radius: 20 * scale,
-  //               backgroundImage: NetworkImage(
-  //                   'https://randomuser.me/api/portraits/women/44.jpg'),
-  //             ),
-  //             SizedBox(width: 10 * scale),
-  //             Expanded(
-  //               child: Column(
-  //                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                 children: [
-  //                   Text(
-  //                     "Алиса",
-  //                     style: TextStyle(
-  //                       fontSize: 16 * scale,
-  //                       fontWeight: FontWeight.bold,
-  //                       color: AppColors.textPrimary,
-  //                     ),
-  //                   ),
-  //                   Text(
-  //                     "13 марта 2022",
-  //                     style: TextStyle(
-  //                         fontSize: 13 * scale, color: Color(0xff575656)),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             Row(
-  //               children: List.generate(
-  //                 5,
-  //                 (index) => Icon(MyFlutterApp.star,
-  //                     size: 18 * scale, color: AppColors.orange),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //         SizedBox(height: 8 * scale),
-
-  //         // Текст отзыва с возможностью раскрытия
-  //         StatefulBuilder(
-  //           builder: (context, setState) {
-  //             bool isExpanded = false;
-
-  //             return Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Stack(
-  //                   children: [
-  //                     Text(
-  //                       isExpanded ? text : displayText,
-  //                       style: TextStyle(
-  //                           fontSize: 14 * scale, color: AppColors.textPrimary),
-  //                     ),
-  //                     if (isLongText && !isExpanded) ...[
-  //                       Positioned(
-  //                         bottom: 0,
-  //                         left: 0,
-  //                         right: 0,
-  //                         child: Container(
-  //                           height: 40 * scale,
-  //                           decoration: BoxDecoration(
-  //                             gradient: LinearGradient(
-  //                               begin: Alignment.topCenter,
-  //                               end: Alignment.bottomCenter,
-  //                               colors: [
-  //                                 Colors.white.withOpacity(0.1),
-  //                                 AppColors.blueColorLight.withOpacity(0.9),
-  //                               ],
-  //                             ),
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ],
-  //                 ),
-  //                 if (isLongText)
-  //                   TextButton(
-  //                     onPressed: () {
-  //                       setState(() => isExpanded = !isExpanded);
-  //                     },
-  //                     child: Text(
-  //                       isExpanded ? "Свернуть" : "Далее",
-  //                       style: TextStyle(
-  //                         fontSize: 14 * scale,
-  //                         color: AppColors.textPrimary,
-  //                         fontWeight: FontWeight.bold,
-  //                       ),
-  //                     ),
-  //                   ),
-  //               ],
-  //             );
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
+  
   Widget _buildBookImage(double scale) {
     return Container(
       width: 130 * scale,
@@ -707,7 +549,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           children: [
             Expanded(
               child: PurchaseButton(
-                icon: MyFlutterApp.school,
+                icon: BookTrackIcon.selectetScreen,
                 title: 'Полностью',
                 subtitle: _buildPriceWithBonuses(scale),
                 onPressed: _handlePurchase,
@@ -717,7 +559,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             SizedBox(width: 16 * scale),
             Expanded(
               child: PurchaseButton(
-                icon: MyFlutterApp.notes,
+                icon: BookTrackIcon.listDetailBook,
                 title: 'Отрывок',
                 subtitle: 'бесплатно',
                 onPressed: () {},

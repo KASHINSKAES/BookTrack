@@ -1,3 +1,5 @@
+
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/firebase_options.dart';
 import 'package:booktrack/keys.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
@@ -16,7 +18,6 @@ import 'package:provider/provider.dart';
 import 'pages/AppState.dart';
 import 'package:booktrack/pages/profilePage.dart';
 import 'package:booktrack/pages/selectedPage.dart';
-import '/icons.dart';
 import '/pages/mainPage.dart';
 import '/pages/catalogPage.dart';
 import '/widgets/BookListPage.dart';
@@ -144,13 +145,13 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
         unselectedItemColor: const Color(0xffFD521B),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-              icon: Icon(MyFlutterApp.home), label: 'Главная'),
+              icon: Icon(BookTrackIcon.homeScren), label: 'Главная'),
           BottomNavigationBarItem(
-              icon: Icon(MyFlutterApp.catalog), label: 'Каталог'),
+              icon: Icon(BookTrackIcon.catalogScreen), label: 'Каталог'),
           BottomNavigationBarItem(
-              icon: Icon(MyFlutterApp.school), label: 'Избранное'),
+              icon: Icon(BookTrackIcon.selectetScreen), label: 'Избранное'),
           BottomNavigationBarItem(
-              icon: Icon(MyFlutterApp.user), label: 'Профиль'),
+              icon: Icon(BookTrackIcon.profileScreen), label: 'Профиль'),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTap,

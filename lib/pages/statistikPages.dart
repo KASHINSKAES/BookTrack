@@ -1,4 +1,5 @@
-import 'package:booktrack/icons.dart';
+
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/ReadingStatsProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +78,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
         leading: IconButton(
           icon: Icon(
             size: 35 * scale,
-            MyFlutterApp.back,
+            BookTrackIcon.onBack,
             color: Colors.white,
           ),
           onPressed: widget.onBack,
@@ -186,7 +187,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 progressWant: (goalPages ?? goalMinutes).toDouble(),
                 title: pages != null ? 'страниц' : 'минут',
                 value: (pages ?? minutes).toString(),
-                icon: pages != null ? MyFlutterApp.book2 : MyFlutterApp.clock,
+                icon: pages != null ? BookTrackIcon.bookStat : BookTrackIcon.clockStat,
               ),
             ),
           ],

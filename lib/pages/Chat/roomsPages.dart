@@ -1,6 +1,5 @@
 import 'dart:ui';
-
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/roomsModels.dart';
 import 'package:booktrack/models/userModels.dart';
 import 'package:booktrack/pages/Chat/chatScreen.dart';
@@ -36,7 +35,7 @@ class RoomListPage extends StatelessWidget {
       body: _buildBody(context, scale),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _createNewRoom(context),
-        child: Icon(Icons.add),
+        child: Icon(Icons.add, color: AppColors.textPrimary),
       ),
     );
   }
@@ -53,7 +52,7 @@ class RoomListPage extends StatelessWidget {
       ),
       backgroundColor: AppColors.background,
       leading: IconButton(
-        icon: Icon(MyFlutterApp.back, size: 35 * scale, color: Colors.white),
+        icon: Icon(BookTrackIcon.onBack, size: 35 * scale, color: Colors.white),
         onPressed: onBack,
       ),
     );
@@ -82,7 +81,9 @@ class RoomListPage extends StatelessWidget {
                   topRight: Radius.circular(AppDimensions.baseCircual * scale),
                 ),
               ),
-              child: Center(child: Text("Нет активных чатов")));
+              child: Center(
+                  child: Text("Нет активных чатов",
+                      style: TextStyle(color: AppColors.textPrimary))));
         }
 
         final rooms = snapshot.data!;
@@ -148,6 +149,7 @@ class RoomListPage extends StatelessWidget {
     String? selectedUserId;
     List<UserModel> foundUsers = [];
     bool isLoading = false;
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     showDialog(
       context: context,
@@ -167,20 +169,31 @@ class RoomListPage extends StatelessWidget {
                     Text(
                       "Новая комната",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary),
                     ),
                     SizedBox(height: 16),
 
                     // Поле поиска пользователя
                     TextField(
+                      style: TextStyle(color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: "Поиск по email",
-                        border: OutlineInputBorder(),
+                        hintStyle: TextStyle(
+                            color: AppColors.textPrimary.withOpacity(0.8)),
+                        fillColor: const Color(0xff3A4E88).withOpacity(0.3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(35.0),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
                         suffixIcon: isLoading
                             ? CircularProgressIndicator()
-                            : Icon(Icons.search),
+                            : Icon(
+                                BookTrackIcon.research,
+                                color: AppColors.textPrimary.withOpacity(0.8),
+                              ),
                       ),
                       onChanged: (query) async {
                         setState(() {
@@ -210,7 +223,8 @@ class RoomListPage extends StatelessWidget {
                       Container(
                         height: 200,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
+                          border: Border.all(
+                              color: AppColors.textPrimary.withOpacity(0.3)),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: ListView.builder(
@@ -221,10 +235,16 @@ class RoomListPage extends StatelessWidget {
                             final user = foundUsers[index];
                             return ListTile(
                               leading: CircleAvatar(
-                                child: Text(user.name![0]),
+                                child: Text(user.name![0],
+                                    style: TextStyle(
+                                        color: AppColors.textPrimary)),
                               ),
-                              title: Text(user.name!),
-                              subtitle: Text(user.email!),
+                              title: Text(user.name!,
+                                  style:
+                                      TextStyle(color: AppColors.textPrimary)),
+                              subtitle: Text(user.email!,
+                                  style:
+                                      TextStyle(color: AppColors.textPrimary)),
                               onTap: () {
                                 setState(() => selectedUserId = user.uid);
                               },
@@ -237,9 +257,17 @@ class RoomListPage extends StatelessWidget {
 
                     // Поле названия комнаты
                     TextField(
+                      style: TextStyle(color: AppColors.textPrimary),
                       decoration: InputDecoration(
                         hintText: "Название комнаты",
-                        border: OutlineInputBorder(),
+                        hintStyle: TextStyle(
+                            color: AppColors.textPrimary.withOpacity(0.8)),
+                        fillColor: const Color(0xff3A4E88).withOpacity(0.3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(35.0),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
                       ),
                       onChanged: (value) => roomName = value,
                     ),
@@ -251,14 +279,25 @@ class RoomListPage extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text("Отмена"),
+                          child: Text(
+                            "Отмена",
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
                         ),
                         SizedBox(width: 8),
                         ElevatedButton(
+                          style: ButtonStyle(
+                            
+                          ),
                           onPressed: () async {
                             if (selectedUserId == null || roomName.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Заполните все поля")),
+                                SnackBar(
+                                    content: Text(
+                                  "Заполните все поля",
+                                  style:
+                                      TextStyle(color: AppColors.textPrimary),
+                                )),
                               );
                               return;
                             }
@@ -273,11 +312,18 @@ class RoomListPage extends StatelessWidget {
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                    content: Text("Ошибка: ${e.toString()}")),
+                                    content: Text(
+                                  "Ошибка: ${e.toString()}",
+                                  style:
+                                      TextStyle(color: AppColors.textPrimary),
+                                )),
                               );
                             }
                           },
-                          child: Text("Создать"),
+                          child: Text(
+                            "Создать",
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
                         ),
                       ],
                     ),

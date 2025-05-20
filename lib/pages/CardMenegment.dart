@@ -1,3 +1,5 @@
+import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -159,8 +161,18 @@ class _CardsManagementScreenState extends State<CardsManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Мои карты')),
+      appBar: AppBar(
+          title: Text(
+        'Мои карты',
+        style: TextStyle(
+          fontSize: 32 * scale,
+          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+        ),
+      )),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _cards.isEmpty
@@ -173,10 +185,18 @@ class _CardsManagementScreenState extends State<CardsManagementScreen> {
                       child: ListTile(
                         leading: Icon(
                           Icons.credit_card,
-                          color: card['isPrimary'] ? Colors.blue : Colors.grey,
+                          color: card['isPrimary']
+                              ? AppColors.background
+                              : AppColors.grey,
                         ),
-                        title: Text(card['cardNumber']),
-                        subtitle: Text(card['brand']),
+                        title: Text(
+                          card['cardNumber'],
+                          style: TextStyle(color: AppColors.textPrimary),
+                        ),
+                        subtitle: Text(
+                          card['brand'],
+                          style: TextStyle(color: AppColors.textPrimary),
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -184,7 +204,8 @@ class _CardsManagementScreenState extends State<CardsManagementScreen> {
                               const Padding(
                                 padding: EdgeInsets.only(right: 8.0),
                                 child: Text('Основная',
-                                    style: TextStyle(color: Colors.blue)),
+                                    style:
+                                        TextStyle(color: AppColors.background)),
                               )
                             else
                               TextButton(
@@ -192,7 +213,8 @@ class _CardsManagementScreenState extends State<CardsManagementScreen> {
                                 onPressed: () => _setAsPrimary(card['id']),
                               ),
                             IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: const Icon(BookTrackIcon.paperBinCard,
+                                  color: AppColors.orange),
                               onPressed: () => _deleteCard(card['id']),
                             ),
                           ],

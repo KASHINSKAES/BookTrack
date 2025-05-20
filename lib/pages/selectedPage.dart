@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/timerAndPages.dart';
 import 'package:booktrack/servises/levelServises.dart';
@@ -149,10 +149,8 @@ class _selectedPage extends State<selectedPage> {
                           children: [
                             IconButton(
                               icon: Icon(
+                                BookTrackIcon.taimerSelectet,
                                 size: 55 * scale,
-                                appState.dailyGoalAchieved
-                                    ? Icons.celebration
-                                    : Icons.auto_awesome,
                                 color: Colors.white,
                               ),
                               onPressed: null,
@@ -183,7 +181,7 @@ class _selectedPage extends State<selectedPage> {
                               quarterTurns: 2,
                               child: IconButton(
                                 icon: Icon(
-                                  MyFlutterApp.back,
+                                  BookTrackIcon.onBack,
                                   size: 29 * scale,
                                   color: Colors.white,
                                 ),

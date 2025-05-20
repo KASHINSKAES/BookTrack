@@ -1,4 +1,4 @@
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/AppState.dart';
 import 'package:booktrack/pages/readingGoals.dart';
 import 'package:booktrack/widgets/SemiCircleChart.dart';
@@ -65,7 +65,8 @@ class _ActivityPageState extends State<ActivityPage> {
         leading: IconButton(
           icon: Icon(
             size: 35 * scale,
-            MyFlutterApp.back,
+                                 BookTrackIcon.onBack,
+
             color: Colors.white,
           ),
           onPressed: widget.onBack,

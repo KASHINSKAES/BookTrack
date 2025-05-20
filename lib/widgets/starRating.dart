@@ -1,3 +1,6 @@
+
+import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 
 class StarRating extends StatelessWidget {
@@ -5,15 +8,13 @@ class StarRating extends StatelessWidget {
   final ValueChanged<double>? onRatingChanged;
   final bool isStatic;
   final double size;
-  final Color color;
 
-  const StarRating({
+  StarRating({
     Key? key,
     required this.rating,
     this.onRatingChanged,
     this.isStatic = false,
     this.size = 24,
-    this.color = Colors.orange,
   }) : super(key: key);
 
   @override
@@ -25,17 +26,19 @@ class StarRating extends StatelessWidget {
         double ratingValue = index + 1;
 
         if (rating >= ratingValue) {
-          icon = Icons.star;
+          icon = BookTrackIcon.starOtzv;
         } else if (rating > ratingValue - 1) {
-          icon = Icons.star_half;
+          icon = BookTrackIcon.starOtzv;
         } else {
-          icon = Icons.star_border;
+          icon = BookTrackIcon.starOtzv;
         }
 
         return IconButton(
           iconSize: size,
           icon: Icon(icon),
-          color: color,
+          color: rating >= ratingValue
+              ? AppColors.orange
+              : const Color.fromARGB(255, 253, 201, 184),
           onPressed: isStatic || onRatingChanged == null
               ? null
               : () => onRatingChanged!(ratingValue),

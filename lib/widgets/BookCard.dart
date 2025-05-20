@@ -1,4 +1,4 @@
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/BookDetailScreen.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
@@ -116,7 +116,7 @@ class _BookCardState extends State<BookCards> {
   Widget _buildRatingRow() {
     return Row(
       children: [
-        Icon(MyFlutterApp.star, color: AppColors.orange, size: 13),
+        Icon(BookTrackIcon.starOtzv, color: AppColors.orange, size: 13),
         Text(
           widget.book.rating.toStringAsFixed(1),
           style: TextStyle(
@@ -126,7 +126,7 @@ class _BookCardState extends State<BookCards> {
           ),
         ),
         SizedBox(width: 6 * widget.scale),
-        Icon(MyFlutterApp.chat, color: AppColors.grey, size: 10),
+        Icon(BookTrackIcon.comOtzv, color: AppColors.grey, size: 10),
         Text(
           reviewCount.toString(),
           style: TextStyle(

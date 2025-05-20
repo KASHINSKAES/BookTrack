@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:booktrack/icons2.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/AppState.dart';
 import 'package:booktrack/pages/BrightnessProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
@@ -54,7 +54,6 @@ class _BookScreenState extends State<BookScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _initializeReadingSession();
   }
 
@@ -63,7 +62,15 @@ class _BookScreenState extends State<BookScreen> {
     _startNewSession();
     _startReadingSession();
     await _loadBookData();
-    await _loadProgress();
+    await _loadProgress(); // загружаем прогресс
+
+    // Инициализируем PageController только здесь
+    _pageController = PageController(
+      initialPage: _allPages.isNotEmpty
+          ? min(_currentPageIndex, _allPages.length - 1)
+          : 0,
+    );
+
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -151,15 +158,15 @@ class _BookScreenState extends State<BookScreen> {
             .get();
 
         if (progressDoc.exists) {
-          final progressData = progressDoc.data()!;
-          final savedPage = progressData['currentPage'] as int? ?? 0;
+          final savedPage = progressDoc.data()!['currentPage'] as int? ?? 0;
           loadedPage = max(loadedPage, savedPage);
         }
       }
 
       if (mounted) {
         setState(() {
-          _currentPageIndex = min(loadedPage, _allPages.length - 1);
+          // Обновляем позицию, но не создаём новый контроллер
+          _currentPageIndex = loadedPage.clamp(0, _allPages.length - 1);
           _lastRecordedPage = _currentPageIndex;
         });
       }
@@ -400,21 +407,24 @@ class _BookScreenState extends State<BookScreen> {
           onPressed: widget.onBack,
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.search,
-                color: _getTextColor(settings.selectedBackgroundStyle)),
-            onPressed: widget.onBack,
-          ),
-          IconButton(
-            icon: Icon(Icons.settings,
-                color: _getTextColor(settings.selectedBackgroundStyle)),
-            onPressed: () => _showTextEditor(scale, settings),
-          ),
-          IconButton(
-            icon: Icon(Icons.notes,
-                color: _getTextColor(settings.selectedBackgroundStyle)),
-            onPressed: () => _showFootnotes(context),
-          ),
+          CircleAvatar(
+              backgroundColor: _getBackgroundColor(
+                  settings.selectedBackgroundStyle), // цвет круга
+              radius: 20, // радиус круга
+              child: IconButton(
+                icon: Icon(Icons.settings,
+                    color: _getTextColor(settings.selectedBackgroundStyle)),
+                onPressed: () => _showTextEditor(scale, settings),
+              )),
+          CircleAvatar(
+              backgroundColor: _getBackgroundColor(
+                  settings.selectedBackgroundStyle), // цвет круга
+              radius: 20, // радиус круга
+              child: IconButton(
+                icon: Icon(BookTrackIcon.snoskText,
+                    color: _getTextColor(settings.selectedBackgroundStyle)),
+                onPressed: () => _showFootnotes(context),
+              )),
         ],
       ),
       body: _isLoading
@@ -670,36 +680,39 @@ class _BookScreenState extends State<BookScreen> {
     );
   }
 
+// Получение цвета фона на основе выбранного стиля
   Color _getBackgroundColor(int selectedBackgroundStyle) {
     switch (selectedBackgroundStyle) {
       case 0:
-        return Colors.white;
+        return Colors.white; // Белый фон
       case 1:
-        return const Color(0xffFFF7E0);
+        return Color(0xffFFF7E0); // Светло-желтый фон
       case 2:
-        return const Color(0xff858585);
+        return Color(0xff858585); // Серый фон
       case 3:
-        return AppColors.textPrimary;
+        return AppColors.textPrimary; // Черный фон
       default:
         return Colors.white;
     }
   }
 
+  // Получение цвета текста на основе выбранного стиля
   Color _getTextColor(int selectedBackgroundStyle) {
     switch (selectedBackgroundStyle) {
       case 0:
-        return AppColors.textPrimary;
+        return AppColors.textPrimary; // Черный текст
       case 1:
-        return AppColors.textPrimary;
+        return AppColors.textPrimary; // Черный текст
       case 2:
-        return Colors.white;
+        return Colors.white; // Белый текст
       case 3:
-        return Colors.white;
+        return Colors.white; // Белый текст
       default:
         return AppColors.textPrimary;
     }
   }
 
+  // Получение шрифта на основе выбранного стиля
   String _getFontFamily(int selectedFontFamily) {
     switch (selectedFontFamily) {
       case 0:
@@ -722,14 +735,17 @@ class _BookScreenState extends State<BookScreen> {
       isScrollControlled: true,
       builder: (context) {
         final height = MediaQuery.of(context).size.height * 0.8;
-        final brightnessProvider = Provider.of<BrightnessProvider>(context);
+
+        // Локальные переменные для временных настроек
+        int tempBackgroundStyle = settings.selectedBackgroundStyle;
+        int tempFontFamily = settings.selectedFontFamily;
+        double tempFontSize = settings.fontSize;
+        double tempBrightness = settings.brightness;
+        final brightnessProvider =
+            Provider.of<BrightnessProvider>(context, listen: false);
 
         return StatefulBuilder(
           builder: (context, setState) {
-            int tempBackgroundStyle = settings.selectedBackgroundStyle;
-            int tempFontFamily = settings.selectedFontFamily;
-            double tempFontSize = settings.fontSize;
-
             return SizedBox(
               height: height,
               child: SingleChildScrollView(
@@ -737,6 +753,7 @@ class _BookScreenState extends State<BookScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Настройки',
@@ -744,8 +761,9 @@ class _BookScreenState extends State<BookScreen> {
                         fontSize: 32 * scale,
                         color: AppColors.textPrimary,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 11),
+                    SizedBox(height: 11 * scale),
                     Text(
                       "Яркость",
                       style: TextStyle(
@@ -754,7 +772,7 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    const SizedBox(height: 11),
+                    SizedBox(height: 11 * scale),
                     Column(
                       children: [
                         Slider(
@@ -771,7 +789,7 @@ class _BookScreenState extends State<BookScreen> {
                             Row(
                               children: [
                                 Icon(
-                                  MyFlutter.sun,
+                                  BookTrackIcon.sunSettingBook,
                                   size: 30 * scale,
                                   color: AppColors.orange,
                                 ),
@@ -788,7 +806,7 @@ class _BookScreenState extends State<BookScreen> {
                             Row(
                               children: [
                                 Icon(
-                                  MyFlutter.sun,
+                                  BookTrackIcon.sunSettingBook,
                                   size: 30 * scale,
                                   color: AppColors.orange,
                                 ),
@@ -806,7 +824,7 @@ class _BookScreenState extends State<BookScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20 * scale),
                     Text(
                       'Цветовая тема',
                       style: TextStyle(
@@ -815,13 +833,130 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * scale),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: _buildThemeOptions(
-                          scale, tempBackgroundStyle, setState),
+                      children: <Widget>[
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempBackgroundStyle = 0;
+                            });
+                          },
+                          child: Container(
+                            width: 80 * scale,
+                            height: 35 * scale,
+                            padding: EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: tempBackgroundStyle == 0
+                                    ? AppColors.orange
+                                    : Colors.white,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Аа',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16 * scale,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempBackgroundStyle = 1;
+                            });
+                          },
+                          child: Container(
+                            width: 80 * scale,
+                            height: 35 * scale,
+                            padding: EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: tempBackgroundStyle == 1
+                                    ? AppColors.orange
+                                    : Colors.white,
+                              ),
+                              color: Color(0xffFFF7E0), // Цвет фона для стиля 1
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Аа',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16 * scale,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempBackgroundStyle = 2;
+                            });
+                          },
+                          child: Container(
+                            width: 80 * scale,
+                            height: 35 * scale,
+                            padding: EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: tempBackgroundStyle == 2
+                                    ? AppColors.orange
+                                    : Colors.white,
+                              ),
+                              color: Color(0xff858585), // Цвет фона для стиля 2
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Аа',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16 * scale,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempBackgroundStyle = 3;
+                            });
+                          },
+                          child: Container(
+                            width: 80 * scale,
+                            height: 35 * scale,
+                            padding: EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: tempBackgroundStyle == 3
+                                    ? AppColors.orange
+                                    : Colors.white,
+                              ),
+                              color: AppColors
+                                  .textPrimary, // Цвет фона для стиля 3
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Аа',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16 * scale,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * scale),
                     Text(
                       'Шрифт',
                       style: TextStyle(
@@ -830,13 +965,173 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * scale),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children:
-                          _buildFontOptions(scale, tempFontFamily, setState),
+                      children: <Widget>[
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempFontFamily = 0;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 80 * scale,
+                                height: 35 * scale,
+                                padding: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: tempFontFamily == 0
+                                        ? AppColors.orange
+                                        : AppColors.blueColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Аа',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 16 * scale,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Text(
+                                'Rounded',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14 * scale,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempFontFamily = 1;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 80 * scale,
+                                height: 35 * scale,
+                                padding: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: tempFontFamily == 1
+                                        ? AppColors.orange
+                                        : AppColors.blueColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Аа',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontFamily: "Rubik",
+                                    fontSize: 16 * scale,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Text(
+                                'Rubik',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14 * scale,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempFontFamily = 2;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 80 * scale,
+                                height: 35 * scale,
+                                padding: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: tempFontFamily == 2
+                                        ? AppColors.orange
+                                        : AppColors.blueColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Аа',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontFamily: "Inter",
+                                    fontSize: 16 * scale,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Text(
+                                'Inter',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14 * scale,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              tempFontFamily = 3;
+                            });
+                          },
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 80 * scale,
+                                height: 35 * scale,
+                                padding: EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: tempFontFamily == 3
+                                        ? AppColors.orange
+                                        : AppColors.blueColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  'Аа',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontFamily: "AdventPro",
+                                    fontSize: 16 * scale,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Text(
+                                'Advent',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14 * scale,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * scale),
                     Text(
                       'Размер текста',
                       style: TextStyle(
@@ -845,7 +1140,7 @@ class _BookScreenState extends State<BookScreen> {
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16 * scale),
                     Column(
                       children: [
                         Row(
@@ -876,19 +1171,26 @@ class _BookScreenState extends State<BookScreen> {
                           showTicks: true,
                           minorTickShape: const SfTickShape(),
                           onChanged: (value) {
-                            setState(() => tempFontSize = value);
+                            setState(() {
+                              tempFontSize = value;
+                            });
                           },
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16 * scale),
                         ElevatedButton(
                           style: ButtonStyle(
-                            backgroundColor:
-                                MaterialStateProperty.all(AppColors.background),
+                            backgroundColor: MaterialStateProperty.all(
+                              AppColors.background,
+                            ),
                           ),
                           onPressed: () {
+                            // Применяем настройки через провайдер
                             settings.setBackgroundStyle(tempBackgroundStyle);
                             settings.setFontFamily(tempFontFamily);
                             settings.setFontSize(tempFontSize);
+                            settings.setBrightness(tempBrightness);
+
+                            // Закрываем модальное окно
                             Navigator.pop(context);
                           },
                           child: Text(
@@ -897,6 +1199,7 @@ class _BookScreenState extends State<BookScreen> {
                               fontSize: 32,
                               color: Colors.white,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
@@ -908,162 +1211,6 @@ class _BookScreenState extends State<BookScreen> {
           },
         );
       },
-    );
-  }
-
-  List<Widget> _buildThemeOptions(
-      double scale, int tempBackgroundStyle, Function setState) {
-    return [
-      _buildThemeOption(
-        scale,
-        0,
-        tempBackgroundStyle,
-        Colors.white,
-        AppColors.textPrimary,
-        setState,
-      ),
-      _buildThemeOption(
-        scale,
-        1,
-        tempBackgroundStyle,
-        const Color(0xffFFF7E0),
-        AppColors.textPrimary,
-        setState,
-      ),
-      _buildThemeOption(
-        scale,
-        2,
-        tempBackgroundStyle,
-        const Color(0xff858585),
-        Colors.white,
-        setState,
-      ),
-      _buildThemeOption(
-        scale,
-        3,
-        tempBackgroundStyle,
-        AppColors.textPrimary,
-        Colors.white,
-        setState,
-      ),
-    ];
-  }
-
-  Widget _buildThemeOption(
-    double scale,
-    int value,
-    int tempBackgroundStyle,
-    Color bgColor,
-    Color textColor,
-    Function setState,
-  ) {
-    return GestureDetector(
-      onTap: () => setState(() => tempBackgroundStyle = value),
-      child: Container(
-        width: 80 * scale,
-        height: 35 * scale,
-        padding: EdgeInsets.all(5 * scale),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color:
-                tempBackgroundStyle == value ? AppColors.orange : Colors.white,
-          ),
-          color: bgColor,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          'Аа',
-          style: TextStyle(
-            color: textColor,
-            fontSize: 16 * scale,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildFontOptions(
-      double scale, int tempFontFamily, Function setState) {
-    return [
-      _buildFontOption(
-        scale,
-        0,
-        tempFontFamily,
-        'Rounded',
-        'MPLUSRounded1c',
-        setState,
-      ),
-      _buildFontOption(
-        scale,
-        1,
-        tempFontFamily,
-        'Rubik',
-        'Rubik',
-        setState,
-      ),
-      _buildFontOption(
-        scale,
-        2,
-        tempFontFamily,
-        'Inter',
-        'Inter',
-        setState,
-      ),
-      _buildFontOption(
-        scale,
-        3,
-        tempFontFamily,
-        'Advent',
-        'AdventPro',
-        setState,
-      ),
-    ];
-  }
-
-  Widget _buildFontOption(
-    double scale,
-    int value,
-    int tempFontFamily,
-    String fontName,
-    String fontFamily,
-    Function setState,
-  ) {
-    return GestureDetector(
-      onTap: () => setState(() => tempFontFamily = value),
-      child: Column(
-        children: [
-          Container(
-            width: 80 * scale,
-            height: 35 * scale,
-            padding: EdgeInsets.all(5 * scale),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: tempFontFamily == value
-                    ? AppColors.orange
-                    : AppColors.blueColor,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'Аа',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16 * scale,
-                fontFamily: fontFamily,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Text(
-            fontName,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14 * scale,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1165,13 +1312,39 @@ class QuoteTextSelectionControls extends MaterialTextSelectionControls {
     ValueListenable<ClipboardStatus>? clipboardStatus,
     Offset? lastSecondaryTapDownPosition,
   ) {
-    return QuoteSelectionToolbar(
-      delegate: delegate,
-      onSaveQuote: (selectedText) {
-        if (onSaveQuote != null) {
-          onSaveQuote!(selectedText);
-        }
-      },
-    );
+    // Откладываем показ диалога до следующего кадра
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showQuoteDialog(context, delegate);
+    });
+
+    return const SizedBox.shrink();
+  }
+
+  void _showQuoteDialog(BuildContext context, TextSelectionDelegate delegate) {
+    final selection = delegate.textEditingValue.selection;
+    final text = delegate.textEditingValue.text;
+
+    // Проверяем, что выделение действительно содержит текст
+    if (selection.isValid &&
+        !selection.isCollapsed &&
+        selection.start >= 0 &&
+        selection.end <= text.length) {
+      showDialog(
+        context: context,
+        builder: (context) => QuoteSelectionDialog(
+          delegate: delegate,
+          onSaveQuote: (selectedText) {
+            if (onSaveQuote != null) {
+              onSaveQuote!(selectedText);
+            }
+          },
+        ),
+      );
+    } else {
+      // Если выделение невалидно, показываем сообщение
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Выделите текст для цитирования')),
+      );
+    }
   }
 }

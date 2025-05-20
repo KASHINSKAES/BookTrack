@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class Review {
   final String id;
@@ -21,9 +22,14 @@ class Review {
     List<String>? likes,
   }) : likes = likes ?? [];
 
-  factory Review.fromFirestore(Map<String, dynamic> data) {
+  factory Review.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    debugPrint('IdReview${doc.id.toString()}');
+    debugPrint('IdReview${data['bookId'].toString()}');
+    debugPrint('IdReview${data['userId'].toString()}');
+    debugPrint('IdReview${data['userName'].toString()}');
     return Review(
-      id: data['id'],
+      id: doc.id,
       bookId: data['bookId'] ?? '',
       userId: data['userId'],
       userName: data['userName'] ?? 'Аноним',

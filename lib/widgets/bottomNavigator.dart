@@ -1,5 +1,6 @@
+import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
-import '/icons.dart';
 
 class bottomNavigator extends StatelessWidget {
   const bottomNavigator({super.key});
@@ -10,17 +11,17 @@ class bottomNavigator extends StatelessWidget {
       selectedLabelStyle: TextStyle(fontSize: 11.0),
       iconSize: 35.0,
       showUnselectedLabels: true,
-      selectedItemColor: Color(0xff5775CD),
-      unselectedItemColor: Color(0xffFD521B),
+      selectedItemColor: AppColors.buttonBorder,
+      unselectedItemColor: AppColors.orange,
       items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.home), label: 'Главная'),
+            icon: Icon(BookTrackIcon.homeScren), label: 'Главная'),
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.catalog), label: 'Каталог'),
+            icon: Icon(BookTrackIcon.catalogScreen), label: 'Каталог'),
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.school), label: 'Избранное'),
+            icon: Icon(BookTrackIcon.selectetScreen), label: 'Избранное'),
         BottomNavigationBarItem(
-            icon: Icon(MyFlutterApp.user), label: 'Профиль'),
+            icon: Icon(BookTrackIcon.profileScreen), label: 'Профиль'),
       ],
     );
   }

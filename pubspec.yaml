@@ -63,18 +63,27 @@ flutter:
     - family: MPLUSRounded1c
       fonts:
         - asset: fonts/MPLUSRounded1c-Bold.ttf
+
     - family: MyFlutterApp
       fonts:
         - asset: fonts/MyFlutterApp.ttf
+
     - family: MyFlutter
       fonts:
         - asset: fonts/MyFlutter.ttf
+
     - family: Rubik
       fonts:
         - asset: fonts/Rubik.ttf
+
     - family: Inter
       fonts:
         - asset: fonts/Inter.ttf
+
     - family: AdventPro
       fonts:
         - asset: fonts/AdventPro.ttf
+
+    - family: BookTrackIcon
+      fonts:
+        - asset: fonts/BookTrackIcon.ttf
