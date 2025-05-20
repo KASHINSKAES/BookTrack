@@ -1,4 +1,4 @@
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -55,7 +55,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
         leading: IconButton(
           icon: Icon(
             size: 35 * scale,
-            MyFlutterApp.back,
+                                  BookTrackIcon.onBack,
+
             color: Colors.white,
           ),
           onPressed: widget.onBack,
@@ -82,7 +83,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       trailing: _selectedIndex == index
-                          ? Icon(Icons.check, color: Colors.blue)
+                          ? Icon(Icons.check, color: AppColors.buttonBorder)
                           : null,
                       onTap: () {
                         setState(() {

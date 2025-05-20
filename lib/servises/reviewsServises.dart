@@ -104,13 +104,15 @@ class ReviewService {
         .collection('reviews')
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Review.fromFirestore(doc.data()))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Review.fromFirestore(doc)).toList());
   }
 
   // Переключение лайка на отзыве
   Future<void> toggleLike(String bookId, String reviewId, String userId) async {
+    debugPrint('USER ${userId}');
+    debugPrint('BOOK ${bookId}');
+    debugPrint('ReviewId ${reviewId}');
     final reviewRef = _firestore
         .collection('books')
         .doc(bookId)
@@ -120,6 +122,7 @@ class ReviewService {
     await _firestore.runTransaction((transaction) async {
       final doc = await transaction.get(reviewRef);
       final currentLikes = List<String>.from(doc['likes'] ?? []);
+
 
       if (currentLikes.contains(userId)) {
         currentLikes.remove(userId);
@@ -158,9 +161,7 @@ class ReviewService {
         .orderBy('date', descending: true)
         .get();
 
-    return snapshot.docs
-        .map((doc) => Review.fromFirestore(doc.data()))
-        .toList();
+    return snapshot.docs.map((doc) => Review.fromFirestore(doc)).toList();
   }
 
   // Получение количества отзывов (оптимизированная версия)

@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/filter/filterProvider.dart';
 import 'package:booktrack/pages/helpsWidgets/filterButton.dart';
 import 'package:booktrack/pages/helpsWidgets/selectableButton.dart';
@@ -52,7 +52,7 @@ class _BookListPageState extends State<BookListPage> {
       backgroundColor: AppColors.background,
       leading: IconButton(
         icon: const Icon(
-          MyFlutterApp.back,
+          BookTrackIcon.onBack,
           color: Colors.white,
         ),
         onPressed: widget.onBack,
@@ -60,7 +60,7 @@ class _BookListPageState extends State<BookListPage> {
       actions: [
         IconButton(
           icon: const Icon(
-            MyFlutterApp.search1,
+            BookTrackIcon.research,
             color: Colors.white,
           ),
           onPressed: widget.onBack,
@@ -99,13 +99,13 @@ class _BookListPageState extends State<BookListPage> {
         children: [
           FilterButton(
             label: "Популярные",
-            icon: MyFlutterApp.tuning,
+            icon: BookTrackIcon.popularCatalog,
             onPressed: () => _showSortOptions(scale),
             scale: scale,
           ),
           FilterButton(
             label: "Фильтры",
-            icon: MyFlutterApp.sort,
+            icon: BookTrackIcon.filterCatalog,
             onPressed: () => _showFilterOptions(scale),
             scale: scale,
           ),
@@ -208,7 +208,7 @@ class _BookListPageState extends State<BookListPage> {
                                 textSizeButton:
                                     AppDimensions.baseTextSizeButton * scale,
                                 label: 'Текст',
-                                icon: Icons.book,
+                                icon:  BookTrackIcon.bookStat,
                                 isSelected:
                                     filterProvider.tempSelectedFormat == 'text',
                                 onTap: () {
@@ -220,7 +220,7 @@ class _BookListPageState extends State<BookListPage> {
                                 textSizeButton:
                                     AppDimensions.baseTextSizeButton * scale,
                                 label: 'Аудио',
-                                icon: Icons.audiotrack,
+                                icon: BookTrackIcon.audioFilterBook,
                                 isSelected: filterProvider.tempSelectedFormat ==
                                     'audio',
                                 onTap: () {

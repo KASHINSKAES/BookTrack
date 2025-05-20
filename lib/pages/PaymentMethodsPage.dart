@@ -1,5 +1,4 @@
-import 'package:booktrack/MyFlutterIcons.dart';
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/CardMenegment.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/cardForm.dart';
@@ -64,16 +63,16 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
       title: Text(
         'Способы оплаты',
         style: TextStyle(
-          fontSize: 32 * scale,
-          fontWeight: FontWeight.bold,
+          fontSize: 28 * scale,
           color: Colors.white,
         ),
+        softWrap: true,
       ),
       backgroundColor: AppColors.background,
       leading: IconButton(
         icon: Icon(
           size: 35 * scale,
-          MyFlutterApp.back,
+          BookTrackIcon.onBack,
           color: Colors.white,
         ),
         onPressed: widget.onBack,
@@ -82,7 +81,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
         IconButton(
           icon: Icon(
             size: 35 * scale,
-            MyFlutterApp.back,
+            Icons.settings,
             color: Colors.white,
           ),
           onPressed: () {
@@ -240,7 +239,6 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(MyFlutterApp.back, size: 24 * scale),
             SizedBox(height: 15 * scale),
             Text(
               "Добавить карту",
@@ -426,7 +424,7 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
             ),
           ),
           leading: Icon(
-            MyFlutter.bonus,
+            BookTrackIcon.bonusProfilesvg,
             size: 48 * scale,
             color: AppColors.orange,
           ),

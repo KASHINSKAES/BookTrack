@@ -1,8 +1,10 @@
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/book.dart';
+import 'package:booktrack/pages/BookSearchScreen.dart';
 import 'package:booktrack/servises/bookServises.dart';
 import 'package:booktrack/widgets/AllBookGrid.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:booktrack/widgets/searchField.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -69,29 +71,12 @@ class _MainPageState extends State<MainPage> with SingleTickerProviderStateMixin
                     width: 250,
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Что вы хотите почитать?',
-                      hintStyle: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                      prefixIcon: Opacity(
-                        opacity: 0.6,
-                        child: Icon(
-                          MyFlutterApp.search1,
-                          size: 21.0,
-                          color: Colors.white,
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xff3A4E88).withOpacity(0.5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(35.0),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
+                  SearchField(onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => BookSearchScreen()),
+          );
+        }),
                   const SizedBox(height: 10),
                 ],
               ),

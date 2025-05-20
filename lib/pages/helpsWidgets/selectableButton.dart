@@ -34,7 +34,7 @@ class SelectableButton extends StatelessWidget {
         ),
       ),
       onPressed: onTap,
-      icon: Icon(icon, size: 16 * (textSizeButton / 14)),
+      icon: Icon(icon, size: 16 * (textSizeButton / 14), color: AppColors.buttonBorder,),
       label: Text(
         label,
         style: TextStyle(fontSize: textSizeButton),

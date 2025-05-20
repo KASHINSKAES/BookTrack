@@ -1,7 +1,6 @@
 import 'dart:math';
 
-import 'package:booktrack/MyFlutterIcons.dart';
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/userModels.dart';
 import 'package:booktrack/pages/Chat/roomsPages.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
@@ -61,27 +60,16 @@ class _ProfilePageState extends State<ProfilePage> {
     return Material(
         color: Colors.transparent,
         child: Scaffold(
-          extendBodyBehindAppBar:
-              true, // Это ключевой параметр - позволяет контенту заходить под AppBar
+          extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
           appBar: AppBar(
             elevation: 0,
-
-            scrolledUnderElevation: 0, // Убирает тень при скролле
             surfaceTintColor: Colors.transparent,
             shadowColor: Colors.transparent,
             backgroundColor: Colors.transparent,
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent, // Прозрачный статус-бар
-              statusBarIconBrightness:
-                  Brightness.dark, // Иконки статус-бара (темные/светлые)
-              statusBarBrightness: Brightness.light,
-            ),
-
             actions: [
               IconButton(
-                icon: Icon(MyFlutter.setting,
-                    color: Colors.black), // Явно задаем цвет иконки
+                icon: Icon(Icons.settings, color: AppColors.textPrimary),
                 onPressed: () {
                   // Действие для настроек
                 },
@@ -233,7 +221,7 @@ class _ProfilePageState extends State<ProfilePage> {
           [
             MenuItem(
               title: "Уровень",
-              icon: MyFlutter.level,
+              icon: BookTrackIcon.medailProfile,
               onTap: () {
                 Navigator.push(
                   context,
@@ -248,7 +236,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Divider(color: Color(0xffDCDCDC)),
             MenuItem(
               title: "Статистика",
-              icon: MyFlutter.statistik,
+              icon: BookTrackIcon.statikProfile,
               onTap: () {
                 Navigator.push(
                   context,
@@ -263,7 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Divider(color: Color(0xffDCDCDC)),
             MenuItem(
               title: "Трекер чтения",
-              icon: MyFlutter.calendar,
+              icon: BookTrackIcon.calendarProfile,
               onTap: () {
                 Navigator.push(
                   context,
@@ -281,7 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Divider(color: Color(0xffDCDCDC)),
             MenuItem(
               title: "История бонусов",
-              icon: MyFlutter.bonus,
+              icon: BookTrackIcon.bonusProfilesvg,
               onTap: () {
                 Navigator.push(
                   context,
@@ -296,7 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Divider(color: Color(0xffDCDCDC)),
             MenuItem(
               title: "Любимые цитаты",
-              icon: MyFlutterApp.book2,
+              icon: BookTrackIcon.bookSelectet,
               onTap: () {
                 Navigator.push(
                   context,
@@ -335,7 +323,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: MenuItem(
           title: "Чат",
-          icon: MyFlutter.chatObsh,
+          icon: BookTrackIcon.chatProfile,
           onTap: () {
             Navigator.push(
               context,
@@ -511,7 +499,7 @@ class MenuItem2 extends StatelessWidget {
           Transform.rotate(
             angle: 180 * pi / 180,
             child: Icon(
-              MyFlutterApp.back,
+              BookTrackIcon.onBack,
               color: AppColors.textPrimary,
             ),
           ),

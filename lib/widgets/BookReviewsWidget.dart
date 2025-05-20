@@ -1,8 +1,10 @@
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/bookReview.dart';
 import 'package:booktrack/models/reviewModels.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/addReview.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
+import 'package:booktrack/widgets/constants.dart';
 import 'package:booktrack/widgets/starRating.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -45,13 +47,6 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
   }
 
   void _navigateToAddReview() async {
-    final authProvider = Provider.of<AuthProviders>(context, listen: false);
-
-    if (authProvider.userModel == null) {
-      _showAuthWarning();
-      return;
-    }
-
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -64,24 +59,6 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
         _reviewsFuture = _loadReviews();
       });
     }
-  }
-
-  void _showAuthWarning() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text('Только авторизованные пользователи могут оставлять отзывы'),
-        action: SnackBarAction(
-          label: 'Войти',
-          onPressed: () => _navigateToAuth(),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToAuth() {
-    // Реализуйте переход на экран авторизации
-    // Например: Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen()));
   }
 
   @override
@@ -103,6 +80,8 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
         }
 
         final reviews = snapshot.data!;
+        debugPrint('Review ${reviews.toString()}');
+
         return _buildReviewsSection(reviews);
       },
     );
@@ -131,7 +110,7 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
@@ -147,7 +126,7 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
                   style: TextStyle(
                     fontSize: 18 * widget.scale,
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange,
+                    color: AppColors.orange,
                   ),
                 ),
               ],
@@ -165,6 +144,8 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
             scrollDirection: Axis.horizontal,
             itemCount: reviews.length,
             itemBuilder: (context, index) {
+              debugPrint('Review ${reviews.toString()}');
+
               return _buildReviewCard(reviews[index]);
             },
           ),
@@ -211,9 +192,9 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
                     Text(
                       review.userName,
                       style: TextStyle(
-                        fontSize: 16 * widget.scale,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 16 * widget.scale,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary),
                     ),
                     Text(
                       DateFormat('dd MMMM yyyy', 'ru_RU').format(review.date),
@@ -225,12 +206,12 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
                   ],
                 ),
               ),
-              StarRating(
-                rating: review.rating.toDouble(),
-                isStatic: true,
-                size: 18 * widget.scale,
-              ),
             ],
+          ),
+          StarRating(
+            rating: review.rating.toDouble(),
+            isStatic: true,
+            size: 18 * widget.scale,
           ),
           SizedBox(height: 8 * widget.scale),
           ExpandableText(
@@ -240,30 +221,31 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
           SizedBox(height: 8 * widget.scale),
           Row(
             children: [
-              IconButton(
-                iconSize: 20 * widget.scale,
-                icon: Icon(
-                  isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: isLiked ? Colors.red : Colors.grey,
-                ),
-                onPressed: () {
-                  if (currentUserId == null) {
-                    _showAuthWarning();
-                    return;
-                  }
-                  _reviewService.toggleLike(
-                    widget.bookId,
-                    review.id,
-                    currentUserId,
-                  );
-                  setState(() {});
-                },
-              ),
+              Transform.scale(
+                  scaleY: -1,
+                  child: IconButton(
+                    iconSize: 20 * widget.scale,
+                    icon: Icon(
+                      BookTrackIcon.dislikeDetailBook,
+                      color: isLiked ? AppColors.orange : Colors.grey,
+                    ),
+                    onPressed: () {
+                      if (currentUserId == null) {
+                        return;
+                      }
+                      _reviewService.toggleLike(
+                        widget.bookId,
+                        review.id,
+                        currentUserId,
+                      );
+                      setState(() {});
+                    },
+                  )),
               Text(
                 review.likes.length.toString(),
                 style: TextStyle(
                   fontSize: 14 * widget.scale,
-                  color: Colors.grey[600],
+                  color: AppColors.orange,
                 ),
               ),
             ],

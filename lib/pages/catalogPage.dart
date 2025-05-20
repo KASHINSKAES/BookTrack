@@ -1,6 +1,8 @@
-import 'package:booktrack/icons.dart';
+import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/pages/BookSearchScreen.dart';
 import 'package:booktrack/widgets/BookListPage.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:booktrack/widgets/searchField.dart';
 import 'package:flutter/material.dart';
 
 // CatalogPage с обработчиком нажатий на категории
@@ -20,29 +22,12 @@ class CatalogPage extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Что вы хотите почитать?',
-                hintStyle: TextStyle(
-                  fontSize: 14.0,
-                  color: Colors.white.withOpacity(0.5),
-                ),
-                prefixIcon: Opacity(
-                  opacity: 0.6,
-                  child: const Icon(
-                    MyFlutterApp.search1,
-                    size: 21.0,
-                    color: Colors.white,
-                  ),
-                ),
-                filled: true,
-                fillColor: const Color(0xff3A4E88).withOpacity(0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(35.0),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
+            child: SearchField(onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => BookSearchScreen()),
+              );
+            }),
           ),
           Container(
             width: screenWidth,
@@ -80,16 +65,26 @@ class BookCategory extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 30, left: 26),
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+            padding: const EdgeInsets.only(top: 30, left: 26),
+            child: Row(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Transform.scale(
+                    scaleX: -1,
+                    child: Icon(
+                      Icons.arrow_back_ios_rounded,
+                      size: 20,
+                      color: AppColors.textPrimary,
+                    ))
+              ],
+            )),
         SizedBox(
           height: 100,
           child: ListView.builder(
