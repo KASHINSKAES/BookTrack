@@ -35,7 +35,7 @@ class _BookRatingWidgetState extends State<BookRatingWidget> {
       final reviewCount = await _reviewService.getReviewsCount(widget.bookId);
       return {
         'raiting': bookDoc.data()?['raiting'] ?? 0.0,
-        'reviewCount': reviewCount ?? 0,
+        'reviewCount': reviewCount,
       };
     });
   }

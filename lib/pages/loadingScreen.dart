@@ -21,7 +21,6 @@ class LoadingScreen extends StatefulWidget {
 
 class _LoadingScreenState extends State<LoadingScreen> {
   bool _showLoading = true;
-  bool _authCheckComplete = false;
   bool _hasError = false;
   late DateTime _startTime;
 
@@ -61,7 +60,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
       if (mounted) {
         setState(() {
-          _authCheckComplete = true;
           _showLoading = false;
         });
       }
@@ -70,7 +68,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
       if (mounted) {
         setState(() {
           _hasError = true;
-          _authCheckComplete = true;
           _showLoading = false;
         });
       }

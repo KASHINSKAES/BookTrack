@@ -1,8 +1,7 @@
-import 'package:booktrack/BookTrackIcon.dart';
-import 'package:booktrack/models/bookReview.dart';
+
 import 'package:booktrack/models/reviewModels.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
-import 'package:booktrack/pages/addReview.dart';
+import 'package:booktrack/pages/BookCard/Detail/addReview.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
 import 'package:booktrack/widgets/LikeButtonWithCounter.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -48,7 +47,11 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddReviewPage(bookId: widget.bookId),
+        builder: (context) => AddReviewPage(
+            bookId: widget.bookId,
+            onBack: () {
+              Navigator.pop(context);
+            }),
       ),
     );
 
@@ -155,9 +158,7 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
   Widget _buildReviewCard(Review review) {
     final authProvider = Provider.of<AuthProviders>(context, listen: false);
     final currentUserId = authProvider.userModel?.uid;
-    final isLiked =
-        currentUserId != null && review.likes.contains(currentUserId);
-
+    
     return Container(
       width: 350 * widget.scale,
       margin: EdgeInsets.only(right: 16 * widget.scale),

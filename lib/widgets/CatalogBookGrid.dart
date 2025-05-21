@@ -2,7 +2,6 @@ import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/filter/filterProvider.dart';
 import 'package:booktrack/servises/bookServises.dart';
 import 'package:booktrack/widgets/BookCard.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'constants.dart';
@@ -40,7 +39,8 @@ class _CatalogBookGridState extends State<CatalogBookGrid> {
           final books =
               _applyFilters(snapshot.data!, filterProvider.activeFilters);
 
-          return Container(
+          return SingleChildScrollView(
+        child:Container(
             padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -78,7 +78,7 @@ class _CatalogBookGridState extends State<CatalogBookGrid> {
                 },
               ),
             ),
-          );
+          ));
         });
   }
 
