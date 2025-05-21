@@ -1,7 +1,9 @@
 import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CardsManagementScreen extends StatefulWidget {
   final String userId;
@@ -88,6 +90,8 @@ class _CardsManagementScreenState extends State<CardsManagementScreen> {
         'selectedPaymentMethod': cardId,
         'lastPaymentUpdate': FieldValue.serverTimestamp(),
       });
+      final authProvider = Provider.of<AuthProviders>(context, listen: false);
+      await authProvider.updateSelectedPaymentMethod(userId, cardId);
     } catch (e) {
       print('Ошибка установки основной карты: $e');
       rethrow;

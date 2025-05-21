@@ -3,6 +3,7 @@ import 'package:booktrack/models/book.dart';
 import 'package:booktrack/pages/BookDetailScreen.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
 import 'package:booktrack/widgets/constants.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -33,11 +34,30 @@ class _BookCardState extends State<BookCards> {
   final ReviewService _reviewService = ReviewService();
   late Future<int?> _reviewsCountStream;
   int reviewCount = 0;
+  late Stream<Map<String, dynamic>> _bookDataStream;
 
   @override
   void initState() {
     super.initState();
+    _bookDataStream = _createBookDataStream();
     _reviewsCountStream = _reviewService.getReviewsCount(widget.book.id);
+  }
+
+  Stream<Map<String, dynamic>> _createBookDataStream() {
+    // Создаем поток для данных книги
+    final bookStream = FirebaseFirestore.instance
+        .collection('books')
+        .doc(widget.book.id)
+        .snapshots();
+
+    // Комбинируем с потоком количества отзывов
+    return bookStream.asyncMap((bookDoc) async {
+      final reviewCount = await _reviewService.getReviewsCount(widget.book.id);
+      return {
+        'raiting': bookDoc.data()?['raiting'] ?? 0.0,
+        'reviewCount': reviewCount ?? 0,
+      };
+    });
   }
 
   Widget build(BuildContext context) {
@@ -114,27 +134,47 @@ class _BookCardState extends State<BookCards> {
   }
 
   Widget _buildRatingRow() {
-    return Row(
-      children: [
-        Icon(BookTrackIcon.starOtzv, color: AppColors.orange, size: 13),
-        Text(
-          widget.book.rating.toStringAsFixed(1),
-          style: TextStyle(
-            fontSize: 12 * widget.scale,
-            fontWeight: FontWeight.bold,
-            color: AppColors.orange,
-          ),
-        ),
-        SizedBox(width: 6 * widget.scale),
-        Icon(BookTrackIcon.comOtzv, color: AppColors.grey, size: 10),
-        Text(
-          reviewCount.toString(),
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.grey,
-          ),
-        ),
-      ],
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: _bookDataStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            width: 100 * scale,
+            height: 20 * scale,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Text('Ошибка загрузки',
+              style: TextStyle(fontSize: 12 * scale));
+        }
+
+        return Row(
+          children: [
+            Icon(BookTrackIcon.starOtzv, color: AppColors.orange, size: 13),
+            Text(
+              snapshot.data!['raiting'].toString(),
+              style: TextStyle(
+                fontSize: 12 * widget.scale,
+                fontWeight: FontWeight.bold,
+                color: AppColors.orange,
+              ),
+            ),
+            SizedBox(width: 6 * widget.scale),
+            Icon(BookTrackIcon.comOtzv, color: AppColors.grey, size: 10),
+            Text(
+              snapshot.data!['reviewCount'].toString(),
+              style: TextStyle(
+                fontSize: 10,
+                color: AppColors.grey,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

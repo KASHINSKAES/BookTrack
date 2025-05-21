@@ -66,7 +66,7 @@ class _AddReviewPageState extends State<AddReviewPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Добавить отзыв'),
+        title: Text('Добавить отзыв', ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

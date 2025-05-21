@@ -109,29 +109,28 @@ class ReviewService {
   }
 
   // Переключение лайка на отзыве
-  Future<void> toggleLike(String bookId, String reviewId, String userId) async {
-    debugPrint('USER ${userId}');
-    debugPrint('BOOK ${bookId}');
-    debugPrint('ReviewId ${reviewId}');
+ Future<void> toggleLike(String bookId, String reviewId, String userId) async {
     final reviewRef = _firestore
         .collection('books')
         .doc(bookId)
         .collection('reviews')
         .doc(reviewId);
 
-    await _firestore.runTransaction((transaction) async {
-      final doc = await transaction.get(reviewRef);
-      final currentLikes = List<String>.from(doc['likes'] ?? []);
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(reviewRef);
+        if (!doc.exists) throw Exception('Review not found');
 
+        final currentLikes = List<String>.from(doc['likes'] ?? []);
+        currentLikes.contains(userId) 
+            ? currentLikes.remove(userId)
+            : currentLikes.add(userId);
 
-      if (currentLikes.contains(userId)) {
-        currentLikes.remove(userId);
-      } else {
-        currentLikes.add(userId);
-      }
-
-      transaction.update(reviewRef, {'likes': currentLikes});
-    });
+        transaction.update(reviewRef, {'likes': currentLikes});
+      });
+    } on FirebaseException catch (e) {
+      throw 'Не удалось обновить лайк: ${e.message}';
+    }
   }
 
   // Получение среднего рейтинга книги

@@ -24,10 +24,6 @@ class Review {
 
   factory Review.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
-    debugPrint('IdReview${doc.id.toString()}');
-    debugPrint('IdReview${data['bookId'].toString()}');
-    debugPrint('IdReview${data['userId'].toString()}');
-    debugPrint('IdReview${data['userName'].toString()}');
     return Review(
       id: doc.id,
       bookId: data['bookId'] ?? '',
