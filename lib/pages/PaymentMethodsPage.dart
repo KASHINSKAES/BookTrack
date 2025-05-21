@@ -123,8 +123,8 @@ class _PaymentMethodsPageState extends State<PaymentMethodsPage> {
   }
 
   Widget _buildCardsSection(double scale) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchPaymentCards(context),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _fetchPaymentCards(context),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyCardsState(scale);
@@ -475,25 +475,28 @@ Future<List<Map<String, dynamic>>> _fetchPaymentHistory(
   }).toList();
 }
 
-Future<List<Map<String, dynamic>>> _fetchPaymentCards(
-    BuildContext context) async {
+Stream<List<Map<String, dynamic>>> _fetchPaymentCards(BuildContext context) {
   final authProvider = Provider.of<AuthProviders>(context, listen: false);
   final userModel = authProvider.userModel;
 
-  if (userModel == null) return [];
+  if (userModel == null) {
+    return Stream.value([]);
+  }
 
-  final QuerySnapshot snapshot = await FirebaseFirestore.instance
+  return FirebaseFirestore.instance
       .collection('users')
       .doc(userModel.uid)
       .collection('payments')
-      .get();
-
-  return snapshot.docs.map((doc) {
-    return {
-      'cardId': doc.id,
-      'cardNumber': doc['cardNumber'],
-    };
-  }).toList();
+      .snapshots()
+      .map((querySnapshot) {
+    return querySnapshot.docs.map((doc) {
+      return {
+        'cardId': doc.id,
+        'cardNumber': doc['cardNumber'],
+        // Add other fields you might need from the document
+      };
+    }).toList();
+  });
 }
 
 Map<String, List<Map<String, dynamic>>> _groupHistoryByMonth(

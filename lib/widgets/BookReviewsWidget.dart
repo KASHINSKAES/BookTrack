@@ -4,6 +4,7 @@ import 'package:booktrack/models/reviewModels.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/addReview.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
+import 'package:booktrack/widgets/LikeButtonWithCounter.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:booktrack/widgets/starRating.dart';
 import 'package:flutter/material.dart';
@@ -14,11 +15,8 @@ class BookReviewsWidget extends StatefulWidget {
   final String bookId;
   final double scale;
 
-  const BookReviewsWidget({
-    Key? key,
-    required this.bookId,
-    this.scale = 1.0,
-  }) : super(key: key);
+  const BookReviewsWidget({Key? key, required this.bookId, required this.scale})
+      : super(key: key);
 
   @override
   _BookReviewsWidgetState createState() => _BookReviewsWidgetState();
@@ -219,37 +217,11 @@ class _BookReviewsWidgetState extends State<BookReviewsWidget> {
             scale: widget.scale,
           ),
           SizedBox(height: 8 * widget.scale),
-          Row(
-            children: [
-              Transform.scale(
-                  scaleY: -1,
-                  child: IconButton(
-                    iconSize: 20 * widget.scale,
-                    icon: Icon(
-                      BookTrackIcon.dislikeDetailBook,
-                      color: isLiked ? AppColors.orange : Colors.grey,
-                    ),
-                    onPressed: () {
-                      if (currentUserId == null) {
-                        return;
-                      }
-                      _reviewService.toggleLike(
-                        widget.bookId,
-                        review.id,
-                        currentUserId,
-                      );
-                      setState(() {});
-                    },
-                  )),
-              Text(
-                review.likes.length.toString(),
-                style: TextStyle(
-                  fontSize: 14 * widget.scale,
-                  color: AppColors.orange,
-                ),
-              ),
-            ],
-          ),
+          LikeButtonWithCounter(
+            bookId: widget.bookId,
+            reviewId: review.id,
+            currentUserId: currentUserId,
+          )
         ],
       ),
     );

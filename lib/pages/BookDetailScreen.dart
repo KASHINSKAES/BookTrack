@@ -10,6 +10,7 @@ import 'package:booktrack/pages/textBook.dart';
 import 'package:booktrack/widgets/BookReviewsWidget.dart';
 import 'package:booktrack/widgets/blobPath.dart';
 import 'package:booktrack/widgets/bookListGoris.dart';
+import 'package:booktrack/widgets/bookRaitingWidget.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -153,7 +154,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final scale = constraints.maxWidth / AppDimensions.baseWidth;
+               final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
             return Stack(
               children: [
                 // Фиолетовый фон
@@ -233,7 +235,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildSBooksSection(
                   scale,
                 ),
-                BookReviewsWidget(bookId: widget.bookId),
+                BookReviewsWidget(
+                  bookId: widget.bookId,
+                  scale: scale,
+                ),
               ],
             ),
           ),
@@ -256,28 +261,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(BookTrackIcon.starOtzv, size: 16 * scale, color: AppColors.orange),
-            Text(
-              '${widget.bookRating}',
-              style: TextStyle(
-                  fontSize: 16 * scale,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.orange),
-            ),
-            SizedBox(width: 6 * scale),
-            Icon(BookTrackIcon.comOtzv, size: 16 * scale, color: AppColors.grey),
-            SizedBox(width: 4 * scale),
-            Text(
-              '${widget.reviewCount}',
-              style: TextStyle(
-                  fontSize: 12 * scale,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.grey),
-            ),
-          ],
+        BookRatingWidget(
+          bookId: widget.bookId,
         ),
         SizedBox(height: 5 * scale),
         Text(widget.bookTitle,
@@ -445,7 +430,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
-  
   Widget _buildBookImage(double scale) {
     return Container(
       width: 130 * scale,
