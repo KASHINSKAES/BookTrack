@@ -112,7 +112,7 @@ class BookService {
         .doc(userId)
         .snapshots()
         .asyncMap((userDoc) async {
-      final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final userData = userDoc.data() ?? {};
       final bookIds = List<String>.from(userData[listType] ?? []);
 
       if (bookIds.isEmpty) return [];

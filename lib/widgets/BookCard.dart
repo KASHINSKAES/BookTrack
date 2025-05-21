@@ -1,6 +1,6 @@
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/models/book.dart';
-import 'package:booktrack/pages/BookDetailScreen.dart';
+import 'package:booktrack/pages/BookCard/Detail/BookDetailScreen.dart';
 import 'package:booktrack/servises/reviewsServises.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -55,7 +55,7 @@ class _BookCardState extends State<BookCards> {
       final reviewCount = await _reviewService.getReviewsCount(widget.book.id);
       return {
         'raiting': bookDoc.data()?['raiting'] ?? 0.0,
-        'reviewCount': reviewCount ?? 0,
+        'reviewCount': reviewCount,
       };
     });
   }
@@ -105,6 +105,9 @@ class _BookCardState extends State<BookCards> {
           price: widget.book.price,
           format: widget.book.format,
           tags: widget.book.tags,
+          onBack: () {
+                              Navigator.pop(context);
+                            }
         ),
       ),
     );

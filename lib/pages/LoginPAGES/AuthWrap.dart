@@ -133,7 +133,6 @@ class _AuthScreenState extends State<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
-    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     return Scaffold(
       backgroundColor: Colors.white,

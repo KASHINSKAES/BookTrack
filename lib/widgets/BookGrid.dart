@@ -1,11 +1,10 @@
 import 'package:booktrack/models/book.dart';
 import 'package:booktrack/servises/bookServises.dart';
 import 'package:booktrack/widgets/BookCard.dart';
-import 'package:booktrack/widgets/BookGrid.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
 
-class BookList extends StatefulWidget {
+class BookGrid extends StatefulWidget {
   final int maxItemsToShow;
   final bool showSeeAllButton;
   final String? listType; // Для пользовательских списков
@@ -15,7 +14,7 @@ class BookList extends StatefulWidget {
   final String? format; // Для похожих книг
   final String? language; // Для похожих книг
 
-  const BookList({
+  const BookGrid({
     this.maxItemsToShow = 5,
     this.showSeeAllButton = true,
     this.listType,
@@ -28,10 +27,10 @@ class BookList extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<BookList> createState() => _BookListState();
+  State<BookGrid> createState() => _BookListState();
 }
 
-class _BookListState extends State<BookList> {
+class _BookListState extends State<BookGrid> {
   late final BookService _bookService;
   late final Stream<List<Book>> _booksStream;
 
@@ -64,12 +63,11 @@ class _BookListState extends State<BookList> {
         language: widget.language!,
         limit: widget.maxItemsToShow,
       );
-    } else {
-      return _bookService.getBooksStream().map((snapshot) => snapshot.docs
-          .take(widget.maxItemsToShow)
-          .map((doc) => Book.fromFirestore(doc))
-          .toList());
     }
+    return _bookService.getBooksStream().map((snapshot) => snapshot.docs
+        .take(widget.maxItemsToShow)
+        .map((doc) => Book.fromFirestore(doc))
+        .toList());
   }
 
   @override
@@ -87,7 +85,7 @@ class _BookListState extends State<BookList> {
         // Если есть данные - показываем
         if (snapshot.hasData) {
           final books = snapshot.data!;
-          return _buildBookList(books, scale);
+          return _buildBookGrid(books, scale);
         }
 
         // Если нет данных и идет загрузка
@@ -96,39 +94,49 @@ class _BookListState extends State<BookList> {
     );
   }
 
-  Widget _buildBookList(List<Book> books, double scale) {
+  Widget _buildBookGrid(List<Book> books, double scale) {
     final booksToShow = widget.maxItemsToShow > 0
         ? books.take(widget.maxItemsToShow).toList()
         : books;
 
     return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(
-            booksToShow.length,
-            (index) => SizedBox(
-              // Ограничиваем ширину
-              width: (AppDimensions.baseImageHeight - 40) *
-                  scale, // Примерное значение, подберите под ваш дизайн
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    BookCards(
-                      book: booksToShow[index],
-                      scale: scale,
-                      imageWidth: AppDimensions.baseImageWidth * scale,
-                      imageHeight: AppDimensions.baseImageHeight * scale,
-                      textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
-                      textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
-                      textSpacing: 6.0 * scale,
-                    )
-                  ],
-                ),
-              ),
-            ),
+        child: Container(
+      padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppDimensions.baseCircual * scale),
+          topRight: Radius.circular(AppDimensions.baseCircual * scale),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.baseCrossAxisSpacing * scale),
+        child: GridView.builder(
+          shrinkWrap: true, // Добавьте это
+          physics: NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: AppDimensions.baseCrossAxisSpacingBlock * scale,
+            mainAxisSpacing: AppDimensions.baseMainAxisSpacing * scale,
+            childAspectRatio: AppDimensions.baseImageWidth /
+                (AppDimensions.baseImageHeight + 40 * scale),
           ),
-        ));
+          itemCount: books.length,
+          itemBuilder: (context, index) {
+            final book = booksToShow[index];
+            return BookCards(
+              book: book,
+              scale: scale,
+              imageWidth: AppDimensions.baseImageWidth * scale,
+              imageHeight: AppDimensions.baseImageHeight * scale,
+              textSizeTitle: AppDimensions.baseTextSizeTitle * scale,
+              textSizeAuthor: AppDimensions.baseTextSizeAuthor * scale,
+              textSpacing: 6.0 * scale,
+            );
+          },
+        ),
+      ),
+    ));
   }
 
   Widget _buildLoadingWidget(double scale) {
@@ -174,55 +182,3 @@ class _BookListState extends State<BookList> {
   }
 }
 
-class AllBooksPage extends StatelessWidget {
-  final String? title;
-  final String? listType;
-  final String? userId;
-  final String? author;
-  final String? format;
-  final String? language;
-  final String? currentBookId;
-
-  const AllBooksPage({
-    this.title,
-    this.listType,
-    this.userId,
-    this.author,
-    this.format,
-    this.language,
-    this.currentBookId,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getTitle(listType.toString())),
-      ),
-      body: BookGrid(
-        currentBookId: currentBookId,
-        listType: listType,
-        userId: userId,
-        author: author,
-        format: format,
-        language: language,
-        maxItemsToShow: 100,
-        showSeeAllButton: false,
-      ),
-    );
-  }
-
-  String _getTitle(String type) {
-    switch (type) {
-      case 'saved_books':
-        return 'Избранные книги';
-      case 'read_books':
-        return 'Прочитанные книги';
-      case 'end_books':
-        return 'Читаемые книги';
-      default:
-        return 'Все книги';
-    }
-  }
-}

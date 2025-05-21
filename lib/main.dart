@@ -1,25 +1,24 @@
-
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/firebase_options.dart';
 import 'package:booktrack/keys.dart';
-import 'package:booktrack/pages/BrightnessProvider.dart';
+import 'package:booktrack/pages/BookCard/text/BrightnessProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthWrap.dart';
-import 'package:booktrack/pages/ReadingStatsProvider.dart';
-import 'package:booktrack/pages/SettingsProvider.dart';
+import 'package:booktrack/pages/ProfilePages/Statistic/ReadingStatsProvider.dart';
+import 'package:booktrack/pages/BookCard/text/SettingsProvider.dart';
 import 'package:booktrack/pages/filter/filterProvider.dart';
-import 'package:booktrack/pages/levelProvider.dart';
+import 'package:booktrack/pages/ProfilePages/Level/levelProvider.dart';
 import 'package:booktrack/pages/loadingScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
-import 'pages/AppState.dart';
-import 'package:booktrack/pages/profilePage.dart';
-import 'package:booktrack/pages/selectedPage.dart';
-import '/pages/mainPage.dart';
-import '/pages/catalogPage.dart';
+import 'pages/BookCard/text/AppState.dart';
+import 'package:booktrack/pages/PagesMainBottom/profilePage.dart';
+import 'package:booktrack/pages/PagesMainBottom/SelectetPage/selectedPage.dart';
+import 'pages/PagesMainBottom/mainPage.dart';
+import 'pages/PagesMainBottom/catalogPage.dart';
 import '/widgets/BookListPage.dart';
 
 void main() async {
@@ -51,7 +50,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'MPLUSRounded1c'),
+      theme: ThemeData(
+        fontFamily: 'MPLUSRounded1c',
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
+      ),
       home: const AuthWrapper(),
     );
   }
@@ -117,7 +123,8 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      body: IndexedStack(
+        index: _selectedCategory != null ? 1 : 0,
         children: [
           _mainPages(context, _onCategoryTap)[_selectedIndex],
           if (_selectedCategory != null)

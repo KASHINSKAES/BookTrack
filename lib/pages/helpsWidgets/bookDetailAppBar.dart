@@ -1,3 +1,4 @@
+import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/FavoriteIcon.dart';
 import 'package:booktrack/servises/bookServises.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -8,14 +9,15 @@ class BookDetailsAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String bookTitle;
   final String userId;
   final double scrollPosition;
-  
-  const BookDetailsAppBar({
-    super.key,
-    required this.bookId,
-    required this.bookTitle,
-    required this.userId,
-    required this.scrollPosition,
-  });
+  final VoidCallback onBack;
+
+  const BookDetailsAppBar(
+      {super.key,
+      required this.bookId,
+      required this.bookTitle,
+      required this.userId,
+      required this.scrollPosition,
+      required this.onBack});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -36,12 +38,16 @@ class _BookDetailsAppBarState extends State<BookDetailsAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
     return AppBar(
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
-      backgroundColor: widget.scrollPosition > 300 ? AppColors.background : Colors.transparent,
-      title: widget.scrollPosition > 300 
+      backgroundColor: widget.scrollPosition > 300
+          ? AppColors.background
+          : Colors.transparent,
+      title: widget.scrollPosition > 300
           ? Text(widget.bookTitle, style: const TextStyle(color: Colors.white))
           : null,
       actions: [
@@ -64,6 +70,14 @@ class _BookDetailsAppBarState extends State<BookDetailsAppBar> {
           },
         ),
       ],
+      leading: IconButton(
+        icon: Icon(
+          size: 35 * scale,
+          BookTrackIcon.onBack,
+          color: Colors.white,
+        ),
+        onPressed: widget.onBack,
+      ),
     );
   }
 }
