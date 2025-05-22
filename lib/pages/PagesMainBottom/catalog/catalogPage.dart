@@ -1,6 +1,6 @@
 
 import 'package:booktrack/pages/BookCard/Detail/BookSearchScreen.dart';
-import 'package:booktrack/widgets/BookListPage.dart';
+import 'package:booktrack/pages/PagesMainBottom/catalog/BookListPage.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:booktrack/widgets/searchField.dart';
 import 'package:flutter/material.dart';

@@ -20,9 +20,9 @@ class LevelService {
       }
 
       final stats = userDoc.data()?['stats'] ?? {};
-      final currentLevel = stats['current_level'] ?? 1;
-      final xp = stats['xp'] ?? 0;
-      final pages = stats['pages'] ?? 0;
+      final currentLevel = (stats['current_level'] ?? 1).toInt();  // Convert to int
+      final xp = (stats['xp'] ?? 0).toInt();  // Convert to int
+      final pages = (stats['pages'] ?? 0).toInt();  // Convert to int
 
       debugPrint('Current level: $currentLevel, XP: $xp, Pages: $pages');
 
@@ -38,7 +38,7 @@ class LevelService {
 
       final nextLevelData = nextLevelDoc.data()!;
 
-      final rewardPoints = nextLevelData['reward_points'] as int? ?? 0;
+      final rewardPoints = (nextLevelData['reward_points'] ?? 0).toInt(); 
       _showLevelUpReward(context, currentLevel + 1, rewardPoints);
     } catch (e) {
       debugPrint('Ошибка при проверке уровня: $e');

@@ -18,8 +18,8 @@ import 'pages/BookCard/text/AppState.dart';
 import 'package:booktrack/pages/PagesMainBottom/profilePage.dart';
 import 'package:booktrack/pages/PagesMainBottom/SelectetPage/selectedPage.dart';
 import 'pages/PagesMainBottom/mainPage.dart';
-import 'pages/PagesMainBottom/catalogPage.dart';
-import '/widgets/BookListPage.dart';
+import 'pages/PagesMainBottom/catalog/catalogPage.dart';
+import 'pages/PagesMainBottom/catalog/BookListPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
