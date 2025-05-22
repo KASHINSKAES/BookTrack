@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/pages/BookCard/text/textBookOtr.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/LoginPAGES/RegistrPage.dart';
 import 'package:booktrack/pages/BookCard/Detail/PurchaseSuccessScreen.dart';
@@ -128,7 +129,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         _isLoading = false;
       });
       debugPrint('Ошибка при проверке коллекции: $e');
-      debugPrint(' $_isBookInCollection');
     }
   }
 
@@ -408,7 +408,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               MaterialPageRoute(
                   builder: (context) => AllBooksPage(
                         author: widget.authorName,
-                         currentBookId: widget.bookId,
+                        currentBookId: widget.bookId,
                       )),
             );
           },
@@ -427,7 +427,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   builder: (context) => AllBooksPage(
                         format: widget.format,
                         language: widget.language,
-                         currentBookId: widget.bookId,
+                        currentBookId: widget.bookId,
                       )),
             );
           },
@@ -481,7 +481,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator());
     }
-    debugPrint(' $_isBookInCollection');
 
     return Material(
       borderRadius: BorderRadius.circular(12),
@@ -558,7 +557,19 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 icon: BookTrackIcon.listDetailBook,
                 title: 'Отрывок',
                 subtitle: 'бесплатно',
-                onPressed: () {},
+                onPressed: () {
+                  // Навигация на страницу чтения книги
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BookScreenOtr(
+                          bookId: widget.bookId,
+                          onBack: () {
+                            Navigator.pop(context);
+                          }),
+                    ),
+                  );
+                },
                 scale: scale,
               ),
             ),
@@ -897,8 +908,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       ),
     );
   }
-
-
 
   int getSafeInt(dynamic value) {
     if (value == null) return 0;

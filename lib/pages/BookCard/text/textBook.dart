@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/BookCard/text/AppState.dart';
 import 'package:booktrack/pages/BookCard/text/BrightnessProvider.dart';
+import 'package:booktrack/pages/BookCard/text/loadingText.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/BookCard/text/SettingsProvider.dart';
 import 'package:booktrack/pages/BookCard/text/epigraphWidgers.dart';
@@ -31,16 +32,17 @@ class BookScreen extends StatefulWidget {
 }
 
 class _BookScreenState extends State<BookScreen> {
-  late final PageController _pageController;
+  LoadingPhase _loadingPhase = LoadingPhase.downloading;
+  late PageController _pageController = PageController(); // Initialize here
   final BookRepository _repository = BookRepository();
   int _currentPageIndex = 0;
-  late List<String> _allPages = [];
-  late List<Chapter> _chapters = [];
+  List<String> _allPages = [];
+  List<Chapter> _chapters = [];
   DateTime? _sessionStart;
   int _sessionPages = 0;
   Timer? _sessionTimer;
   late BookWithChapters _bookData;
-  late List<int> _chapterPageStarts = [];
+  List<int> _chapterPageStarts = [];
   int _pagesSinceLastXP = 0;
   int _sessionPageCount = 0;
   DateTime? _sessionStartTime;
@@ -49,6 +51,8 @@ class _BookScreenState extends State<BookScreen> {
   int _lastRecordedPage = 0;
   late LevelService _levelService;
   bool _isLoading = true;
+  bool _processingInterrupted = false;
+  double _loadingProgress = 0;
 
   @override
   void initState() {
@@ -57,21 +61,34 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<void> _initializeReadingSession() async {
-    await _loadUserId();
-    _startNewSession();
-    _startReadingSession();
-    await _loadBookData();
-    await _loadProgress(); // загружаем прогресс
+    try {
+      await _loadUserId();
+      _startNewSession();
+      _startReadingSession();
+      await _loadBookData();
+      await _loadProgress(); // Теперь _currentPageIndex установлен правильно
 
-    // Инициализируем PageController только здесь
-    _pageController = PageController(
-      initialPage: _allPages.isNotEmpty
-          ? min(_currentPageIndex, _allPages.length - 1)
-          : 0,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Инициализируем контроллер только после загрузки данных
+          _pageController = PageController(
+            initialPage: _allPages.isNotEmpty
+                ? _currentPageIndex.clamp(0, _allPages.length - 1)
+                : 0,
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing reading session: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _allPages = ['Error loading book content'];
+          // Инициализируем контроллер даже при ошибке
+          _pageController = PageController();
+        });
+      }
     }
   }
 
@@ -164,9 +181,13 @@ class _BookScreenState extends State<BookScreen> {
 
       if (mounted) {
         setState(() {
-          // Обновляем позицию, но не создаём новый контроллер
           _currentPageIndex = loadedPage.clamp(0, _allPages.length - 1);
           _lastRecordedPage = _currentPageIndex;
+
+          // Если контроллер уже инициализирован, переходим на нужную страницу
+          if (_pageController != null && _pageController.hasClients) {
+            _pageController.jumpToPage(_currentPageIndex);
+          }
         });
       }
     } catch (e) {
@@ -372,19 +393,71 @@ class _BookScreenState extends State<BookScreen> {
 
   Future<void> _precalculateAllPages(
       BookWithChapters book, BuildContext context) async {
-    _allPages = [];
-    _chapterPageStarts = [];
-
-    for (var chapter in book.chapters) {
-      _chapterPageStarts.add(_allPages.length);
-      final chapterPages =
-          await splitTextIntoPages(chapter.text, context); // Ждём результат
-      _allPages.addAll(
-          chapterPages); // Теперь chapterPages - это List<String>, а не Future
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _loadingProgress = 0;
+        _allPages = [];
+        _chapterPageStarts = [];
+      });
     }
 
-    if (_allPages.isEmpty || !_allPages.last.contains("Спасибо за прочтение")) {
-      _allPages.add("Спасибо за прочтение!");
+    try {
+      const batchSize = 2;
+      final totalChapters = book.chapters.length;
+      int processedChapters = 0;
+
+      for (int i = 0; i < totalChapters; i += batchSize) {
+        if (!mounted || _processingInterrupted) break;
+
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        final endIndex = min(i + batchSize, totalChapters);
+        final batch = book.chapters.sublist(i, endIndex);
+
+        final batchResults = await Future.wait(
+          batch.map((chapter) => splitTextIntoPages(chapter.text, context)),
+        );
+
+        if (!mounted || _processingInterrupted) break;
+
+        for (int j = 0; j < batchResults.length; j++) {
+          processedChapters++;
+          _chapterPageStarts.add(_allPages.length);
+          _allPages.addAll(batchResults[j]);
+
+          if (mounted) {
+            setState(() {
+              _loadingProgress = processedChapters / totalChapters;
+            });
+          }
+        }
+      }
+
+      if (!_processingInterrupted && mounted) {
+        if (_allPages.isEmpty ||
+            !_allPages.last.contains("Спасибо за прочтение")) {
+          _allPages.add("Спасибо за прочтение!");
+        }
+
+        // Ensure _pageController is initialized before using it
+        if (_pageController != null && _pageController.hasClients) {
+          _pageController.jumpToPage(_currentPageIndex);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _precalculateAllPages: $e');
+      if (mounted) {
+        setState(() {
+          _allPages = ['Error loading book content'];
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -401,24 +474,25 @@ class _BookScreenState extends State<BookScreen> {
         shadowColor: Colors.transparent,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back,
+          icon: Icon(BookTrackIcon.onBack,
               color: _getTextColor(settings.selectedBackgroundStyle)),
           onPressed: widget.onBack,
+          color: AppColors.textPrimary,
         ),
         actions: [
           CircleAvatar(
-              backgroundColor: _getBackgroundColor(
-                  settings.selectedBackgroundStyle), // цвет круга
-              radius: 20, // радиус круга
+              backgroundColor:
+                  _getBackgroundColor(settings.selectedBackgroundStyle),
+              radius: 20,
               child: IconButton(
                 icon: Icon(Icons.settings,
                     color: _getTextColor(settings.selectedBackgroundStyle)),
                 onPressed: () => _showTextEditor(scale, settings),
               )),
           CircleAvatar(
-              backgroundColor: _getBackgroundColor(
-                  settings.selectedBackgroundStyle), // цвет круга
-              radius: 20, // радиус круга
+              backgroundColor:
+                  _getBackgroundColor(settings.selectedBackgroundStyle),
+              radius: 20,
               child: IconButton(
                 icon: Icon(BookTrackIcon.snoskText,
                     color: _getTextColor(settings.selectedBackgroundStyle)),
@@ -428,22 +502,74 @@ class _BookScreenState extends State<BookScreen> {
       ),
       body: _isLoading
           ? Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 3),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: _loadingProgress,
+                        backgroundColor: Colors.grey[300],
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.background),
+                        strokeWidth: 6,
+                      ),
+                      Text(
+                        '${(_loadingProgress * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _loadingPhase == LoadingPhase.downloading
+                        ? 'Загрузка данных...'
+                        : _loadingPhase == LoadingPhase.processing
+                            ? 'Обработка текста...'
+                            : 'Финальная подготовка...',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.orange,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _processingInterrupted = true;
+                        _isLoading = false;
+                      });
+                    },
+                    child: const Text(
+                      'Отменить',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             )
           : Column(
               children: [
                 _buildBookHeader(_bookData, context),
                 Expanded(
-                  child: PageView.builder(
-                    itemCount: _allPages.length,
-                    controller: _pageController,
-                    onPageChanged: _onPageChanged,
-                    itemBuilder: (context, index) => _buildPageContent(index),
-                  ),
+                  child: _allPages.isEmpty
+                      ? Center(child: Text('Нет содержимого для отображения'))
+                      : PageView.builder(
+                          itemCount: _allPages.length,
+                          controller: _pageController,
+                          onPageChanged: _onPageChanged,
+                          itemBuilder: (context, index) =>
+                              _buildPageContent(index),
+                        ),
                 ),
                 _buildPageFooter(),
               ],
@@ -1214,75 +1340,88 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<List<String>> splitTextIntoPages(
-      String text, BuildContext context) async {
-    final settings = Provider.of<SettingsProvider>(context, listen: false);
-    final textStyle = TextStyle(
-      fontSize: settings.fontSize,
-      fontFamily: _getFontFamily(settings.selectedFontFamily),
-    );
+    String text,
+    BuildContext context,
+  ) async {
+    try {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      final textStyle = TextStyle(
+        fontSize: settings.fontSize,
+        fontFamily: _getFontFamily(settings.selectedFontFamily),
+      );
 
-    final textPainter = TextPainter(
-      text: TextSpan(text: 'Sample', style: textStyle),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    );
-    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
-    final lineHeight = textPainter.height;
+      // Предварительный расчёт высоты строки
+      final textPainter = TextPainter(
+        text: TextSpan(text: 'Sample', style: textStyle),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      );
+      textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 32);
+      final lineHeight = textPainter.height;
 
-    final screenHeight = MediaQuery.of(context).size.height;
-    final linesPerPage = ((screenHeight - 200) / lineHeight).floor();
+      final screenHeight = MediaQuery.of(context).size.height;
+      final linesPerPage = ((screenHeight - 200) / lineHeight).floor();
 
-    return await compute(
-      splitTextIntoPagesIsolate,
-      {
-        'text': text,
-        'lineHeight': lineHeight,
-        'linesPerPage': linesPerPage.toDouble(),
-        'maxWidth': MediaQuery.of(context).size.width - 32,
-        'fontSize': settings.fontSize,
-        'fontFamily': _getFontFamily(settings.selectedFontFamily),
-      },
-    );
+      // Запускаем тяжёлую работу в изоляте
+      return await compute(
+        splitTextIntoPagesIsolate,
+        {
+          'text': text,
+          'lineHeight': lineHeight,
+          'linesPerPage': linesPerPage.toDouble(),
+          'maxWidth': MediaQuery.of(context).size.width - 32,
+          'fontSize': settings.fontSize,
+          'fontFamily': _getFontFamily(settings.selectedFontFamily),
+        },
+      );
+    } catch (e) {
+      debugPrint('Error in splitTextIntoPages: $e');
+      return ['Error processing text'];
+    }
   }
 
   List<String> splitTextIntoPagesIsolate(Map<String, dynamic> params) {
-    final text = params['text'] as String;
-    final double lineHeight = params['lineHeight'];
-    final double linesPerPage = params['linesPerPage'];
-    final double maxWidth = params['maxWidth'];
-    final String fontFamily = params['fontFamily'];
-    final double fontSize = params['fontSize'];
+    try {
+      final text = params['text'] as String;
+      final lineHeight = params['lineHeight'] as double;
+      final linesPerPage = params['linesPerPage'] as double;
+      final maxWidth = params['maxWidth'] as double;
+      final fontFamily = params['fontFamily'] as String;
+      final fontSize = params['fontSize'] as double;
 
-    final textStyle = TextStyle(fontSize: fontSize, fontFamily: fontFamily);
+      final textStyle = TextStyle(fontSize: fontSize, fontFamily: fontFamily);
+      final words = text.split(' ');
+      final pages = <String>[];
+      String currentPage = '';
 
-    final words = text.split(' ');
-    List<String> pages = [];
-    String currentPage = '';
+      final textPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        maxLines: null,
+      );
 
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-      maxLines: null,
-    );
+      for (final word in words) {
+        final testText = currentPage.isEmpty ? word : '$currentPage $word';
+        textPainter.text = TextSpan(text: testText, style: textStyle);
+        textPainter.layout(maxWidth: maxWidth);
+        final testLines = (textPainter.height / lineHeight).ceil();
 
-    for (final word in words) {
-      final testText = currentPage.isEmpty ? word : '$currentPage $word';
-      textPainter.text = TextSpan(text: testText, style: textStyle);
-      textPainter.layout(maxWidth: maxWidth);
-      final testLines = (textPainter.height / lineHeight).ceil();
-
-      if (testLines <= linesPerPage) {
-        currentPage = testText;
-      } else {
-        pages.add(currentPage);
-        currentPage = word;
+        if (testLines <= linesPerPage) {
+          currentPage = testText;
+        } else {
+          pages.add(currentPage);
+          currentPage = word;
+        }
       }
-    }
 
-    if (currentPage.isNotEmpty) {
-      pages.add(currentPage);
-    }
+      if (currentPage.isNotEmpty) {
+        pages.add(currentPage);
+      }
 
-    return pages;
+      return pages;
+    } catch (e) {
+      debugPrint('Error in isolate: $e');
+      return ['Error processing text'];
+    }
   }
 }
 
