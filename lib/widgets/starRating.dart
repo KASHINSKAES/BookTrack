@@ -1,4 +1,3 @@
-
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:flutter/material.dart';
@@ -35,10 +34,12 @@ class StarRating extends StatelessWidget {
 
         return IconButton(
           iconSize: size,
-          icon: Icon(icon),
-          color: rating >= ratingValue
-              ? AppColors.orange
-              : const Color.fromARGB(255, 253, 201, 184),
+          icon: Icon(
+            BookTrackIcon.starOtzv,
+            color: rating >= ratingValue
+                ? AppColors.orange
+                : const Color.fromARGB(255, 253, 201, 184),
+          ),
           onPressed: isStatic || onRatingChanged == null
               ? null
               : () => onRatingChanged!(ratingValue),
