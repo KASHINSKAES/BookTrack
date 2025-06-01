@@ -108,6 +108,14 @@ class ReviewService {
             snapshot.docs.map((doc) => Review.fromFirestore(doc)).toList());
   }
 
+  Stream<int> getReviewsCountStream(String bookId) {
+  return FirebaseFirestore.instance
+      .collection('reviews')
+      .where('bookId', isEqualTo: bookId)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.length);
+}
+
   // Переключение лайка на отзыве
  Future<void> toggleLike(String bookId, String reviewId, String userId) async {
     final reviewRef = _firestore

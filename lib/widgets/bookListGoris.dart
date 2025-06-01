@@ -218,9 +218,9 @@ class AllBooksPage extends StatelessWidget {
       case 'saved_books':
         return 'Избранные книги';
       case 'read_books':
-        return 'Прочитанные книги';
-      case 'end_books':
         return 'Читаемые книги';
+      case 'end_books':
+        return 'Прочитанные книги';
       default:
         return 'Все книги';
     }

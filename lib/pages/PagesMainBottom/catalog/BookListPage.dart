@@ -208,7 +208,7 @@ class _BookListPageState extends State<BookListPage> {
                                 textSizeButton:
                                     AppDimensions.baseTextSizeButton * scale,
                                 label: 'Текст',
-                                icon:  BookTrackIcon.bookStat,
+                                icon: BookTrackIcon.bookStat,
                                 isSelected:
                                     filterProvider.tempSelectedFormat == 'text',
                                 onTap: () {

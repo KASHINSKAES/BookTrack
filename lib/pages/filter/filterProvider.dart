@@ -5,27 +5,30 @@ class FilterProvider with ChangeNotifier {
   bool _isExclusive = false;
   String? _selectedFormat;
   String? _selectedLanguage;
-  bool _isHighRated = false;
+  double? _minRating;
+  bool get isHighRated => minRating != null && minRating! >= 4.0;
 
-  // Временные переменные для хранения состояния фильтров
+  // Временные переменные
   bool _tempIsSubscription = false;
   bool _tempIsExclusive = false;
   String? _tempSelectedFormat;
   String? _tempSelectedLanguage;
-  bool _tempIsHighRated = false;
+  double? _tempMinRating;
+  bool get tempIsHighRated => tempMinRating != null && tempMinRating! >= 4.0;
 
+  // Геттеры
   bool get isSubscription => _isSubscription;
   bool get isExclusive => _isExclusive;
   String? get selectedFormat => _selectedFormat;
   String? get selectedLanguage => _selectedLanguage;
-  bool get isHighRated => _isHighRated;
+  double? get minRating => _minRating;
 
   // Геттеры для временных переменных
   bool get tempIsSubscription => _tempIsSubscription;
   bool get tempIsExclusive => _tempIsExclusive;
   String? get tempSelectedFormat => _tempSelectedFormat;
   String? get tempSelectedLanguage => _tempSelectedLanguage;
-  bool get tempIsHighRated => _tempIsHighRated;
+  double? get tempMinRating => _tempMinRating;
 
   void toggleSubscription() {
     _tempIsSubscription = !_tempIsSubscription;
@@ -56,38 +59,45 @@ class FilterProvider with ChangeNotifier {
   }
 
   void toggleHighRated() {
-    _tempIsHighRated = !_tempIsHighRated;
+    _tempMinRating = tempIsHighRated ? null : 4.0;
     notifyListeners();
   }
 
-  // Метод для применения временных фильтров
+  // Новый метод для установки минимального рейтинга
+
   void applyFilters() {
     _isSubscription = _tempIsSubscription;
     _isExclusive = _tempIsExclusive;
     _selectedFormat = _tempSelectedFormat;
     _selectedLanguage = _tempSelectedLanguage;
-    _isHighRated = _tempIsHighRated;
+    _minRating = _tempMinRating;
     notifyListeners();
   }
 
-  // Метод для получения всех активных фильтров
   Map<String, dynamic> get activeFilters {
     return {
       'isSubscription': _isSubscription,
       'isExclusive': _isExclusive,
-      'isHighRated': _isHighRated,
+      'minRating': _minRating,  
       'format': _selectedFormat,
       'language': _selectedLanguage,
     };
   }
 
-  // Метод для сброса всех фильтров
   void resetFilters() {
     _isSubscription = false;
     _isExclusive = false;
-    _isHighRated = false;
+    _minRating = null;
     _selectedFormat = null;
     _selectedLanguage = null;
+
+    // Сбрасываем также временные переменные
+    _tempIsSubscription = false;
+    _tempIsExclusive = false;
+    _tempMinRating = null;
+    _tempSelectedFormat = null;
+    _tempSelectedLanguage = null;
+
     notifyListeners();
   }
 }

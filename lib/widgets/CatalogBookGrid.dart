@@ -40,7 +40,7 @@ class _CatalogBookGridState extends State<CatalogBookGrid> {
               _applyFilters(snapshot.data!, filterProvider.activeFilters);
 
           return SingleChildScrollView(
-        child:Container(
+              child: Container(
             padding: EdgeInsets.only(top: AppDimensions.baseScreenTop * scale),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -66,6 +66,7 @@ class _CatalogBookGridState extends State<CatalogBookGrid> {
                 itemCount: books.length,
                 itemBuilder: (context, index) {
                   final book = books[index];
+                  debugPrint(book.title);
                   return BookCards(
                     book: book, // Передаем весь объект Book
                     scale: scale,
@@ -94,8 +95,8 @@ class _CatalogBookGridState extends State<CatalogBookGrid> {
         return false;
       }
 
-      // Фильтр по рейтингу
-      if (filters['isHighRated'] == true && book.rating < 4) {
+      // Фильтр по рейтингу (исправленная версия)
+      if (filters['minRating'] != null && book.rating < filters['minRating']) {
         return false;
       }
 

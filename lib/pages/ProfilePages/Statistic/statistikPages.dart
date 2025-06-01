@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/ProfilePages/Statistic/ReadingStatsProvider.dart';
 import 'package:booktrack/widgets/constants.dart';
@@ -464,7 +466,7 @@ class TodayPieChart extends StatelessWidget {
                 child: EasyPieChart(
                   children: [
                     PieData(
-                        value: progressWant - progress,
+                        value: max(0, progressWant - progress),
                         color: Color(0xffFFD3C5)),
                     PieData(value: progress, color: AppColors.orange),
                   ],

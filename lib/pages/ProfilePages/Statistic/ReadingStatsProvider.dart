@@ -1,3 +1,4 @@
+import 'package:booktrack/pages/BookCard/text/AppState.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,13 @@ class ReadingStatsProvider with ChangeNotifier {
   int selectedWeekPage = 0;
   bool isLoading = true;
   String? errorMessage;
+  AppState? _appState;
+
+  // Метод для установки связи с AppState
+  void setAppState(AppState appState) {
+    _appState = appState;
+    notifyListeners();
+  }
 
   Map<String, List<int>> weeklyDataPages = {};
   Map<String, List<int>> weeklyDataMinutes = {};
@@ -143,7 +151,7 @@ class ReadingStatsProvider with ChangeNotifier {
     notifyListeners();
   }
 
- void changeTimeWeek(int newIndex) {
+  void changeTimeWeek(int newIndex) {
     selectedWeekTime = newIndex;
     notifyListeners();
   }
@@ -165,6 +173,12 @@ class ReadingStatsProvider with ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
+      // Получаем AppState из провайдера
+      _appState = Provider.of<AppState>(context, listen: false);
+
+      // Загружаем цели из AppState
+      await _appState?.loadUserData(userModel.uid);
+
       await Future.wait([
         _loadDailyStats(userModel.uid),
         _loadWeeklyStats(userModel.uid),
@@ -176,8 +190,9 @@ class ReadingStatsProvider with ChangeNotifier {
       errorMessage = 'Failed to load data: ${e.toString()}';
       debugPrint(errorMessage);
     } finally {
+      // Важно использовать finally
       isLoading = false;
-      notifyListeners();
+      notifyListeners(); // Уведомляем о завершении загрузки
     }
   }
 
@@ -188,19 +203,24 @@ class ReadingStatsProvider with ChangeNotifier {
       return;
     }
 
-    // Проверяем наличие данных пользователя
+    // Используем цели из AppState, если они доступны
+    if (_appState != null) {
+      final todayKey = _formatDate(DateTime.now());
+      dailyGoalPages[todayKey] = _appState!.readingPagesPurpose;
+      dailyGoalMinutes[todayKey] = _appState!.readingMinutesPurpose ~/ 60;
+      return;
+    }
+
+    // Резервный вариант: загрузка из Firestore
     final userDoc =
         await FirebaseFirestore.instance.collection('users').doc(userId).get();
 
     if (!userDoc.exists) {
-      // Если данных пользователя нет, создаем их
       await FirebaseFirestore.instance.collection('users').doc(userId).set({
         'reading_goals': [],
-        // Добавьте другие поля, если необходимо
       });
     }
 
-    // Проверяем наличие подколлекции reading_goals
     final goalsCollection = userDoc.reference.collection('reading_goals');
     final goalsSnapshot = await goalsCollection.get();
 
@@ -216,6 +236,36 @@ class ReadingStatsProvider with ChangeNotifier {
         dailyGoalMinutes[dateKey] = (data['goalMinutes'] ?? 0).toInt();
       }
     }
+  }
+
+  // Добавляем методы для обновления целей
+  Future<void> updateDailyGoals(int pages, int minutes, String userId) async {
+    final todayKey = _formatDate(DateTime.now());
+    dailyGoalPages[todayKey] = pages;
+    dailyGoalMinutes[todayKey] = minutes;
+
+    // Синхронизируем с AppState
+    if (_appState != null) {
+      await _appState!.updateReadingPagesPurpose(pages, userId);
+      await _appState!.updateReadingMinutesPurpose(minutes * 60, userId);
+    }
+
+    // Сохраняем в Firestore
+    await _saveGoalsToFirestore(userId, pages, minutes);
+
+    notifyListeners();
+  }
+
+  Future<void> _saveGoalsToFirestore(
+      String userId, int pages, int minutes) async {
+    final today = DateTime.now();
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(userId);
+
+    await userDoc.collection('reading_goals').doc(_formatDate(today)).set({
+      'date': Timestamp.fromDate(today),
+      'goalPages': pages,
+      'goalMinutes': minutes,
+    }, SetOptions(merge: true));
   }
 
   // Метод для изменения выбранного дня
