@@ -20,9 +20,9 @@ class LevelService {
       }
 
       final stats = userDoc.data()?['stats'] ?? {};
-      final currentLevel = (stats['current_level'] ?? 1).toInt();  // Convert to int
-      final xp = (stats['xp'] ?? 0).toInt();  // Convert to int
-      final pages = (stats['pages'] ?? 0).toInt();  // Convert to int
+      final currentLevel = (stats['current_level'] ?? 1).toInt();
+      final xp = (stats['xp'] ?? 0).toInt();
+      final pages = (stats['pages'] ?? 0).toInt();
 
       debugPrint('Current level: $currentLevel, XP: $xp, Pages: $pages');
 
@@ -37,9 +37,20 @@ class LevelService {
       }
 
       final nextLevelData = nextLevelDoc.data()!;
+      final xpRequired = (nextLevelData['xp_required'] ?? 0).toInt();
 
-      final rewardPoints = (nextLevelData['reward_points'] ?? 0).toInt(); 
-      _showLevelUpReward(context, currentLevel + 1, rewardPoints);
+      // Проверяем, достиг ли пользователь необходимого XP для нового уровня
+      if (xp >= xpRequired) {
+        final rewardPoints = (nextLevelData['reward_points'] ?? 0).toInt();
+        final newLevel = currentLevel + 1;
+
+        // Обновляем уровень пользователя в Firestore
+        await _firestore.collection('users').doc(userId).update({
+          'stats.current_level': newLevel,
+        });
+
+        _showLevelUpReward(context, newLevel, rewardPoints);
+      }
     } catch (e) {
       debugPrint('Ошибка при проверке уровня: $e');
     }

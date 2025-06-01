@@ -26,76 +26,75 @@ class BookCards extends StatefulWidget {
     required this.textSizeAuthor,
     required this.textSpacing,
   }) : super(key: key);
+
   @override
   _BookCardState createState() => _BookCardState();
 }
 
 class _BookCardState extends State<BookCards> {
   final ReviewService _reviewService = ReviewService();
-  late Future<int?> _reviewsCountStream;
-  int reviewCount = 0;
   late Stream<Map<String, dynamic>> _bookDataStream;
 
   @override
   void initState() {
     super.initState();
     _bookDataStream = _createBookDataStream();
-    _reviewsCountStream = _reviewService.getReviewsCount(widget.book.id);
+  }
+
+  @override
+  void didUpdateWidget(covariant BookCards oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.book.id != widget.book.id) {
+      _bookDataStream = _createBookDataStream();
+    }
   }
 
   Stream<Map<String, dynamic>> _createBookDataStream() {
-    // Создаем поток для данных книги
-    final bookStream = FirebaseFirestore.instance
+    final bookDocStream = FirebaseFirestore.instance
         .collection('books')
         .doc(widget.book.id)
         .snapshots();
 
-    // Комбинируем с потоком количества отзывов
-    return bookStream.asyncMap((bookDoc) async {
+    return bookDocStream.asyncMap((bookDoc) async {
       final reviewCount = await _reviewService.getReviewsCount(widget.book.id);
+      final data = bookDoc.data() ?? {};
+
       return {
-        'raiting': bookDoc.data()?['raiting'] ?? 0.0,
+        'rating': (data['rating'] ?? data['raiting'] ?? 0.0).toDouble(),
         'reviewCount': reviewCount,
       };
     });
   }
 
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<int?>(
-        future: _reviewsCountStream,
-        builder: (context, snapshot) {
-          reviewCount = snapshot.data ?? 0;
-          debugPrint(reviewCount.toString());
-          return GestureDetector(
-            onTap: () => _navigateToDetail(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBookImage(),
-                SizedBox(height: widget.textSpacing),
-                _buildRatingRow(),
-                _buildTitle(),
-                SizedBox(height: widget.textSpacing / 4),
-                _buildAuthor(),
-              ],
-            ),
-          );
-        });
+    return GestureDetector(
+      onTap: _navigateToDetail,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBookImage(),
+          SizedBox(height: widget.textSpacing),
+          _buildRatingRow(),
+          _buildTitle(),
+          SizedBox(height: widget.textSpacing / 4),
+          _buildAuthor(),
+        ],
+      ),
+    );
   }
 
-  void _navigateToDetail(BuildContext context) {
-    debugPrint('${widget.book.rating} raiting');
-
+  void _navigateToDetail() {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => BookDetailScreen(
-          bookId: widget.book.id, // Передаем ID для загрузки деталей
+          bookId: widget.book.id,
           bookTitle: widget.book.title,
           authorName: widget.book.author,
           bookImageUrl: widget.book.imageUrl,
           bookRating: widget.book.rating,
-          reviewCount: reviewCount,
+          reviewCount: 0, // Будет загружено в детальном экране
           pages: widget.book.pages,
           age: widget.book.ageRestriction,
           description: widget.book.description,
@@ -105,9 +104,7 @@ class _BookCardState extends State<BookCards> {
           price: widget.book.price,
           format: widget.book.format,
           tags: widget.book.tags,
-          onBack: () {
-                              Navigator.pop(context);
-                            }
+          onBack: () => Navigator.pop(context),
         ),
       ),
     );
@@ -150,16 +147,19 @@ class _BookCardState extends State<BookCards> {
           );
         }
 
-        if (snapshot.hasError) {
-          return Text('Ошибка загрузки',
-              style: TextStyle(fontSize: 12 * scale));
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Text(
+            'Ошибка загрузки',
+            style: TextStyle(fontSize: 12 * scale),
+          );
         }
 
+        final data = snapshot.data!;
         return Row(
           children: [
             Icon(BookTrackIcon.starOtzv, color: AppColors.orange, size: 13),
             Text(
-              snapshot.data!['raiting'].toString(),
+              data['rating'].toStringAsFixed(1),
               style: TextStyle(
                 fontSize: 12 * widget.scale,
                 fontWeight: FontWeight.bold,
@@ -169,7 +169,7 @@ class _BookCardState extends State<BookCards> {
             SizedBox(width: 6 * widget.scale),
             Icon(BookTrackIcon.comOtzv, color: AppColors.grey, size: 10),
             Text(
-              snapshot.data!['reviewCount'].toString(),
+              data['reviewCount'].toString(),
               style: TextStyle(
                 fontSize: 10,
                 color: AppColors.grey,

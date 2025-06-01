@@ -8,10 +8,11 @@ import 'package:provider/provider.dart';
 
 class AddReviewPage extends StatefulWidget {
   final String bookId;
-  
+
   final VoidCallback onBack;
 
-  const AddReviewPage({Key? key, required this.bookId,required this.onBack}) : super(key: key);
+  const AddReviewPage({Key? key, required this.bookId, required this.onBack})
+      : super(key: key);
 
   @override
   _AddReviewPageState createState() => _AddReviewPageState();
@@ -177,7 +178,7 @@ class _AddReviewPageState extends State<AddReviewPage> {
             builder: (context) => AlertDialog(
               title: Text('Подтверждение',
                   style: TextStyle(
-                      color: AppColors.textPrimary, fontSize: 30 * scale)),
+                      color: AppColors.background, fontSize: 28 * scale)),
               content: Text(
                   'После отправки отзыв нельзя будет изменить. Продолжить?',
                   style: TextStyle(
@@ -187,13 +188,19 @@ class _AddReviewPageState extends State<AddReviewPage> {
                   onPressed: () => Navigator.pop(context, false),
                   child: Text('Отмена',
                       style: TextStyle(
-                          color: AppColors.textPrimary, fontSize: 20 * scale)),
+                          color: AppColors.background, fontSize: 16 * scale)),
                 ),
                 TextButton(
+                  style: ButtonStyle(
+                    backgroundColor:
+                        MaterialStateProperty.all(AppColors.background),
+                  ),
                   onPressed: () => Navigator.pop(context, true),
-                  child: Text('Отправить',
-                      style: TextStyle(
-                          color: AppColors.textPrimary, fontSize: 24 * scale)),
+                  child: Text(
+                    'Отправить',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),

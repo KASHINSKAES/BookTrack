@@ -111,10 +111,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           .get();
 
       if (userDoc.exists) {
-        final savedBooks =
-            List<String>.from(userDoc.data()?['saved_books'] ?? []);
+        final readBooks =
+            List<String>.from(userDoc.data()?['read_books'] ?? []);
         setState(() {
-          _isBookInCollection = savedBooks.contains(bookId);
+          _isBookInCollection = readBooks.contains(bookId);
           _isLoading = false;
         });
       } else {
@@ -700,13 +700,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
       final userData = userDoc.data() ??
           {
-            'saved_books': [],
+            'read_books': [],
             'totalBonuses': 0,
             'payments': {},
             'selectedPaymentMethod': 'card_1',
           };
 
-      final savedBooks = List<String>.from(userData['saved_books'] ?? []);
+      final savedBooks = List<String>.from(userData['read_books'] ?? []);
       final currentBonuses = getSafeInt(userData['totalBonuses']);
       final paymentMethods = userData['payments'] is Map
           ? userData['payments'] as Map<String, dynamic>? ?? {}
@@ -768,7 +768,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
       // Обновляем данные пользователя
       final updateData = {
-        'saved_books': FieldValue.arrayUnion([bookId]),
+        'read_books': FieldValue.arrayUnion([bookId]),
         'totalBonuses': FieldValue.increment(bonusesToAdd - bonusesToUse),
         'lastPurchaseDate': FieldValue.serverTimestamp(),
       };
