@@ -124,7 +124,6 @@ class _BookScreenState extends State<BookScreen> {
         pages: _sessionPages,
         userId: auth.userModel!.uid,
       );
-
     }
     _startNewSession();
   }
@@ -151,10 +150,28 @@ class _BookScreenState extends State<BookScreen> {
   Future<void> _loadBookData() async {
     try {
       _bookData = await _repository.getBookWithChapters(widget.bookId);
+
+      // Проверка на полученные данные
+      if (_bookData.book.title.isEmpty) {
+        throw Exception('Не удалось загрузить данные книги');
+      }
+
       _chapters = _bookData.chapters;
+
+      // Проверка на наличие глав
+      if (_chapters.isEmpty) {
+        throw Exception('Книга не содержит глав');
+      }
+
       await _precalculateAllPages(_bookData, context);
     } catch (e) {
       debugPrint('Error loading book: $e');
+      if (mounted) {
+        setState(() {
+          _allPages = ['Ошибка загрузки книги: ${e.toString()}'];
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -195,31 +212,31 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   void _onPageChanged(int index) async {
-  if (!mounted || index == _currentPageIndex) return;
+    if (!mounted || index == _currentPageIndex || _allPages.isEmpty) return;
 
-  final prevChapter = _getCurrentChapterIndex();
-  setState(() => _currentPageIndex = index);
-  final currentChapter = _getCurrentChapterIndex();
+    final prevChapter = _getCurrentChapterIndex();
+    setState(() => _currentPageIndex = index);
+    final currentChapter = _getCurrentChapterIndex();
 
-  // Обновляем данные только если листаем вперед
-  if (index > _lastRecordedPage) {
-    final pagesRead = index - _lastRecordedPage;
-    _sessionPages += pagesRead;
-    _pagesSinceLastXP += pagesRead;
-    _sessionPageCount += pagesRead;
-    _lastRecordedPage = index;
+    // Обновляем данные только если листаем вперед
+    if (index > _lastRecordedPage) {
+      final pagesRead = index - _lastRecordedPage;
+      _sessionPages += pagesRead;
+      _pagesSinceLastXP += pagesRead;
+      _sessionPageCount += pagesRead;
+      _lastRecordedPage = index;
 
-    // Обновляем AppState в реальном времени
-    final appState = Provider.of<AppState>(context, listen: false);
-    
-    if (_pagesSinceLastXP >= 10) {
-      await _addXP(5);
-      _pagesSinceLastXP = 0;
+      // Обновляем AppState в реальном времени
+      final appState = Provider.of<AppState>(context, listen: false);
+
+      if (_pagesSinceLastXP >= 10) {
+        await _addXP(5);
+        _pagesSinceLastXP = 0;
+      }
     }
-  }
 
-  _debounceSaveProgress();
-}
+    _debounceSaveProgress();
+  }
 
   // Добавляем недостающий метод
   void _debounceSaveProgress() {
@@ -271,6 +288,8 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   int _getCurrentChapterIndex() {
+    if (_chapterPageStarts.isEmpty) return 0;
+
     for (int i = 0; i < _chapterPageStarts.length; i++) {
       if (i == _chapterPageStarts.length - 1 ||
           _currentPageIndex < _chapterPageStarts[i + 1]) {
@@ -300,36 +319,27 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<void> _saveDailyReadingProgress(Duration readingTime) async {
-  try {
-    if (_userId == null) return;
-    
-    final appState = Provider.of<AppState>(context, listen: false);
-    final today = DateTime.now();
-    
-    // Обновляем локальное состояние
-    appState.updateReadingProgress(
-      minutes: readingTime.inMinutes,
-      pages: _sessionPageCount,
-      userId: _userId!,
-    );
+    try {
+      if (_userId == null) return;
 
-    // Сохраняем в Firestore
-    final docRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(_userId)
-        .collection('reading_goals')
-        .doc('goal_${today.year}_${today.month}_${today.day}');
+      final today = DateTime.now();
 
-    await docRef.set({
-      'date': today,
-      'readPages': FieldValue.increment(_sessionPageCount),
-      'readMinutes': FieldValue.increment(readingTime.inMinutes),
-    }, SetOptions(merge: true));
-    
-  } catch (e) {
-    debugPrint('Error saving daily progress: $e');
+      // Сохраняем в Firestore
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .collection('reading_goals')
+          .doc('goal_${today.year}_${today.month}_${today.day}');
+
+      await docRef.set({
+        'date': today,
+        'readPages': FieldValue.increment(_sessionPageCount),
+        'readMinutes': FieldValue.increment(readingTime.inMinutes),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving daily progress: $e');
+    }
   }
-}
 
   Future<void> _addXP(int amount) async {
     if (_userId == null) {
@@ -407,6 +417,10 @@ class _BookScreenState extends State<BookScreen> {
     }
 
     try {
+      if (book.chapters.isEmpty) {
+        throw Exception('Книга не содержит глав');
+      }
+
       const batchSize = 2;
       final totalChapters = book.chapters.length;
       int processedChapters = 0;
@@ -419,9 +433,21 @@ class _BookScreenState extends State<BookScreen> {
         final endIndex = min(i + batchSize, totalChapters);
         final batch = book.chapters.sublist(i, endIndex);
 
-        final batchResults = await Future.wait(
-          batch.map((chapter) => splitTextIntoPages(chapter.text, context)),
-        );
+        // Используем List<Future<List<String>>> для batchFutures
+        final List<Future<List<String>>> batchFutures =
+            batch.map((chapter) async {
+          if (chapter.text.isEmpty) {
+            return ['Глава не содержит текста'];
+          }
+          try {
+            return await splitTextIntoPages(chapter.text, context);
+          } catch (e) {
+            debugPrint('Ошибка обработки главы: $e');
+            return ['Ошибка загрузки содержимого главы'];
+          }
+        }).toList();
+
+        final batchResults = await Future.wait<List<String>>(batchFutures);
 
         if (!mounted || _processingInterrupted) break;
 
@@ -439,21 +465,21 @@ class _BookScreenState extends State<BookScreen> {
       }
 
       if (!_processingInterrupted && mounted) {
-        if (_allPages.isEmpty ||
-            !_allPages.last.contains("Спасибо за прочтение")) {
-          _allPages.add("Спасибо за прочтение!");
+        if (_allPages.isEmpty) {
+          _allPages.add('Книга не содержит текста для отображения');
         }
 
-        // Ensure _pageController is initialized before using it
-        if (_pageController != null && _pageController.hasClients) {
-          _pageController.jumpToPage(_currentPageIndex);
+        if (_pageController.hasClients) {
+          _pageController
+              .jumpToPage(_currentPageIndex.clamp(0, _allPages.length - 1));
         }
       }
     } catch (e) {
-      debugPrint('Error in _precalculateAllPages: $e');
+      debugPrint('Ошибка в _precalculateAllPages: $e');
       if (mounted) {
         setState(() {
-          _allPages = ['Error loading book content'];
+          _allPages = ['Ошибка загрузки книги: ${e.toString()}'];
+          _isLoading = false;
         });
       }
     } finally {
@@ -470,6 +496,41 @@ class _BookScreenState extends State<BookScreen> {
     final settings = Provider.of<SettingsProvider>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
+    // Проверка на отсутствие данных
+    if (_chapters.isEmpty || _allPages.isEmpty) {
+      return Scaffold(
+        backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
+        appBar: AppBar(
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
+          leading: IconButton(
+            icon: Icon(BookTrackIcon.onBack,
+                color: _getTextColor(settings.selectedBackgroundStyle)),
+            onPressed: widget.onBack,
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.book, size: 50, color: Colors.grey),
+              SizedBox(height: 20),
+              Text(
+                'Книга не содержит текста',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: widget.onBack,
+                child: Text('Вернуться назад'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
       appBar: AppBar(
@@ -582,8 +643,29 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Widget _buildPageContent(int pageIndex) {
+    // Проверка на выход за границы списка
+    if (pageIndex < 0 || pageIndex >= _allPages.length) {
+      return Center(
+        child: Text(
+          'Страница не найдена',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
     final settings = Provider.of<SettingsProvider>(context);
     final chapterIndex = _getCurrentChapterIndexForPage(pageIndex);
+
+    // Проверка на выход за границы списка глав
+    if (chapterIndex < 0 || chapterIndex >= _chapters.length) {
+      return Center(
+        child: Text(
+          'Глава не найдена',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
     final chapter = _chapters[chapterIndex];
 
     return FutureBuilder(
@@ -599,6 +681,16 @@ class _BookScreenState extends State<BookScreen> {
             ),
           );
         }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Ошибка загрузки страницы: ${snapshot.error}',
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
         return snapshot.data ?? SizedBox();
       },
     );
@@ -673,6 +765,8 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   int _getCurrentChapterIndexForPage(int pageIndex) {
+    if (_chapterPageStarts.isEmpty) return 0;
+
     for (int i = 0; i < _chapterPageStarts.length; i++) {
       if (i == _chapterPageStarts.length - 1 ||
           pageIndex < _chapterPageStarts[i + 1]) {
@@ -1348,6 +1442,11 @@ class _BookScreenState extends State<BookScreen> {
     BuildContext context,
   ) async {
     try {
+      // Проверка на пустой текст
+      if (text.isEmpty) {
+        return ['Текст главы отсутствует'];
+      }
+
       final settings = Provider.of<SettingsProvider>(context, listen: false);
       final textStyle = TextStyle(
         fontSize: settings.fontSize,
@@ -1380,7 +1479,7 @@ class _BookScreenState extends State<BookScreen> {
       );
     } catch (e) {
       debugPrint('Error in splitTextIntoPages: $e');
-      return ['Error processing text'];
+      return ['Ошибка обработки текста: ${e.toString()}'];
     }
   }
 

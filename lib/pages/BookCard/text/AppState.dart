@@ -29,7 +29,7 @@ class AppState extends ChangeNotifier {
   // Основной метод загрузки данных пользователя
   Future<void> loadUserData(String userId) async {
     if (userId.isEmpty) return;
-    
+
     await Future.wait([
       _loadGoals(userId),
       _loadTodayProgress(userId),
@@ -59,7 +59,7 @@ class AppState extends ChangeNotifier {
     try {
       final now = DateTime.now();
       final docId = 'goal_${now.year}_${now.month}_${now.day}';
-      
+
       final doc = await FirebaseFirestore.instance
           .collection('users/$userId/reading_goals')
           .doc(docId)
@@ -68,9 +68,10 @@ class AppState extends ChangeNotifier {
       if (doc.exists) {
         final data = doc.data()!;
         _pagesReadToday = (data['pagesRead'] ?? data['readPages'] ?? 0).toInt();
-        _minutesReadToday = (data['minutesRead'] ?? data['readMinutes'] ?? 0).toInt();
-        _dailyGoalAchieved = _pagesReadToday >= readingPagesPurpose || 
-                           _minutesReadToday * 60 >= _readingMinutesPurpose;
+        _minutesReadToday =
+            (data['minutesRead'] ?? data['readMinutes'] ?? 0).toInt();
+        _dailyGoalAchieved = _pagesReadToday >= readingPagesPurpose ||
+            _minutesReadToday * 60 >= _readingMinutesPurpose;
       } else {
         _pagesReadToday = 0;
         _minutesReadToday = 0;
@@ -111,16 +112,15 @@ class AppState extends ChangeNotifier {
 
     final now = DateTime.now();
     final docId = 'goal_${now.year}_${now.month}_${now.day}';
-    
+
     await FirebaseFirestore.instance
         .collection('users/$userId/reading_goals')
         .doc(docId)
         .set({
-          'pagesRead': FieldValue.increment(pages),
-          'minutesRead': FieldValue.increment(minutes),
-          'date': DateFormat('MMMM d, y').format(now),
-          'timestamp': Timestamp.now(),
-        }, SetOptions(merge: true));
+      'readPages': FieldValue.increment(pages),
+      'readMinutes': FieldValue.increment(minutes),
+      'date': Timestamp.now(),
+    }, SetOptions(merge: true));
 
     if (!_dailyGoalAchieved &&
         (_pagesReadToday >= readingPagesPurpose ||
