@@ -497,7 +497,7 @@ class _BookScreenState extends State<BookScreen> {
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
 
     // Проверка на отсутствие данных
-    if (_chapters.isEmpty || _allPages.isEmpty) {
+    if (_chapters.isEmpty || _allPages.isEmpty && _isLoading == false) {
       return Scaffold(
         backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
         appBar: AppBar(

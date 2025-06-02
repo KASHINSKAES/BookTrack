@@ -224,6 +224,7 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
               SizedBox(height: 10),
               TableCalendar(
+                locale: 'ru',
                 firstDay: DateTime.utc(2023, 1, 1),
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: _focusedDay,

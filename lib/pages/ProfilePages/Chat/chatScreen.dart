@@ -35,7 +35,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (!roomDoc.exists ||
         !(roomDoc.data()?['members'] ?? []).contains(widget.currentUser.uid)) {
-      throw Exception('You are not a member of this room');
+      throw Exception('Вы не участник комнаты');
     }
 
     // Затем загружайте сообщения

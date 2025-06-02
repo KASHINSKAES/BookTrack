@@ -20,11 +20,12 @@ class StatisticsPage extends StatefulWidget {
 class _StatisticsPageState extends State<StatisticsPage> {
   int selectedWeek = 0;
   double scale = 1.0;
-
   @override
   void initState() {
     super.initState();
-    _loadInitialData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
   }
 
   Future<void> _loadInitialData() async {
@@ -360,8 +361,13 @@ class _PagesBarChart extends StatelessWidget {
                 showTitles: true,
                 getTitlesWidget: (value, _) {
                   const days = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-                  return Text(days[value.toInt()],
-                      style: const TextStyle(fontSize: 12));
+                  final index = value.toInt();
+                  if (index >= 0 && index < days.length) {
+                    return Text(days[index],
+                        style: const TextStyle(fontSize: 12));
+                  }
+                  return const SizedBox
+                      .shrink(); // или верните пустой виджет, если индекс недопустим
                 },
               ),
             ),
@@ -411,8 +417,13 @@ class _ReadingTimeLineChart extends StatelessWidget {
                 showTitles: true,
                 getTitlesWidget: (value, _) {
                   const days = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-                  return Text(days[value.toInt()],
-                      style: const TextStyle(fontSize: 12));
+                  final index = value.toInt();
+                  if (index >= 0 && index < days.length) {
+                    return Text(days[index],
+                        style: const TextStyle(fontSize: 12));
+                  }
+                  return const SizedBox
+                      .shrink(); // или верните пустой виджет, если индекс недопустим
                 },
               ),
             ),

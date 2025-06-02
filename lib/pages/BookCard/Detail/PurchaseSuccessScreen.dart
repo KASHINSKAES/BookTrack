@@ -8,7 +8,7 @@ class PurchaseSuccessScreen extends StatelessWidget {
   final double price;
   final int bonusesUsed;
   final int bonusesAdded;
-  
+
   const PurchaseSuccessScreen({
     required this.bookId,
     required this.bookTitle,
@@ -16,7 +16,7 @@ class PurchaseSuccessScreen extends StatelessWidget {
     required this.bonusesUsed,
     required this.bonusesAdded,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,7 +57,8 @@ class PurchaseSuccessScreen extends StatelessWidget {
                   _buildDetailRow('Сумма покупки:', '$price ₽'),
                   if (bonusesUsed > 0) ...[
                     _buildDetailRow('Списано бонусов:', '-$bonusesUsed'),
-                    _buildDetailRow('Итоговая сумма:', '${price + bonusesUsed} ₽'),
+                    _buildDetailRow(
+                        'Итоговая сумма:', '${price + bonusesUsed} ₽'),
                   ],
                   if (bonusesAdded > 0)
                     _buildDetailRow('Начислено бонусов:', '+$bonusesAdded'),
@@ -84,16 +85,12 @@ class PurchaseSuccessScreen extends StatelessWidget {
               child: Text('Читать сейчас'),
             ),
             SizedBox(height: 10),
-            TextButton(
-              onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
-              child: Text('Вернуться в каталог'),
-            ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

@@ -9,25 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:booktrack/pages/BookCard/text/SettingsProvider.dart';
 import 'package:booktrack/models/chaptersModel.dart';
 import 'package:booktrack/pages/BookCard/text/bookReposityr.dart';
-import 'package:booktrack/pages/BookCard/text/epigraphWidgers.dart';
-import 'package:booktrack/pages/ProfilePages/Quote/QuoteSelectionToolbar.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
-import 'dart:math';
-import 'dart:async';
-
-import 'package:booktrack/BookTrackIcon.dart';
-import 'package:booktrack/pages/BookCard/text/textBook.dart';
-import 'package:booktrack/widgets/constants.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:booktrack/pages/BookCard/text/SettingsProvider.dart';
-import 'package:booktrack/models/chaptersModel.dart';
-import 'package:booktrack/pages/BookCard/text/bookReposityr.dart';
-import 'package:booktrack/pages/BookCard/text/epigraphWidgers.dart';
-import 'package:booktrack/pages/ProfilePages/Quote/QuoteSelectionToolbar.dart';
-import 'package:syncfusion_flutter_sliders/sliders.dart';
 
 class BookScreenOtr extends StatefulWidget {
   final String bookId;
