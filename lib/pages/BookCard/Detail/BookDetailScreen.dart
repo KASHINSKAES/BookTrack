@@ -674,153 +674,171 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       return;
     }
 
-    showDialog(
+    // Показываем индикатор загрузки
+    final loadingDialog = showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
-      var bookId = widget.bookId;
-      var bookPrice = widget.price;
-
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
-      final userDoc = await userRef.get();
 
+      // 1. Загружаем данные пользователя
+      final userDoc = await userRef.get();
       if (!userDoc.exists) {
         await userRef.set({
-          'saved_books': [],
+          'read_books': [],
           'totalBonuses': 0,
-          'payments': {},
-          'selectedPaymentMethod': 'card_1',
+          'selectedPaymentMethod': null,
           'lastPurchaseDate': FieldValue.serverTimestamp(),
         });
       }
 
-      final userData = userDoc.data() ??
-          {
-            'read_books': [],
-            'totalBonuses': 0,
-            'payments': {},
-            'selectedPaymentMethod': 'card_1',
-          };
-
+      final userData = userDoc.data() ?? {};
       final savedBooks = List<String>.from(userData['read_books'] ?? []);
-      final currentBonuses = getSafeInt(userData['totalBonuses']);
-      final paymentMethods = userData['payments'] is Map
-          ? userData['payments'] as Map<String, dynamic>? ?? {}
-          : {};
-      final selectedMethod =
-          userData['selectedPaymentMethod'] as String? ?? 'card_1';
 
-      if (savedBooks.contains(bookId)) {
-        Navigator.pop(context);
+      // Проверка наличия книги
+      if (savedBooks.contains(widget.bookId)) {
+        Navigator.pop(context); // Закрываем диалог
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Эта книга уже у вас в коллекции')),
+          const SnackBar(content: Text('Книга уже в вашей коллекции')),
         );
         return;
       }
 
-      // Расчет бонусов
-      final maxBonusUse = (bookPrice * 0.3).round();
-      final bonusesAvailable = min(currentBonuses, maxBonusUse);
-      final willUseBonuses = useBonuses && bonusesAvailable > 0;
-
-      final bonusesToUse = willUseBonuses ? bonusesAvailable : 0;
-      final bonusesToAdd = (bookPrice * 0.15).round();
-      final finalPrice = bookPrice - bonusesToUse;
-
-      // Проверка на отрицательные бонусы
-      if (currentBonuses - bonusesToUse < 0) {
-        throw Exception('Недостаточно бонусов для списания');
+      // 2. Загружаем платежные методы
+      final paymentsSnapshot = await userRef.collection('payments').get();
+      if (paymentsSnapshot.docs.isEmpty) {
+        Navigator.pop(context); // Закрываем диалог
+        await _showAddPaymentDialog(context);
+        return;
       }
 
-      // Получаем данные о карте
-      final cardData =
-          paymentMethods[selectedMethod] as Map<String, dynamic>? ??
-              {
-                'cardNumber': '**** **** **** ****',
-                'brand': 'Unknown',
-              };
-      final cardNumber =
-          cardData['cardNumber'] as String? ?? '**** **** **** ****';
-      final cardLast4 = cardNumber.length > 4
-          ? cardNumber.substring(cardNumber.length - 4)
-          : '****';
-
-      // Создаем запись о покупке
-      final purchaseData = {
-        'amount': finalPrice,
-        'date': FieldValue.serverTimestamp(),
-        'paymentMethod': selectedMethod,
-        'paymentDetails': {
-          'cardLast4': cardLast4,
-          'cardBrand': cardData['brand'] as String? ?? 'Unknown',
-        },
-        'reason': 'Покупка книги',
-        'bookId': bookId,
-        'bonusesUsed': bonusesToUse,
-        'bonusesAdded': bonusesToAdd,
-        'status': 'completed',
-        'originalPrice': bookPrice,
+      final paymentMethods = {
+        for (var doc in paymentsSnapshot.docs) doc.id: doc.data()
       };
 
-      // Обновляем данные пользователя
-      final updateData = {
-        'read_books': FieldValue.arrayUnion([bookId]),
-        'totalBonuses': FieldValue.increment(bonusesToAdd - bonusesToUse),
-        'lastPurchaseDate': FieldValue.serverTimestamp(),
-      };
-      await userRef.update(updateData);
-
-      // Добавляем запись в историю покупок
-      final purchaseDocRef =
-          await userRef.collection('purchase_history').add(purchaseData);
-
-      // Добавляем записи в историю бонусов
-      if (bonusesToUse > 0) {
-        await userRef.collection('bonus_history').add({
-          'amount': bonusesToUse.toString(),
-          'date': FieldValue.serverTimestamp(),
-          'isPositive': false,
-          'title': 'Списание бонусов',
-          'bookId': bookId,
-          'relatedPurchaseId': purchaseDocRef.id,
-        });
+      // 3. Проверяем выбранный метод
+      final selectedMethod = userData['selectedPaymentMethod'] as String?;
+      if (selectedMethod == null ||
+          !paymentMethods.containsKey(selectedMethod)) {
+        Navigator.pop(context); // Закрываем диалог
+        await _showSelectPaymentDialog(context, paymentMethods);
+        return;
       }
 
-      if (bonusesToAdd > 0) {
-        await userRef.collection('bonus_history').add({
-          'amount': bonusesToAdd.toString(),
-          'date': FieldValue.serverTimestamp(),
-          'isPositive': true,
-          'title': 'Покупка книги',
-          'bookId': bookId,
-          'relatedPurchaseId': purchaseDocRef.id,
-        });
-      }
+      // 4. Выполняем покупку
+      final currentBonuses = (userData['totalBonuses'] as int?) ?? 0;
+      final price = widget.price;
 
-      Navigator.pop(context);
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PurchaseSuccessScreen(
-            bookId: bookId,
-            price: finalPrice.toDouble(),
-            bonusesUsed: bonusesToUse,
-            bonusesAdded: bonusesToAdd,
-            bookTitle: widget.bookTitle,
+      final bonusesToUse =
+          useBonuses ? min((price * 0.3).round(), currentBonuses) : 0;
+      final finalPrice = price - bonusesToUse;
+      final bonusesToAdd = (price * 0.15).round();
+
+      // Используем транзакцию для безопасности
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        // Обновляем основные данные
+        transaction.update(userRef, {
+          'read_books': FieldValue.arrayUnion([widget.bookId]),
+          'totalBonuses': FieldValue.increment(bonusesToAdd - bonusesToUse),
+          'lastPurchaseDate': FieldValue.serverTimestamp(),
+        });
+
+        // Добавляем запись о покупке
+        final purchaseRef = userRef.collection('purchases').doc();
+        transaction.set(purchaseRef, {
+          'bookId': widget.bookId,
+          'amount': finalPrice,
+          'date': FieldValue.serverTimestamp(),
+          'bonusesUsed': bonusesToUse,
+          'bonusesAdded': bonusesToAdd,
+          'status': 'completed',
+        });
+      });
+
+      // Закрываем все диалоги перед навигацией
+      try {
+        // Сначала гарантированно закрываем диалог
+        if (Navigator.of(context, rootNavigator: true).canPop()) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+
+        // Затем показываем экран успеха с небольшой задержкой
+        await Future.delayed(const Duration(milliseconds: 50));
+
+        if (!context.mounted) return;
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PurchaseSuccessScreen(
+              bookTitle: widget.bookTitle,
+              bookId: widget.bookId,
+              price: finalPrice.toDouble(),
+              bonusesUsed: bonusesToUse,
+              bonusesAdded: bonusesToAdd,
+            ),
           ),
-        ),
-      );
+        );
+      } catch (e) {
+        debugPrint('Error navigating to success screen: $e');
+       
+      }
     } catch (e, stackTrace) {
-      debugPrint('Ошибка при покупке: $e');
+      debugPrint('Purchase error: $e');
       debugPrint('Stack trace: $stackTrace');
 
+      // Гарантированно закрываем диалог при ошибке
       Navigator.pop(context);
-      _showRetryDialog(context, e.toString(), user.uid);
+
+      _showRetryDialog(
+        context,
+        'Ошибка при обработке платежа: ${e.toString()}',
+        user.uid,
+      );
+    } finally {
+      // Дополнительная гарантия закрытия диалога
+      if (loadingDialog != null && context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
     }
+  }
+
+// Вспомогательные методы для диалогов
+  Future<void> _showAddPaymentDialog(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Нет платежных методов'),
+        content: const Text('Добавьте карту для совершения покупки.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSelectPaymentDialog(
+      BuildContext context, Map<String, dynamic> paymentMethods) async {
+    return showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Выберите способ оплаты'),
+        content: const Text('Пожалуйста, выберите карту для оплаты.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAuthErrorDialog(BuildContext context) {
