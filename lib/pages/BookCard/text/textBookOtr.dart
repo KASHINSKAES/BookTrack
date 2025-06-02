@@ -13,6 +13,22 @@ import 'package:booktrack/pages/BookCard/text/epigraphWidgers.dart';
 import 'package:booktrack/pages/ProfilePages/Quote/QuoteSelectionToolbar.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
 
+import 'dart:math';
+import 'dart:async';
+
+import 'package:booktrack/BookTrackIcon.dart';
+import 'package:booktrack/pages/BookCard/text/textBook.dart';
+import 'package:booktrack/widgets/constants.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:booktrack/pages/BookCard/text/SettingsProvider.dart';
+import 'package:booktrack/models/chaptersModel.dart';
+import 'package:booktrack/pages/BookCard/text/bookReposityr.dart';
+import 'package:booktrack/pages/BookCard/text/epigraphWidgers.dart';
+import 'package:booktrack/pages/ProfilePages/Quote/QuoteSelectionToolbar.dart';
+import 'package:syncfusion_flutter_sliders/sliders.dart';
+
 class BookScreenOtr extends StatefulWidget {
   final String bookId;
   final VoidCallback onBack;
@@ -35,6 +51,8 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
   String _bookAuthor = '';
   double _loadingProgress = 0;
   bool _processingInterrupted = false;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -56,7 +74,9 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _allPages = ['Error loading book content'];
+          _hasError = true;
+          _errorMessage = 'Ошибка загрузки книги: ${e.toString()}';
+          _allPages = [_errorMessage];
           _pageController = PageController();
         });
       }
@@ -72,12 +92,31 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
   Future<void> _loadBookData() async {
     try {
       final bookData = await _repository.getBookWithChapters(widget.bookId);
+
+      if (bookData.chapters.isEmpty) {
+        throw Exception('Книга не содержит глав');
+      }
+
       _chapters = bookData.chapters;
       _bookTitle = bookData.book.title;
       _bookAuthor = bookData.book.author;
+
       await _precalculateAllPages(bookData);
+
+      // Проверка на пустой текст после обработки
+      if (_allPages.isEmpty || _allPages.every((page) => page.trim().isEmpty)) {
+        throw Exception('Книга не содержит текста для отображения');
+      }
     } catch (e) {
       debugPrint('Error loading book: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Ошибка загрузки книги: ${e.toString()}';
+          _allPages = [_errorMessage];
+        });
+      }
+      rethrow;
     }
   }
 
@@ -87,6 +126,7 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
         _isLoading = true;
         _loadingProgress = 0;
         _allPages = [];
+        _hasError = false;
       });
     }
 
@@ -123,7 +163,11 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
 
       if (!_processingInterrupted && mounted) {
         if (_allPages.isEmpty ||
-            !_allPages.last.contains("Спасибо за прочтение")) {
+            _allPages.every((page) => page.trim().isEmpty)) {
+          throw Exception('Текст книги пуст или не содержит содержимого');
+        }
+
+        if (!_allPages.last.contains("Спасибо за прочтение")) {
           _allPages.add("Спасибо за прочтение!");
         }
       }
@@ -131,8 +175,9 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
       debugPrint('Error in _precalculateAllPages: $e');
       if (mounted) {
         setState(() {
-          _allPages = ['Error loading book content'];
-          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'Ошибка обработки текста: ${e.toString()}';
+          _allPages = [_errorMessage];
         });
       }
     } finally {
@@ -148,6 +193,11 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
+
+    // Показываем экран ошибки, если есть ошибка и нет данных
+    if (_hasError && _allPages.isEmpty) {
+      return _buildErrorScreen(context);
+    }
 
     return Scaffold(
       backgroundColor: _getBackgroundColor(settings.selectedBackgroundStyle),
@@ -186,64 +236,14 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
         ],
       ),
       body: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: _loadingProgress,
-                        backgroundColor: Colors.grey[300],
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(AppColors.background),
-                        strokeWidth: 6,
-                      ),
-                      Text(
-                        '${(_loadingProgress * 100).toStringAsFixed(0)}%',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Загрузка данных...',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.orange,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _processingInterrupted = true;
-                        _isLoading = false;
-                      });
-                    },
-                    child: const Text(
-                      'Отменить',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            )
+          ? _buildLoadingScreen()
           : Column(
               children: [
                 _buildBookHeader(context),
                 Expanded(
-                  child: _allPages.isEmpty
-                      ? Center(child: Text('Нет содержимого для отображения'))
+                  child: _allPages.isEmpty ||
+                          _allPages.every((page) => page.trim().isEmpty)
+                      ? _buildEmptyContentScreen()
                       : PageView.builder(
                           itemCount: _allPages.length,
                           controller: _pageController,
@@ -260,7 +260,117 @@ class _BookScreenOtrState extends State<BookScreenOtr> {
     );
   }
 
+  Widget _buildErrorScreen(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.book, size: 50, color: Colors.grey),
+            SizedBox(height: 20),
+            Text(
+              'Книга не содержит текста',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: widget.onBack,
+              child: Text('Вернуться назад'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyContentScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.book, size: 50, color: Colors.grey),
+          const SizedBox(height: 20),
+          Text(
+            'Книга не содержит текста',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: widget.onBack,
+            child: Text('Вернуться назад'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: _loadingProgress,
+                backgroundColor: Colors.grey[300],
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.background),
+                strokeWidth: 6,
+              ),
+              Text(
+                '${(_loadingProgress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Загрузка данных...',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.orange,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            onPressed: () {
+              setState(() {
+                _processingInterrupted = true;
+                _isLoading = false;
+              });
+            },
+            child: const Text(
+              'Отменить',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPageContent(int pageIndex) {
+    // Проверка на выход за границы списка
+    if (pageIndex < 0 || pageIndex >= _allPages.length) {
+      return Center(
+        child: Text(
+          'Страница не найдена',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
     final settings = Provider.of<SettingsProvider>(context);
     final textStyle = TextStyle(
       fontSize: settings.fontSize,

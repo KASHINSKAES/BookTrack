@@ -115,7 +115,7 @@ class _BottomNavigationBarEXState extends State<BottomNavigationBarEX> {
     return <Widget>[
       const MainPage(),
       CatalogPage(onCategoryTap: onCategoryTap),
-      selectedPage(),
+      SelectedPage(),
       ProfilePage(),
     ];
   }

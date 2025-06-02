@@ -52,7 +52,9 @@ class ReadingStatsProvider with ChangeNotifier {
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
-      final date = (data['date'] as Timestamp).toDate();
+      final date = data['date'] is String
+          ? DateTime.parse(data['date'])
+          : (data['date'] as Timestamp).toDate();
       final dayKey = _formatDate(date);
 
       if (type == "pages") {
@@ -95,7 +97,9 @@ class ReadingStatsProvider with ChangeNotifier {
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
-      final date = (data['date'] as Timestamp).toDate();
+      final date = data['date'] is String
+          ? DateTime.parse(data['date'])
+          : (data['date'] as Timestamp).toDate();
       final weekKey = _getWeekKey(date);
 
       if (!weeklyData.containsKey(weekKey)) {
@@ -277,9 +281,10 @@ class ReadingStatsProvider with ChangeNotifier {
   // Геттер для выбранной даты
   String get selectedDate {
     final days = dailyDataPages.keys.toList();
-    if (days.isEmpty)
+    if (days.isEmpty) {
       return _formatDate(
           DateTime.now()); // Возвращаем текущую дату по умолчанию
+    }
     return days[
         selectedDay.clamp(0, days.length - 1)]; // Защита от выхода за границы
   }
