@@ -37,7 +37,7 @@ class _ActivityPageState extends State<ActivityPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await Provider.of<AppState>(context, listen: false)
-            .loadCurrentGoals(widget.userId);
+            .loadUserData(widget.userId);
       } catch (e) {
         print('Ошибка инициализации целей: $e');
       }
@@ -63,8 +63,7 @@ class _ActivityPageState extends State<ActivityPage> {
         leading: IconButton(
           icon: Icon(
             size: 35 * scale,
-                                 BookTrackIcon.onBack,
-
+            BookTrackIcon.onBack,
             color: Colors.white,
           ),
           onPressed: widget.onBack,
@@ -198,7 +197,6 @@ class _ActivityPageState extends State<ActivityPage> {
       ],
     );
   }
-
 
   Widget _buildActivityDays() {
     return StreamBuilder<List<ReadingGoal>>(

@@ -1,57 +1,54 @@
 import 'dart:async';
-
 import 'package:booktrack/BookTrackIcon.dart';
 import 'package:booktrack/pages/LoginPAGES/AuthProvider.dart';
 import 'package:booktrack/pages/PagesMainBottom/SelectetPage/timerAndPages.dart';
+import 'package:booktrack/pages/ProfilePages/Statistic/ReadingStatsProvider.dart';
 import 'package:booktrack/servises/levelServises.dart';
 import 'package:booktrack/widgets/bookListGoris.dart';
 import 'package:booktrack/widgets/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../BookCard/text/AppState.dart';
 
-int readingMinutes = 0; // Количество минут чтения
-
-class selectedPage extends StatefulWidget {
+class SelectedPage extends StatefulWidget {
   @override
-  _selectedPage createState() => _selectedPage();
+  _SelectedPageState createState() => _SelectedPageState();
 }
 
-class _selectedPage extends State<selectedPage> {
+class _SelectedPageState extends State<SelectedPage> {
   late LevelService _levelService;
-
   String? userId;
-
+  late AppState _appState;
+  late ReadingStatsProvider _statsProvider;
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadInitialData();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadUserData();
+    _appState = Provider.of<AppState>(context);
+    _statsProvider = Provider.of<ReadingStatsProvider>(context, listen: false);
+    userId =
+        Provider.of<AuthProviders>(context, listen: false).userModel?.uid ?? '';
+
+    if (userId!.isNotEmpty) {
+      _levelService = LevelService(userId!);
+      _appState.loadUserData(userId!);
+    }
   }
 
-  Future<void> _loadUserData() async {
-    final auth = Provider.of<AuthProviders>(context, listen: false);
-    final appState = Provider.of<AppState>(context, listen: false);
-    userId = auth.userModel?.uid ?? '';
-
-    if (auth.userModel != null) {
-      await appState.loadUserData(auth.userModel!.uid);
-    }
+  Future<void> _loadInitialData() async {
+    await _statsProvider.loadData(context);
   }
 
   Future<void> _addXP(int amount) async {
-    if (userId == null) {
-      debugPrint('User ID is null');
-      return;
-    }
+    if (userId == null || userId!.isEmpty) return;
 
     try {
       await FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -63,7 +60,7 @@ class _selectedPage extends State<selectedPage> {
           transaction.set(userRef, {
             'stats': {
               'current_level': 1,
-              'pages': 10,
+              'pages': amount,
               'xp': amount,
             },
           });
@@ -71,16 +68,8 @@ class _selectedPage extends State<selectedPage> {
         }
 
         final stats = doc.data()?['stats'] as Map<String, dynamic>? ?? {};
-        int currentXP = stats['xp'] ?? 0;
-        int currentLevel = stats['current_level'] ?? 1;
-        int currentPages = stats['pages'] ?? 0;
-
-        final int newXP = currentXP + amount;
-        final int newPages = currentPages + 10;
-
         transaction.update(userRef, {
-          'stats.xp': newXP,
-          'stats.pages': newPages,
+          'stats.xp': (stats['xp'] ?? 0) + amount,
         });
 
         if (mounted) {
@@ -94,18 +83,10 @@ class _selectedPage extends State<selectedPage> {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
     final scale = MediaQuery.of(context).size.width / AppDimensions.baseWidth;
-    if (appState.pagesReadToday == appState.readingPagesPurpose ||
-        appState.formattedRemainingTime == '00:00:00') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _addXP(15);
-      });
-    }
 
     return Scaffold(
       backgroundColor: const Color(0xff5775CD),
-      
       body: ListView(
         padding: EdgeInsets.only(top: 23.0 * scale),
         children: [
@@ -131,140 +112,148 @@ class _selectedPage extends State<selectedPage> {
             ),
             child: Column(
               children: [
-                Container(
-                  decoration: BoxDecoration(),
-                  padding: EdgeInsets.all(22.0 * scale),
-                  child: Stack(
-                    children: [
-                      SvgPicture.asset(
-                        'images/fonTaimer.svg',
-                        height: 77.0 * scale,
-                        width: 350.0 * scale,
-                        fit: BoxFit.fill,
-                      ),
-                      Align(
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                BookTrackIcon.taimerSelectet,
-                                size: 55 * scale,
-                                color: Colors.white,
-                              ),
-                              onPressed: null,
-                            ),
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    appState.formattedRemainingTime,
-                                    style: TextStyle(
-                                      fontSize: 32 * scale,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${appState.pagesReadToday}/${appState.readingPagesPurpose} страниц',
-                                    style: TextStyle(
-                                      fontSize: 16 * scale,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            RotatedBox(
-                              quarterTurns: 2,
-                              child: IconButton(
-                                icon: Icon(
-                                  BookTrackIcon.onBack,
-                                  size: 29 * scale,
-                                  color: Colors.white,
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TimerPage(
-                                        onBack: () {
-                                          Navigator.pop(context);
-                                        },
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Таймер и статистика чтения
+                _buildReadingStats(scale),
+
+                // Списки книг
                 SectionTitle(
                   title: "Избранные",
-                  onSeeAll: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AllBooksPage(
-                                listType: 'saved_books',
-                                userId: userId,
-                              )),
-                    );
-                  },
+                  onSeeAll: () => _navigateToBookList('saved_books'),
                 ),
-                BookList(
-                  listType: 'saved_books',
-                  userId: userId,
-                ),
+                BookList(listType: 'saved_books', userId: userId),
 
-// Прочитанные книги
                 SectionTitle(
                   title: "Читаемые",
-                  onSeeAll: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AllBooksPage(
-                                listType: 'read_books',
-                                userId: userId,
-                              )),
-                    );
-                  },
+                  onSeeAll: () => _navigateToBookList('read_books'),
                 ),
-                BookList(
-                  listType: 'read_books',
-                  userId: userId,
-                ),
+                BookList(listType: 'read_books', userId: userId),
 
-// Читаемые книги
                 SectionTitle(
                   title: "Прочитано",
-                  onSeeAll: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AllBooksPage(
-                                listType: 'end_books',
-                                userId: userId,
-                              )),
-                    );
-                  },
+                  onSeeAll: () => _navigateToBookList('end_books'),
                 ),
-                BookList(
-                  listType: 'end_books',
-                  userId: userId,
-                ),
+                BookList(listType: 'end_books', userId: userId),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReadingStats(double scale) {
+    return Selector<AppState, bool>(
+      selector: (_, appState) => appState.dailyGoalAchieved,
+      builder: (context, goalAchieved, child) {
+        // Проверяем достижение цели после построения UI
+
+        if (goalAchieved) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            final prefs = await SharedPreferences.getInstance();
+            bool xpWasAdded = prefs.getBool('daily_xp_added') ?? false;
+
+            if (!xpWasAdded) {
+              _addXP(15);
+              await prefs.setBool('daily_xp_added', true); // Сохраняем флаг
+              if (mounted) setState(() {}); // Обновляем UI при необходимости
+            }
+          });
+        }
+
+        return Container(
+          decoration: BoxDecoration(),
+          padding: EdgeInsets.all(22.0 * scale),
+          child: Stack(
+            children: [
+              SvgPicture.asset(
+                'images/fonTaimer.svg',
+                height: 77.0 * scale,
+                width: 350.0 * scale,
+                fit: BoxFit.fill,
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        BookTrackIcon.taimerSelectet,
+                        size: 55 * scale,
+                        color: Colors.white,
+                      ),
+                      onPressed: null,
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Selector<AppState, String>(
+                            selector: (_, appState) =>
+                                appState.formattedRemainingTime,
+                            builder: (context, time, child) {
+                              return Text(
+                                time,
+                                style: TextStyle(
+                                  fontSize: 32 * scale,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                          ),
+                          Selector<AppState, int>(
+                            selector: (_, appState) => appState.pagesReadToday,
+                            builder: (context, pagesRead, child) {
+                              return Text(
+                                '$pagesRead/${_appState.readingPagesPurpose} страниц',
+                                style: TextStyle(
+                                  fontSize: 16 * scale,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    RotatedBox(
+                      quarterTurns: 2,
+                      child: IconButton(
+                        icon: Icon(
+                          BookTrackIcon.onBack,
+                          size: 29 * scale,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TimerPage(
+                              onBack: () => Navigator.pop(context),
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToBookList(String listType) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AllBooksPage(
+          listType: listType,
+          userId: userId,
+        ),
       ),
     );
   }
@@ -274,7 +263,7 @@ class SectionTitle extends StatelessWidget {
   final String title;
   final VoidCallback onSeeAll;
 
-  SectionTitle({required this.title, required this.onSeeAll});
+  const SectionTitle({required this.title, required this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
@@ -286,9 +275,10 @@ class SectionTitle extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           TextButton(
             onPressed: onSeeAll,

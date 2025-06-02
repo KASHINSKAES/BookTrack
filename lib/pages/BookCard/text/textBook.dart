@@ -125,7 +125,6 @@ class _BookScreenState extends State<BookScreen> {
         userId: auth.userModel!.uid,
       );
 
-      appState.updatePagesReadToday(_sessionPages);
     }
     _startNewSession();
   }
@@ -196,40 +195,35 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   void _onPageChanged(int index) async {
-    if (!mounted) return;
+  if (!mounted || index == _currentPageIndex) return;
 
-    final prevChapter = _getCurrentChapterIndex();
-    setState(() => _currentPageIndex = index);
-    final currentChapter = _getCurrentChapterIndex();
+  final prevChapter = _getCurrentChapterIndex();
+  setState(() => _currentPageIndex = index);
+  final currentChapter = _getCurrentChapterIndex();
 
-    if (currentChapter != prevChapter && index > _lastRecordedPage) {
-      await _addXP(10);
+  // Обновляем данные только если листаем вперед
+  if (index > _lastRecordedPage) {
+    final pagesRead = index - _lastRecordedPage;
+    _sessionPages += pagesRead;
+    _pagesSinceLastXP += pagesRead;
+    _sessionPageCount += pagesRead;
+    _lastRecordedPage = index;
+
+    // Обновляем AppState в реальном времени
+    final appState = Provider.of<AppState>(context, listen: false);
+    
+    if (_pagesSinceLastXP >= 10) {
+      await _addXP(5);
+      _pagesSinceLastXP = 0;
     }
-
-    if (index > _lastRecordedPage) {
-      _sessionPages += index - _lastRecordedPage;
-      final pagesRead = index - _lastRecordedPage;
-      _pagesSinceLastXP += pagesRead;
-      _sessionPageCount += pagesRead;
-      _lastRecordedPage = index;
-
-      if (_pagesSinceLastXP >= 10) {
-        await _addXP(5);
-        _pagesSinceLastXP = 0;
-      }
-    }
-
-    if (_isLastPage) {
-      await _completeBook();
-    }
-
-    _debounceSaveProgress();
   }
 
-  bool get _isLastPage => _currentPageIndex == _allPages.length - 1;
+  _debounceSaveProgress();
+}
 
+  // Добавляем недостающий метод
   void _debounceSaveProgress() {
-    _debounceTimer.cancel();
+    _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(seconds: 1), () async {
       await _saveAllProgress();
     });
@@ -306,26 +300,36 @@ class _BookScreenState extends State<BookScreen> {
   }
 
   Future<void> _saveDailyReadingProgress(Duration readingTime) async {
-    try {
-      if (_userId == null) return;
-      final today = DateTime.now();
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(_userId)
-          .collection('reading_goals')
-          .doc('goal_${today.year}_${today.month}_${today.day}');
+  try {
+    if (_userId == null) return;
+    
+    final appState = Provider.of<AppState>(context, listen: false);
+    final today = DateTime.now();
+    
+    // Обновляем локальное состояние
+    appState.updateReadingProgress(
+      minutes: readingTime.inMinutes,
+      pages: _sessionPageCount,
+      userId: _userId!,
+    );
 
-      await docRef.set({
-        'date': today,
-        'readPages': FieldValue.increment(_sessionPageCount),
-        'readMinutes': FieldValue.increment(readingTime.inMinutes),
-        'weekStart':
-            DateTime(today.year, today.month, today.day - today.weekday + 1),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('Error saving daily progress: $e');
-    }
+    // Сохраняем в Firestore
+    final docRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .collection('reading_goals')
+        .doc('goal_${today.year}_${today.month}_${today.day}');
+
+    await docRef.set({
+      'date': today,
+      'readPages': FieldValue.increment(_sessionPageCount),
+      'readMinutes': FieldValue.increment(readingTime.inMinutes),
+    }, SetOptions(merge: true));
+    
+  } catch (e) {
+    debugPrint('Error saving daily progress: $e');
   }
+}
 
   Future<void> _addXP(int amount) async {
     if (_userId == null) {
