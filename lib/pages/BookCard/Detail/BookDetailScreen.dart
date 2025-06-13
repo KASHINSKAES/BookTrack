@@ -547,7 +547,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 icon: BookTrackIcon.selectetScreen,
                 title: 'Полностью',
                 subtitle: _buildPriceWithBonuses(scale),
-                onPressed: _handlePurchase,
+                onPressed: () => _handlePurchase(useBonuses: _useBonuses),
                 scale: scale,
               ),
             ),
@@ -669,6 +669,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   Future<void> _handlePurchase({bool useBonuses = false}) async {
     final user = FirebaseAuth.instance.currentUser;
+    final useBonuses = _useBonuses && _availableBonuses > 0;
     if (user == null) {
       _showAuthErrorDialog(context);
       return;
@@ -757,6 +758,31 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           'bonusesAdded': bonusesToAdd,
           'status': 'completed',
         });
+
+        if (bonusesToUse > 0) {
+          final bonusHistoryRef = userRef.collection('bonus_history').doc();
+          transaction.set(bonusHistoryRef, {
+            'amount': bonusesToUse, // Отрицательное значение для списания
+            'title': 'Списание бонусов"',
+            'date': FieldValue.serverTimestamp(),
+            'isPositive': false,
+            'relatedPurchaseId': purchaseRef.id, // Связь с покупкой
+            'bookId': widget.bookId,
+          });
+        }
+
+        // 4. Записываем начисление бонусов (если они есть)
+        if (bonusesToAdd > 0) {
+          final bonusHistoryRef = userRef.collection('bonus_history').doc();
+          transaction.set(bonusHistoryRef, {
+            'amount': bonusesToAdd,
+            'title': 'Начисление бонусов за покупку',
+            'date': FieldValue.serverTimestamp(),
+            'isPositive': true,
+            'relatedPurchaseId': purchaseRef.id,
+            'bookId': widget.bookId,
+          });
+        }
       });
 
       // Закрываем все диалоги перед навигацией
@@ -768,6 +794,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
         // Затем показываем экран успеха с небольшой задержкой
         await Future.delayed(const Duration(milliseconds: 50));
+
+        if (context.mounted) {
+          setState(() {
+            _availableBonuses = currentBonuses - bonusesToUse + bonusesToAdd;
+          });
+        }
 
         if (!context.mounted) return;
 
@@ -785,7 +817,6 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         );
       } catch (e) {
         debugPrint('Error navigating to success screen: $e');
-       
       }
     } catch (e, stackTrace) {
       debugPrint('Purchase error: $e');
