@@ -749,7 +749,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         });
 
         // Добавляем запись о покупке
-        final purchaseRef = userRef.collection('purchases').doc();
+        final purchaseRef = userRef.collection('purchase_history').doc();
         transaction.set(purchaseRef, {
           'bookId': widget.bookId,
           'amount': finalPrice,
